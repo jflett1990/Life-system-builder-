@@ -1,43 +1,153 @@
 /* ==========================================================================
    PRINT STYLES — Life System Builder
-   Applied only in @media print and @page contexts.
-   Governs: page geometry, page breaks, orphan/widow control, grayscale safety.
+   Version: 2.0
+
+   Applied in two contexts:
+     1. @media print — browser print dialog / save as PDF
+     2. @page — paged media geometry
+
+   Design decisions:
+     • US Letter format (8.5in × 11in = 215.9mm × 279.4mm)
+     • 20mm margins all sides — matches --page-margin-v / --page-margin-h in tokens
+     • No URL leak: a[href]::after suppressed completely
+     • No generated content (counters, ::before strings) that carries metadata
+     • Grayscale-safe: every color that conveys meaning also has a text signal
+     • Page break control: cover/divider/chapter always start a new page
+     • Orphan/widow control: minimum 2 lines before/after any break
+
+   Footer note:
+     .page-footer uses position: absolute within each .page container.
+     In print mode, .page is given explicit height = content area (239.4mm)
+     so the absolute footer anchors to that page's bottom, not the document bottom.
+     This prevents footer stacking across page breaks.
    ========================================================================== */
 
+
+/* ══ @page Rules ══════════════════════════════════════════════════════════ */
+
 @page {
-  size: A4 portrait;
-  margin: 22mm 20mm;
+  size: letter portrait;        /* 8.5in × 11in = 215.9mm × 279.4mm        */
+  margin: 20mm;                 /* Matches --page-margin-v and --page-margin-h */
 }
 
+/* No top margin on the cover page — cover bleeds to the physical page edge  */
 @page :first {
   margin-top: 0;
 }
 
+/* Blank pages (inserted by browser for duplex printing) — suppress content  */
+@page :blank {
+  margin: 20mm;
+}
+
+/*
+  Duplex-ready layout (uncomment when printing two-sided):
+  @page :left  { margin-left: 25mm; margin-right: 15mm; }
+  @page :right { margin-left: 15mm; margin-right: 25mm; }
+  This shifts the binding gutter to the correct spine side.
+*/
+
+
+/* ══ @media print ════════════════════════════════════════════════════════= */
+
 @media print {
 
   /* ── Document Shell ────────────────────────────────────────────────────── */
+
   body {
     background: transparent;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+    color-adjust: exact;
   }
 
-  /* ── Page Containers ───────────────────────────────────────────────────── */
+
+  /* ── Link Suppression — no URL leak ────────────────────────────────────── */
+  /*
+    Many browsers append "href" values after link text in print.
+    This kills that behavior entirely. The document contains no active links —
+    it is a print artifact, not a hypertext document.
+  */
+  a,
+  a:visited,
+  a:link {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  a[href]::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  abbr[title]::after {
+    content: none !important;
+  }
+
+
+  /* ── Visibility Utilities ───────────────────────────────────────────────── */
+
+  .no-print {
+    display: none !important;
+  }
+
+  .screen-only {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+
+  /* ── Page Container ─────────────────────────────────────────────────────── */
+  /*
+    In screen mode: .page is a white card (width: 215.9mm, min-height: 279.4mm)
+    centered on a warm grey background.
+
+    In print mode:
+      • @page margins handle the outer whitespace (20mm all sides)
+      • .page fills the printable area: 175.9mm × 239.4mm
+      • min-height: 0 — pages may be shorter than full height without blank space
+      • height: var(--content-height) anchors the absolute footer correctly
+      • margin: 0 / padding: 0 — @page handles the outer margin
+
+    Cover and section divider pages use negative margin bleed (calc(-1 * --page-margin-*))
+    to fill the @page content area edge-to-edge with their dark background.
+  */
+  /*
+    In print: the @page margin handles the 20mm whitespace. .page is just a
+    logical container. page-break-after: always ensures each .page starts a
+    fresh printed page. No fixed height — content is not clipped.
+
+    Footer: see below — uses position: sticky-equivalent via push pattern.
+  */
   .page {
     width: 100%;
-    min-height: auto;
+    min-height: 0;
     margin: 0;
     padding: 0;
     background: transparent;
     box-shadow: none;
+    page-break-after: always;         /* Each .page = one printed page        */
+    break-after: page;
   }
 
-  /* ── Page Break Rules ──────────────────────────────────────────────────── */
-  .page-break-before  { page-break-before: always !important; break-before: page !important; }
-  .page-break-after   { page-break-after:  always !important; break-after:  page !important; }
-  .page-break-avoid   { page-break-inside: avoid  !important; break-inside: avoid  !important; }
+  /* Last page — no trailing blank page                                        */
+  .page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
 
-  /* Cover, dividers, chapter openers always start on a new page */
+
+  /* ── Page Break Rules ──────────────────────────────────────────────────── */
+
+  /* Explicit utility classes (set directly in templates or manifest)         */
+  .page-break-before { page-break-before: always !important; break-before: page !important; }
+  .page-break-after  { page-break-after:  always !important; break-after:  page !important; }
+  .page-break-avoid  { page-break-inside: avoid  !important; break-inside: avoid  !important; }
+
+  /* Archetypes that must always open on a fresh page                         */
   .page--cover_page,
   .page--section_divider,
   .page--chapter_opener {
@@ -45,7 +155,13 @@
     break-before: page;
   }
 
-  /* Never break inside these components */
+
+  /* ── Break-Inside Avoidance ─────────────────────────────────────────────── */
+  /*
+    These components must never be split across a page break.
+    Each is a single unit of meaning — a half-visible gate or callout
+    degrades the document's operational usability.
+  */
   .callout,
   .gate,
   .domain-card,
@@ -53,78 +169,41 @@
   .checklist__item,
   .field-row,
   .stat-box,
+  .worksheet-section,
+  .matrix-row,
   .data-table thead,
   .data-table tbody tr {
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
-  /* Worksheet and matrix pages: avoid breaking mid-section */
-  .worksheet-section,
-  .matrix-row {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  /* Prevent headings from being orphaned at bottom of page */
+  /* Headings must not be orphaned at the bottom of a page                    */
   .heading-section,
   .heading-sub,
   .heading-component,
-  .section-header {
+  .section-header,
+  .worksheet-section__header {
     page-break-after: avoid;
     break-after: avoid;
-    orphans: 2;
-    widows: 2;
   }
 
-  /* ── Orphan / Widow Control ────────────────────────────────────────────── */
-  p, li, td, .body-text {
-    orphans: 2;
-    widows: 2;
+
+  /* ── Orphan / Widow Control ─────────────────────────────────────────────── */
+  p, li, td, dd, .body-text {
+    orphans: 3;
+    widows: 3;
   }
 
-  /* ── Footer ────────────────────────────────────────────────────────────── */
-  .page-footer {
-    position: fixed;
-    bottom: 12mm;
+  h1, h2, h3, h4 {
+    orphans: 3;
+    widows: 3;
   }
 
-  /* ── Grayscale Safety Overrides ────────────────────────────────────────── */
-  /*
-    All interactive colors map to grayscale equivalents.
-    Any color that relies purely on hue for meaning gets a secondary indicator.
-  */
 
-  /* Gold accent → dark grey */
-  .callout { border-left-color: #333 !important; }
-  .rule--accent { border-top-color: #555 !important; }
-  .badge--accent { background: #E8E8E8 !important; color: #111 !important; border-color: #555 !important; }
-
-  /* Pass / fail paths — add text prefix so color not the only signal */
-  .gate__path--pass { background: #EBEBEB !important; border-left-color: #333 !important; }
-  .gate__path--fail { background: #D8D8D8 !important; border-left-color: #111 !important; }
-
-  /* Cover — keep dark background, force text to white */
-  .page--cover_page .cover__body {
-    background: #111 !important;
-  }
-
-  /* Section divider — keep dark */
-  .page--section_divider .divider__body {
-    background: #222 !important;
-  }
-
-  /* ── No-Print Elements ─────────────────────────────────────────────────── */
-  .no-print { display: none !important; }
-
-  /* ── Table Page Break ──────────────────────────────────────────────────── */
+  /* ── Table Headers ──────────────────────────────────────────────────────── */
+  /* thead repeats on each page when a table spans multiple pages              */
   table {
     page-break-inside: auto;
-  }
-
-  tr {
-    page-break-inside: avoid;
-    break-inside: avoid;
   }
 
   thead {
@@ -133,5 +212,154 @@
 
   tfoot {
     display: table-footer-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+
+  /* ── Footer Positioning ─────────────────────────────────────────────────── */
+  /*
+    In print, .page-footer is converted from absolute to static document flow.
+
+    Why not position:fixed?
+      With fixed positioning, all page footers (one per .page) stack at the same
+      screen coordinates. The last DOM node wins — so page "5" would appear at
+      the bottom of every page. This is wrong.
+
+    Why not position:absolute?
+      Absolute positioning requires the parent (.page) to have a known height.
+      We do not fix .page height (to avoid clipping long worksheets), so
+      absolute bottom-anchoring is unreliable across different content lengths.
+
+    Static flow approach:
+      The footer is declared last in each page template. With static positioning
+      and a generous top margin, it sits below the page content, separated by a
+      rule, at the natural bottom of each page's content block.
+      With page-break-after: always on .page, the footer is visually at the
+      bottom of the printed page when content fills close to page height.
+
+    For pixel-perfect footer positioning (footer always at page bottom):
+      Use WeasyPrint with @page { @bottom-center { content: "..." } }
+      This is the PDF export path — see ExportService.export_pdf() hook.
+  */
+  .page-footer {
+    position: static;
+    margin-top: var(--space-8);
+    left: auto;
+    right: auto;
+    bottom: auto;
+  }
+
+  /* Full-bleed pages (cover, divider) — suppress footer entirely             */
+  /* These pages use dark full-bleed backgrounds and need no footer metadata  */
+  .page--cover_page .page-footer,
+  .page--section_divider .page-footer {
+    display: none !important;
+  }
+
+
+  /* ── Dark Page Backgrounds ──────────────────────────────────────────────── */
+  /*
+    Cover and section divider use dark backgrounds.
+    print-color-adjust: exact (set on body) ensures they render.
+    Force-set here for environments that need explicit instruction.
+  */
+  .cover__body,
+  .divider__body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+
+  /* ── Grayscale Safety Overrides ─────────────────────────────────────────── */
+  /*
+    If the user prints to a black-and-white printer, color alone cannot
+    convey functional meaning. Every color-based signal below has a
+    corresponding TEXT signal in the template (PASS/FAIL labels, arrows, etc.)
+
+    These overrides ensure the document remains functionally readable in mono.
+  */
+
+  /* Gold accent → dark grey                                                  */
+  /* The eyebrow "Section 01" label + section number are the text signal      */
+  .callout {
+    border-left-color: var(--ink-700) !important;
+    background: var(--ink-025) !important;
+  }
+
+  .callout--warn {
+    border-left-color: var(--ink-700) !important;
+    background: #ECECEC !important;
+  }
+
+  .callout--pass {
+    border-left-color: var(--ink-900) !important;
+    background: #EBEBEB !important;
+  }
+
+  .rule--accent {
+    border-top-color: var(--ink-600) !important;
+  }
+
+  .badge--accent {
+    background: #EBEBEB !important;
+    color: #111 !important;
+    border-color: #555 !important;
+  }
+
+  .badge--pass {
+    background: #DFDFDF !important;
+    color: #111 !important;
+    border-color: #333 !important;
+  }
+
+  .badge--fail {
+    background: #C8C8C8 !important;
+    color: #000 !important;
+    border-color: #111 !important;
+  }
+
+  /* Decision gate pass/fail — background + bar shift to greyscale            */
+  /* Text labels "PASS" / "FAIL" remain — this is the primary signal          */
+  .gate__path--pass {
+    background: #EBEBEB !important;
+    border-left-color: #444 !important;
+  }
+
+  .gate__path--fail {
+    background: #D0D0D0 !important;
+    border-left-color: #111 !important;
+  }
+
+  .gate__path--pass .gate__path-label {
+    color: #222 !important;
+  }
+
+  .gate__path--fail .gate__path-label {
+    color: #000 !important;
+  }
+
+  /* Dark pages — keep dark background, force white text                      */
+  /* Chrome respects this with print-color-adjust: exact on body              */
+  .page--cover_page .cover__body {
+    background: #0D0C09 !important;
+  }
+
+  .page--section_divider .divider__body {
+    background: #1A1814 !important;
+  }
+
+  .page--chapter_opener [style*="background: var(--color-chapter-bar)"],
+  .page--chapter_opener [style*="background:var(--color-chapter-bar)"] {
+    background: #0D0C09 !important;
+  }
+
+  /* Stat box borders: keep visible in mono                                   */
+  .stat-box {
+    border-color: #888 !important;
   }
 }

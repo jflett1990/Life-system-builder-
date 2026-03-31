@@ -1,14 +1,28 @@
 /* ==========================================================================
    DESIGN TOKENS — Life System Builder
-   All CSS custom properties. No selectors. No rules.
-   Three layers: raw scale → semantic → runtime overrides (injected by renderer)
+   Version: 2.0
+
+   Architecture: three-layer custom property cascade
+     Layer 1 — Raw scales (never used directly in components)
+     Layer 2 — Semantic tokens (used by base.css + templates)
+     Layer 3 — Runtime overrides (injected by renderer from render_blueprint theme)
+
+   Edition overrides target exactly four root tokens:
+     --color-cover-bg     → cover + section divider background
+     --color-accent       → gold rule, eyebrow accent, chapter labels
+     --color-chapter-bar  → chapter opener header strip
+     --color-divider-bg   → section divider background (defaults to cover-bg)
+
+   No selectors. No rules. No @imports. Only custom properties.
    ========================================================================== */
 
 :root {
 
   /* ── Raw Ink Scale ──────────────────────────────────────────────────────── */
-  --ink-950: #111009;
-  --ink-900: #1C1A14;
+  /* Warm-black to warm-white. All steps readable in grayscale. */
+  --ink-950: #0D0C09;
+  --ink-900: #1A1814;
+  --ink-850: #231F1A;
   --ink-800: #2E2B22;
   --ink-700: #433F34;
   --ink-600: #5A5548;
@@ -16,11 +30,15 @@
   --ink-400: #8A8375;
   --ink-300: #A89F91;
   --ink-200: #C9C2B5;
-  --ink-100: #E2DBCF;
-  --ink-050: #F0EBE2;
+  --ink-150: #D9D3C7;
+  --ink-100: #E4DECE;
+  --ink-050: #EDE8DD;
+  --ink-025: #F4F0E8;
   --ink-000: #FAF8F5;
 
   /* ── Gold Accent Scale ──────────────────────────────────────────────────── */
+  /* Muted, editorial gold — not commodity yellow */
+  --gold-800: #5C4417;
   --gold-700: #7A5E28;
   --gold-600: #96732F;
   --gold-500: #B08A3E;
@@ -30,61 +48,110 @@
   --gold-100: #F2E8CC;
   --gold-050: #FAF4E4;
 
-  /* ── Semantic Color Tokens ──────────────────────────────────────────────── */
-  --color-page:          #FFFFFF;
-  --color-surface:       var(--ink-000);
-  --color-surface-raised:var(--ink-050);
-  --color-text-primary:  var(--ink-900);
-  --color-text-secondary:var(--ink-500);
-  --color-text-muted:    var(--ink-400);
-  --color-text-inverse:  #FFFFFF;
-  --color-rule:          var(--ink-100);
-  --color-rule-heavy:    var(--ink-200);
-  --color-accent:        var(--gold-500);
-  --color-accent-light:  var(--gold-100);
-  --color-accent-dark:   var(--gold-700);
-  --color-cover-bg:      var(--ink-900);
-  --color-divider-bg:    var(--ink-800);
-  --color-chapter-bar:   var(--ink-900);
-  --color-pass:          #2D6A4F;
-  --color-pass-bg:       #D8F3DC;
-  --color-fail:          #9B2226;
-  --color-fail-bg:       #FDDEDE;
-  --color-warn:          #7A5E28;
-  --color-warn-bg:       var(--gold-100);
+  /* ── Status Scales ──────────────────────────────────────────────────────── */
+  /* Functional colors — must carry meaning even in grayscale */
+  --pass-700:   #1B4D35;
+  --pass-500:   #2D6A4F;
+  --pass-100:   #D4EDDA;
+  --pass-050:   #EAF5EE;
 
-  /* ── Typography ─────────────────────────────────────────────────────────── */
+  --fail-700:   #7A1B1B;
+  --fail-500:   #9B2226;
+  --fail-100:   #FADADA;
+  --fail-050:   #FDF0F0;
+
+  --warn-700:   #5C4417;
+  --warn-500:   #7A5E28;
+  --warn-100:   var(--gold-100);
+  --warn-050:   var(--gold-050);
+
+  /* ── Semantic Color Tokens ──────────────────────────────────────────────── */
+  /* These are what base.css components reference. Override via render_blueprint. */
+
+  /* Page surfaces */
+  --color-page:           #FFFFFF;
+  --color-surface:        var(--ink-000);
+  --color-surface-raised: var(--ink-025);
+  --color-surface-inset:  var(--ink-050);
+
+  /* Text hierarchy */
+  --color-text-primary:   var(--ink-900);
+  --color-text-secondary: var(--ink-500);
+  --color-text-tertiary:  var(--ink-400);
+  --color-text-muted:     var(--ink-300);
+  --color-text-inverse:   #FFFFFF;
+
+  /* Rules and borders */
+  --color-rule:           var(--ink-100);
+  --color-rule-mid:       var(--ink-150);
+  --color-rule-heavy:     var(--ink-200);
+
+  /* Accent — edition override target */
+  --color-accent:         var(--gold-500);
+  --color-accent-light:   var(--gold-100);
+  --color-accent-subtle:  var(--gold-050);
+  --color-accent-dark:    var(--gold-700);
+
+  /* Full-bleed page backgrounds — edition override targets */
+  --color-cover-bg:       var(--ink-900);
+  --color-divider-bg:     var(--ink-800);
+  --color-chapter-bar:    var(--ink-900);
+
+  /* Functional status — grayscale-safe because text always accompanies color */
+  --color-pass:           var(--pass-500);
+  --color-pass-bg:        var(--pass-100);
+  --color-fail:           var(--fail-500);
+  --color-fail-bg:        var(--fail-100);
+  --color-warn:           var(--warn-500);
+  --color-warn-bg:        var(--warn-100);
+
+  /* ── Typography — Font Stacks ───────────────────────────────────────────── */
+  /* Self-contained stacks only — no @import, no CDN dependency */
+  /* Executive editorial character: serif headings, humanist sans body         */
   --font-heading: Georgia, "Times New Roman", Times, serif;
   --font-body:    "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono:    "Courier New", Courier, monospace;
   --font-label:   "Helvetica Neue", Helvetica, Arial, sans-serif;
 
-  /* ── Type Scale (px) ────────────────────────────────────────────────────── */
+  /* ── Type Scale ─────────────────────────────────────────────────────────── */
+  /* Calibrated for US Letter at 96dpi screen and 300dpi print.                */
+  /* px units so template inline styles can reference them without rem math.   */
   --text-2xs:  9px;
   --text-xs:   10px;
   --text-sm:   11px;
-  --text-base: 13px;
-  --text-md:   15px;
-  --text-lg:   18px;
-  --text-xl:   24px;
-  --text-2xl:  32px;
-  --text-3xl:  44px;
-  --text-4xl:  60px;
+  --text-base: 12.5px;
+  --text-md:   14.5px;
+  --text-lg:   17px;
+  --text-xl:   22px;
+  --text-2xl:  30px;
+  --text-3xl:  42px;
+  --text-4xl:  58px;
 
   /* ── Line Heights ───────────────────────────────────────────────────────── */
-  --leading-tight:  1.2;
-  --leading-snug:   1.35;
-  --leading-normal: 1.6;
-  --leading-loose:  1.85;
+  --leading-tight:  1.18;
+  --leading-snug:   1.32;
+  --leading-normal: 1.58;
+  --leading-relaxed: 1.72;
+  --leading-loose:  1.88;
 
   /* ── Letter Spacing ─────────────────────────────────────────────────────── */
-  --tracking-tight:  -0.02em;
-  --tracking-normal:  0;
-  --tracking-wide:    0.06em;
-  --tracking-wider:   0.12em;
-  --tracking-widest:  0.2em;
+  --tracking-tight:   -0.025em;
+  --tracking-normal:   0;
+  --tracking-open:     0.02em;
+  --tracking-wide:     0.06em;
+  --tracking-wider:    0.10em;
+  --tracking-widest:   0.18em;
+  --tracking-display: -0.03em;
+
+  /* ── Font Weights ───────────────────────────────────────────────────────── */
+  --weight-light:   300;
+  --weight-normal:  400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
 
   /* ── Spacing Scale ──────────────────────────────────────────────────────── */
+  /* 4px base unit. All spacing in multiples of 4px. */
   --space-px:   1px;
   --space-0-5:  2px;
   --space-1:    4px;
@@ -93,7 +160,9 @@
   --space-4:    16px;
   --space-5:    20px;
   --space-6:    24px;
+  --space-7:    28px;
   --space-8:    32px;
+  --space-9:    36px;
   --space-10:   40px;
   --space-12:   48px;
   --space-14:   56px;
@@ -101,31 +170,95 @@
   --space-20:   80px;
   --space-24:   96px;
 
-  /* ── Page Geometry ──────────────────────────────────────────────────────── */
-  --page-margin-v:   22mm;
-  --page-margin-h:   20mm;
-  --page-width:      210mm;
-  --page-height:     297mm;
-  --content-width:   170mm;
+  /* ── Page Geometry — US Letter ──────────────────────────────────────────── */
+  /* US Letter = 8.5in × 11in = 215.9mm × 279.4mm */
+  --page-width:         215.9mm;
+  --page-height:        279.4mm;
 
-  /* ── Border ─────────────────────────────────────────────────────────────── */
-  --border-weight:    0.5px;
-  --border-weight-md: 1px;
-  --border-weight-lg: 2px;
-  --border-weight-xl: 4px;
-  --border-accent:    3px solid var(--color-accent);
-  --border-rule:      var(--border-weight) solid var(--color-rule);
-  --border-rule-heavy:var(--border-weight-md) solid var(--color-rule-heavy);
+  /* Printable margins — matching @page { margin: 20mm 20mm } in print.css    */
+  --page-margin-v:      20mm;
+  --page-margin-h:      20mm;
+
+  /* Content area dimensions (page - 2× margins) */
+  --content-width:      175.9mm;
+  --content-height:     239.4mm;
+
+  /* Footer anchor from bottom of printable area */
+  --footer-from-bottom: 16mm;
+
+  /* ── Border Weights ─────────────────────────────────────────────────────── */
+  --border-hairline:    0.4px;
+  --border-weight:      0.5px;
+  --border-weight-md:   1px;
+  --border-weight-lg:   2px;
+  --border-weight-xl:   4px;
+
+  /* ── Composite Border Shorthands ────────────────────────────────────────── */
+  --border-rule:        var(--border-weight) solid var(--color-rule);
+  --border-rule-mid:    var(--border-weight-md) solid var(--color-rule-mid);
+  --border-rule-heavy:  var(--border-weight-md) solid var(--color-rule-heavy);
+  --border-accent:      var(--border-weight-lg) solid var(--color-accent);
+
+  /* ── Radius ─────────────────────────────────────────────────────────────── */
+  /* Intentionally minimal — executive document aesthetic is rectilinear       */
+  --radius-none: 0;
+  --radius-sm:   1px;
+  --radius-md:   2px;
 
   /* ── Field Geometry ─────────────────────────────────────────────────────── */
-  --field-height:       28px;
-  --field-height-tall:  48px;
+  --field-height:       26px;
+  --field-height-tall:  44px;
   --field-height-area:  72px;
   --field-gap:          var(--space-4);
+  --field-column-gap:   var(--space-8);
+
+  /* ── Section and Component Spacing ─────────────────────────────────────── */
   --section-gap:        var(--space-10);
   --component-gap:      var(--space-6);
 
-  /* ── Z-Index ─────────────────────────────────────────────────────────────── */
-  --z-base:    0;
-  --z-footer:  10;
+  /* ── Transparency Scales for Dark Pages ─────────────────────────────────── */
+  /* Used for watermarks, plate rules, and metadata on dark backgrounds        */
+  --on-dark-strong:     rgba(255, 255, 255, 0.85);
+  --on-dark-mid:        rgba(255, 255, 255, 0.60);
+  --on-dark-faint:      rgba(255, 255, 255, 0.35);
+  --on-dark-ghost:      rgba(255, 255, 255, 0.12);
+  --on-dark-plate:      rgba(255, 255, 255, 0.05);
+  --watermark-opacity:  0.04;
 }
+
+/* ==========================================================================
+   EDITION OVERRIDE CONTRACT
+   ─────────────────────────────────────────────────────────────────────────
+   To produce a branded edition, the renderer injects a :root block AFTER
+   this file that overrides the four edition targets. Example:
+
+     Estate Edition:
+       --color-cover-bg:    #1A1814;   (near-black warm)
+       --color-divider-bg:  #231F1A;
+       --color-chapter-bar: #1A1814;
+       --color-accent:      #B08A3E;   (gold)
+
+     Legal / Divorce Edition:
+       --color-cover-bg:    #1A1520;   (deep slate)
+       --color-divider-bg:  #1E1A28;
+       --color-chapter-bar: #1A1520;
+       --color-accent:      #7A5E28;   (darker gold)
+
+     Caregiving Edition:
+       --color-cover-bg:    #14201A;   (forest)
+       --color-divider-bg:  #182418;
+       --color-chapter-bar: #14201A;
+       --color-accent:      #8A9E6A;   (sage)
+
+     Healthcare Edition:
+       --color-cover-bg:    #111C2A;   (navy)
+       --color-divider-bg:  #14202E;
+       --color-chapter-bar: #111C2A;
+       --color-accent:      #9CB8C8;   (steel blue)
+
+   Font edition override — inject into :root:
+       --font-heading: "Garamond", Georgia, serif;  (luxury editorial)
+       --font-body:    "Gill Sans", Arial, sans-serif;
+
+   All other tokens remain stable across editions.
+   ========================================================================== */
