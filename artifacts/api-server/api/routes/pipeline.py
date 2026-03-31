@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from core.pipeline_orchestrator import PipelineError
-from schemas.pipeline import ValidationReport
 from schemas.stage import STAGE_NAMES, StageOutputResponse
+from schemas.validation import ValidationResultSchema
 from services.pipeline_service import PipelineService
 from services.project_service import ProjectNotFound, ProjectService
 from services.validation_service import ValidationService
@@ -50,13 +50,36 @@ def run_full_pipeline(
     return [StageOutputResponse.from_orm_with_json(r) for r in results]
 
 
-@router.post("/{project_id}/validate", response_model=ValidationReport)
+@router.post("/{project_id}/validate", response_model=ValidationResultSchema)
 def validate_project(
     project_id: int,
-    use_llm: bool = False,
     validation: ValidationService = Depends(_validation_svc),
 ):
+    """
+    Run the compiler-style validation engine against all completed pipeline stages.
+    Returns a structured ValidationResult with verdict, per-stage breakdowns,
+    and a flat defect list sorted by severity.
+    No LLM call — this is pure structural and cross-stage consistency validation.
+    """
     try:
-        return validation.validate_project(project_id, use_llm=use_llm)
+        return validation.validate_project(project_id)
     except ProjectNotFound:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+
+
+@router.get("/{project_id}/validate", response_model=ValidationResultSchema)
+def get_validation_result(
+    project_id: int,
+    validation: ValidationService = Depends(_validation_svc),
+):
+    """Return the most recently persisted validation result without re-running the engine."""
+    try:
+        result = validation.get_persisted_result(project_id)
+    except ProjectNotFound:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No validation result found for project {project_id}. Run POST /pipeline/{project_id}/validate first.",
+        )
+    return result

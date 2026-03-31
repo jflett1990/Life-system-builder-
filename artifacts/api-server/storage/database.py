@@ -24,8 +24,9 @@ def get_db():
 
 def init_db():
     from models.base import Base
-    import models.project  # noqa: F401
-    import models.stage_output  # noqa: F401
+    import models.project           # noqa: F401
+    import models.stage_output      # noqa: F401
+    import models.validation_result # noqa: F401
 
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialised")
