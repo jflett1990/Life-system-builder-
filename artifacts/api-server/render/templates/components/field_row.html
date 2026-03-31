@@ -8,7 +8,7 @@
     {% endif %}
   </div>
   {% if field_type == "textarea" %}
-  <div class="field-row__input field-row__input--area">{{ placeholder }}</div>
+  <div class="field-row__input field-row__input--area">{% if placeholder %}<span class="field-row__placeholder">{{ placeholder }}</span>{% endif %}</div>
   {% elif field_type == "date" %}
   <div class="field-row__input">__ / __ / ________</div>
   {% elif field_type == "boolean" %}
@@ -21,9 +21,9 @@
     Select: {{ options | join(" / ") }}
   </div>
   {% elif field_type == "number" %}
-  <div class="field-row__input">{{ placeholder or "0" }}</div>
+  <div class="field-row__input">{% if placeholder %}<span class="field-row__placeholder">{{ placeholder }}</span>{% else %}<span class="field-row__placeholder">0</span>{% endif %}</div>
   {% else %}
-  <div class="field-row__input">{{ placeholder }}</div>
+  <div class="field-row__input">{% if placeholder %}<span class="field-row__placeholder">{{ placeholder }}</span>{% endif %}</div>
   {% endif %}
   {% if hint %}
   <div class="field-row__hint">{{ hint }}</div>

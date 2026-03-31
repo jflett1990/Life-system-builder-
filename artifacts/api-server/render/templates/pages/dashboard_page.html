@@ -7,7 +7,15 @@
 {# data keys: page_title, page_label, kpis, milestones, success_criteria,    #}
 {#            system_name, time_horizon, domain_count, worksheet_count        #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
+{% from 'templates/components/callout_block.html' import callout %}
 {{ section_header(label=data.page_label | default("System Dashboard"), title=data.page_title | default("Operational Overview")) }}
+
+<!-- System Objective Callout -->
+{% if data.system_objective %}
+<div style="margin-bottom:var(--space-10)">
+  {{ callout(label="System Objective", text=data.system_objective) }}
+</div>
+{% endif %}
 
 <!-- KPI Stats Row -->
 {% if data.kpis or data.domain_count or data.worksheet_count or data.time_horizon %}

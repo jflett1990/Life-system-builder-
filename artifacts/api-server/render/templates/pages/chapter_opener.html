@@ -66,10 +66,25 @@
 
 {% if data.primary_outputs %}
 <div class="mt-8">
-  <span class="heading-component">Primary Outputs</span>
+  <span class="heading-component">Worksheets in this Chapter</span>
   <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-4)">
     {% for output in data.primary_outputs %}
     <span class="badge badge--accent">{{ output }}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if data.cascade_triggers %}
+<div class="mt-8">
+  <span class="heading-component">Cascade Triggers</span>
+  <p class="body-text body-text--muted" style="margin-top:var(--space-1);margin-bottom:var(--space-3)">Downstream systems that activate if this chapter is incomplete or fails.</p>
+  <div style="margin-top:var(--space-2)">
+    {% for trigger in data.cascade_triggers %}
+    <div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:var(--border-rule);align-items:flex-start">
+      <span style="color:var(--color-warn);font-size:var(--text-xs);flex-shrink:0;margin-top:2px;font-weight:700">!</span>
+      <span class="body-text body-text--secondary">{{ trigger }}</span>
+    </div>
     {% endfor %}
   </div>
 </div>

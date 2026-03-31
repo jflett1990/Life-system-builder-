@@ -148,6 +148,7 @@ class ManifestBuilder:
                 "page_label": "System Overview",
                 "page_title": "Operational Dashboard",
                 "system_name": system_name,
+                "system_objective": arch.get("system_objective", ""),
                 "time_horizon": arch.get("time_horizon", ""),
                 "domain_count": len(domains) if domains else None,
                 "worksheet_count": None,        # shown via KPI block instead
@@ -193,39 +194,6 @@ class ManifestBuilder:
                 },
             ))
 
-        # ── 5. Role × Domain Comparison Matrix (conditional) ──────────────────
-        # Only shown when there are 2+ distinct roles — a single-actor system
-        # (e.g. solo estate executor) produces a matrix with one row that adds
-        # no information and feels generic.
-        roles = arch.get("key_roles", [])
-        if len(roles) >= 2 and domains:
-            columns = [d.get("name", d.get("id", "Domain")) for d in domains]
-            rows = []
-            for role in roles:
-                cells: dict[str, str] = {}
-                for domain in domains:
-                    col_name = domain.get("name", domain.get("id", ""))
-                    cells[col_name] = role.get("authority_level", "executor").replace("-", " ").title()
-                rows.append({
-                    "label": role.get("role", ""),
-                    "sublabel": role.get("authority_level", ""),
-                    "cells": cells,
-                })
-            pages.append(ManifestPage(
-                page_id="pg-matrix-roles",
-                sequence=next_seq(),
-                archetype="comparison_matrix",
-                data={
-                    "matrix_label": "Responsibility Matrix",
-                    "matrix_title": "Roles × Control Domains",
-                    "subtitle": "Authority and engagement level per domain.",
-                    "row_header": "Role",
-                    "columns": columns,
-                    "rows": rows,
-                    "notes": "Authority levels reflect decision-making power within each control domain.",
-                },
-            ))
-
         # ── 6a. Chapters from chapter_expansion (current pipeline) ─────────────
         if chapters:
             total_chapters = len(chapters)
@@ -255,6 +223,8 @@ class ManifestBuilder:
 
                 # chapter_opener: show chapter intro + quick-reference rules as scope items
                 # primary_outputs: worksheet titles in this chapter
+                # cascade_triggers: downstream dependencies that activate if this chapter fails
+                cascade_triggers = ch.get("cascade_triggers", [])
                 pages.append(ManifestPage(
                     page_id=f"pg-chapter-{domain_id or ch_num}",
                     sequence=next_seq(),
@@ -262,11 +232,12 @@ class ManifestBuilder:
                     data={
                         "chapter_number": ch_num,
                         "chapter_title": ch_title,
-                        "chapter_summary": ch_narrative[:900].rstrip() + ("…" if len(ch_narrative) > 900 else ""),
+                        "chapter_summary": ch_narrative[:2000].rstrip() + ("…" if len(ch_narrative) > 2000 else ""),
                         "domain_name": domain_name,
                         "domain_purpose": domain_info.get("purpose", ""),
                         "scope_items": ch_rules,
                         "primary_outputs": [ws.get("title", "") for ws in ch_worksheets],
+                        "cascade_triggers": cascade_triggers,
                     },
                 ))
 

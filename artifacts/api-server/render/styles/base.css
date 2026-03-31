@@ -394,6 +394,14 @@ body {
   padding: var(--space-3);
 }
 
+/* Placeholder / example text inside input — clearly "write here" guidance   */
+/* Visually distinct from real filled content: muted color + italic           */
+.field-row__placeholder {
+  color: var(--color-text-muted);
+  font-style: italic;
+  font-size: var(--text-sm);
+}
+
 /* Hint text below the input line                                             */
 .field-row__hint {
   margin-top: var(--space-1);
