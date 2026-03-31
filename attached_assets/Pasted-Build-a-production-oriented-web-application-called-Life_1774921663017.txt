@@ -1,0 +1,82 @@
+Build a production-oriented web application called "Life System Builder".
+
+Purpose:
+This app converts a user-supplied life event into a structured operational control system. The output should not be generic advice. It should generate a multi-stage system composed of:
+1. system architecture
+2. worksheet system
+3. layout mapping
+4. render blueprint
+5. validation audit
+
+The app should be modular, maintainable, and designed for future expansion.
+
+Core requirements:
+- Use a clean full-stack architecture with clear separation between frontend, backend, prompt contracts, generation pipeline, validation logic, and rendering logic.
+- Do not build this as a monolithic script.
+- Use a staged generation pipeline where each stage consumes upstream structured outputs.
+- Store prompt contracts and schemas as first-class files, not inline blobs scattered through the codebase.
+- All major outputs must exist in both machine-readable JSON and human-readable preview form.
+- Include a validation layer that audits outputs like a compiler, not a reviewer.
+- Include an HTML/CSS rendering layer that can produce premium, print-safe manual/workbook pages.
+- Support exporting the final rendered document as HTML and preparing it for PDF generation.
+- Design the system so that later I can swap model providers or add external APIs without rewriting the whole app.
+
+Functional modules required:
+1. Life event intake form
+2. Pipeline orchestration engine
+3. Stage-by-stage generator services
+4. Validation service
+5. Render manifest builder
+6. HTML/CSS template renderer
+7. Preview UI for each stage
+8. Export layer
+
+The app must include:
+- sensible file structure
+- typed schemas where appropriate
+- strong error handling
+- loading and retry states
+- logging
+- basic persistence for generated projects
+- reusable UI components
+- no placeholder junk or fake demo text
+
+Preferred stack:
+- Python backend with FastAPI
+- React frontend
+- JSON-based prompt contracts stored in the repo
+- Jinja2 or equivalent templating for HTML rendering
+- CSS token system for design consistency
+- SQLite for local project persistence
+- clear environment variable handling for API keys
+
+Build an MVP that is real, not decorative:
+- create/edit a project
+- choose a life event
+- run generation pipeline by stage
+- inspect structured outputs
+- run validation
+- preview rendered pages
+- export HTML package
+
+Design for future additions:
+- PDF export
+- user accounts
+- version history
+- white-label branding profiles
+- alternate render themes
+- external Actions/API integrations
+
+Important constraints:
+- Do not make architectural decisions that couple prompt logic tightly to UI components.
+- Do not bury schemas inside routes.
+- Do not mix rendering concerns with system-generation concerns.
+- Do not use a generic chatbot layout as the main interface.
+- Make the interface feel like a control panel / document system builder, not a conversation toy.
+
+Deliver:
+1. file tree
+2. architecture summary
+3. implementation plan
+4. full codebase
+5. instructions for running locally in Replit
