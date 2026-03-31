@@ -51,16 +51,15 @@ class ManifestBuilder:
 
     Page sequence:
       1  cover_page           — system identity
-      2  dashboard_page        — KPIs, chapter milestones, success criteria
+      2  dashboard_page        — system objective callout, KPIs, chapter milestones, success criteria
       3  section_divider       — "System Architecture" divider
       4  explanation_page      — operating premise, domains, constraints
-      [comparison_matrix]      — role × domain grid (only when 2+ distinct roles)
       [for each chapter in chapter_expansion]:
-        N  section_divider     — chapter divider
-        N  chapter_opener      — domain intro + quick-reference rules
-        N  worksheet_page(s)   — one page per worksheet
+        N  section_divider     — "Operational Content" divider (once, before first chapter)
+        N  chapter_opener      — domain intro, narrative, quick-reference rules, cascade triggers
+        N  worksheet_page(s)   — one page per worksheet in this chapter
       [legacy: worksheet_system path if chapter_expansion absent]
-      -2  rapid_response       — failure modes + escalation paths
+      -1  rapid_response       — failure modes + escalation paths
     """
 
     def build(
@@ -173,8 +172,8 @@ class ManifestBuilder:
         ))
 
         # ── 4. Explanation Page ────────────────────────────────────────────────
-        # Intentionally omits key_roles (shown in matrix below when meaningful)
-        # and success_criteria (shown on dashboard) to avoid repetition.
+        # Intentionally omits key_roles (repetitive — not project-differentiated)
+        # and success_criteria (shown on dashboard) to avoid duplication.
         if arch:
             pages.append(ManifestPage(
                 page_id="pg-arch-explain",
