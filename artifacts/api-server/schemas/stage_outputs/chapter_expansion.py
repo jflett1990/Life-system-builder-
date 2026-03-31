@@ -72,6 +72,10 @@ class ExpandedWorksheet(BaseModel):
     sections: list[ChapterSection] = []
     decision_gates: list[ChapterDecisionGate] = []
 
+    # repeat-use and cross-reference metadata
+    repeat_use: bool = False
+    cross_references: list[str] = []
+
 
 class ExpandedChapter(BaseModel):
     """Schema for a single chapter expansion call (per-domain loop)."""

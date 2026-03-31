@@ -60,6 +60,12 @@
   {% if data.estimated_completion_time %}
   <p style="font-family:var(--font-label);font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-2)">Estimated time: {{ data.estimated_completion_time }}</p>
   {% endif %}
+  {% if data.cross_references and data.cross_references | length > 0 %}
+  <div style="margin-top:var(--space-3);display:flex;align-items:baseline;gap:var(--space-2)">
+    <span style="font-family:var(--font-label);font-size:var(--text-xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--color-text-muted);white-space:nowrap">See also:</span>
+    <span style="font-family:var(--font-body);font-size:var(--text-xs);color:var(--color-text-muted)">{{ data.cross_references | join(' · ') }}</span>
+  </div>
+  {% endif %}
 </div>
 
 {# ── TABLE LAYOUT ─────────────────────────────────────────────────────────── #}
