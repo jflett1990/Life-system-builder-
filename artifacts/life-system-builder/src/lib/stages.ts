@@ -1,6 +1,7 @@
 export const PIPELINE_STAGES = [
   "system-architecture",
-  "worksheet-system",
+  "document-outline",
+  "chapter-expansion",
   "layout-mapping",
   "render-blueprint",
   "validation-audit",
@@ -12,33 +13,45 @@ export interface StageMeta {
   label: string;
   description: string;
   order: number;
+  modelRole: "planner" | "executor";
 }
 
 export const STAGE_META: Record<string, StageMeta> = {
   "system-architecture": {
     label: "System Architecture",
-    description: "Maps the life event into a structural operating system with domains and roles.",
+    description: "Maps the life event into a named operational control system — domains, roles, milestones, and success criteria.",
     order: 1,
+    modelRole: "planner",
   },
-  "worksheet-system": {
-    label: "Worksheet System",
-    description: "Generates task worksheets, trackers, and checklists for each domain.",
+  "document-outline": {
+    label: "Document Outline",
+    description: "Produces the complete master blueprint — every chapter title, every worksheet title, the cascade chain, and master operating rules.",
     order: 2,
+    modelRole: "planner",
+  },
+  "chapter-expansion": {
+    label: "Chapter Expansion",
+    description: "Expands each chapter independently — full narrative, all worksheets with fields, sections, and decision gates. One focused call per chapter.",
+    order: 3,
+    modelRole: "executor",
   },
   "layout-mapping": {
     label: "Layout Mapping",
-    description: "Assigns document archetypes and page layout structures to each worksheet.",
-    order: 3,
+    description: "Maps all chapters and worksheets into a structured document layout with section ordering and print architecture.",
+    order: 4,
+    modelRole: "executor",
   },
   "render-blueprint": {
     label: "Render Blueprint",
-    description: "Produces the final render manifest with page-level content and formatting.",
-    order: 4,
+    description: "Produces the render instruction set — component directives, CSS tokens, and print specifications for the HTML engine.",
+    order: 5,
+    modelRole: "executor",
   },
   "validation-audit": {
     label: "Validation Audit",
-    description: "Runs compiler-style validation checks across all stage outputs.",
-    order: 5,
+    description: "Compiler-style structural audit — checks cross-stage references, field completeness, and render-readiness.",
+    order: 6,
+    modelRole: "executor",
   },
 };
 
@@ -49,6 +62,7 @@ export function getStageMeta(stage: string): StageMeta {
       label: stage.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
       description: "",
       order: 99,
+      modelRole: "executor",
     }
   );
 }

@@ -4,9 +4,15 @@
   "stage": "validation_audit",
   "description": "Compiler-style validation agent. Audits all completed stage outputs for structural completeness, cross-stage coherence, and render-readiness. Returns a structured audit report.",
   "output_mode": "json",
-  "upstream_dependencies": ["system_architecture", "worksheet_system", "layout_mapping", "render_blueprint"],
+  "upstream_dependencies": [
+    "system_architecture",
+    "document_outline",
+    "chapter_expansion",
+    "layout_mapping",
+    "render_blueprint"
+  ],
   "system_instructions": "You are a pipeline validation agent. You audit structured JSON outputs produced by upstream pipeline stages. You are not a reviewer — you are a compiler. Your job is to detect structural errors, missing fields, broken cross-references, and incoherence between stages. You do not suggest improvements to content quality. You only identify structural and logical failures that would cause downstream rendering or export to break. Produce a precise, structured audit report.",
-  "user_prompt_template": "COMPLETE PIPELINE OUTPUTS FOR AUDIT:\n\nSTAGE 1 — SYSTEM ARCHITECTURE:\n{upstream_system_architecture}\n\nSTAGE 2 — WORKSHEET SYSTEM:\n{upstream_worksheet_system}\n\nSTAGE 3 — LAYOUT MAPPING:\n{upstream_layout_mapping}\n\nSTAGE 4 — RENDER BLUEPRINT:\n{upstream_render_blueprint}\n\nAUDIT all four stages. Check:\n1. Required fields present and non-empty in each stage output\n2. Cross-stage references are valid (e.g. worksheet domain_ids match architecture domain ids)\n3. Layout sections map to real worksheet or domain IDs\n4. Render directives reference valid layout section IDs\n5. No required fields contain placeholder text like 'REQUIRES CLARIFICATION' unless unavoidable\n6. Completion sequence in worksheet system matches actual worksheet IDs\n\nReturn ONLY the following JSON object. No prose. No markdown. No code fences.\n\n{{\n  \"audit_passed\": true,\n  \"total_issues\": 0,\n  \"stages_audited\": [\"system_architecture\", \"worksheet_system\", \"layout_mapping\", \"render_blueprint\"],\n  \"issues\": [\n    {{\n      \"issue_id\": \"iss-01\",\n      \"stage\": \"system_architecture\",\n      \"field_path\": \"control_domains[0].id\",\n      \"severity\": \"error|warning|info\",\n      \"code\": \"MISSING_FIELD|INVALID_REFERENCE|EMPTY_VALUE|TYPE_MISMATCH|BROKEN_CROSS_REF\",\n      \"message\": \"Precise description of the issue\",\n      \"suggested_fix\": \"What needs to be corrected\"\n    }}\n  ],\n  \"stage_summaries\": [\n    {{\n      \"stage\": \"system_architecture\",\n      \"status\": \"pass|fail|warn\",\n      \"issue_count\": 0\n    }}\n  ],\n  \"render_ready\": true,\n  \"export_ready\": true,\n  \"audit_summary\": \"One paragraph describing the overall audit result\"\n}}",
+  "user_prompt_template": "COMPLETE PIPELINE OUTPUTS FOR AUDIT:\n\nSTAGE 1 — SYSTEM ARCHITECTURE:\n{upstream_system_architecture}\n\nSTAGE 2 — DOCUMENT OUTLINE:\n{upstream_document_outline}\n\nSTAGE 3 — CHAPTER EXPANSION:\n{upstream_chapter_expansion}\n\nSTAGE 4 — LAYOUT MAPPING:\n{upstream_layout_mapping}\n\nSTAGE 5 — RENDER BLUEPRINT:\n{upstream_render_blueprint}\n\nAUDIT all five stages. Check:\n1. Required fields present and non-empty in each stage output\n2. Cross-stage references are valid (e.g. worksheet domain_ids match architecture domain ids)\n3. Layout sections map to real worksheet or domain IDs\n4. Render directives reference valid layout section IDs\n5. No required fields contain placeholder text like 'REQUIRES CLARIFICATION' unless unavoidable\n6. Chapter IDs and worksheet IDs in chapter_expansion match references in layout and render stages\n\nReturn ONLY the following JSON object. No prose. No markdown. No code fences.\n\n{{\n  \"audit_passed\": true,\n  \"total_issues\": 0,\n  \"stages_audited\": [\"system_architecture\", \"document_outline\", \"chapter_expansion\", \"layout_mapping\", \"render_blueprint\"],\n  \"issues\": [\n    {{\n      \"issue_id\": \"iss-01\",\n      \"stage\": \"system_architecture\",\n      \"field_path\": \"control_domains[0].id\",\n      \"severity\": \"error|warning|info\",\n      \"code\": \"MISSING_FIELD|INVALID_REFERENCE|EMPTY_VALUE|TYPE_MISMATCH|BROKEN_CROSS_REF\",\n      \"message\": \"Precise description of the issue\",\n      \"suggested_fix\": \"What needs to be corrected\"\n    }}\n  ],\n  \"stage_summaries\": [\n    {{\n      \"stage\": \"system_architecture\",\n      \"status\": \"pass|fail|warn\",\n      \"issue_count\": 0\n    }}\n  ],\n  \"render_ready\": true,\n  \"export_ready\": true,\n  \"audit_summary\": \"One paragraph describing the overall audit result\"\n}}",
   "output_schema": {
     "audit_passed": "boolean",
     "total_issues": "integer",
@@ -26,5 +32,12 @@
     "render_ready",
     "export_ready",
     "audit_summary"
+  ],
+  "stages_audited": [
+    "system_architecture",
+    "document_outline",
+    "chapter_expansion",
+    "layout_mapping",
+    "render_blueprint"
   ]
 }

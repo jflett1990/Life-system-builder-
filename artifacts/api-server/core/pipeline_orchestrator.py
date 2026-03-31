@@ -18,7 +18,8 @@ class PipelineError(Exception):
 
 STAGE_CONTRACT_MAP: dict[str, str] = {
     "system_architecture": "life_event_system_core",
-    "worksheet_system":    "worksheet_generation_engine",
+    "document_outline":    "document_outline",
+    "chapter_expansion":   "chapter_expansion",
     "layout_mapping":      "layout_architecture_mapper",
     "render_blueprint":    "pdf_render_blueprint",
     "validation_audit":    "life_system_validation_agent",
@@ -26,10 +27,11 @@ STAGE_CONTRACT_MAP: dict[str, str] = {
 
 STAGE_UPSTREAM_MAP: dict[str, list[str]] = {
     "system_architecture": [],
-    "worksheet_system":    ["system_architecture"],
-    "layout_mapping":      ["system_architecture", "worksheet_system"],
-    "render_blueprint":    ["system_architecture", "worksheet_system", "layout_mapping"],
-    "validation_audit":    ["system_architecture", "worksheet_system", "layout_mapping", "render_blueprint"],
+    "document_outline":    ["system_architecture"],
+    "chapter_expansion":   ["system_architecture", "document_outline"],
+    "layout_mapping":      ["system_architecture", "document_outline", "chapter_expansion"],
+    "render_blueprint":    ["system_architecture", "document_outline", "chapter_expansion", "layout_mapping"],
+    "validation_audit":    ["system_architecture", "document_outline", "chapter_expansion", "layout_mapping", "render_blueprint"],
 }
 
 

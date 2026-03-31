@@ -1,0 +1,91 @@
+"""Pydantic schemas for the chapter_expansion pipeline stage.
+
+Two schemas:
+  ExpandedChapter         — validates each per-chapter LLM call during the loop
+  ChapterExpansionOutput  — validates the accumulated output saved to the DB
+"""
+from __future__ import annotations
+
+from typing import Any
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class ChapterField(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    field_id: str = ""
+    label: str = Field(..., min_length=1)
+    type: str = "text"
+    placeholder: str = ""
+    options: list[str] = []
+    required: bool = True
+    validation_hint: str = ""
+
+
+class ChapterSection(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    section_id: str = ""
+    section_title: str = Field(..., min_length=1)
+    instructions: str = ""
+    fields: list[ChapterField] = []
+
+
+class ChapterDecisionGate(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    gate_id: str = ""
+    gate_title: str = ""
+    condition: str = ""
+    pass_action: str = ""
+    fail_action: str = ""
+    blocks_completion: bool = False
+
+
+class ExpandedWorksheet(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str = Field(..., min_length=1)
+    title: str = Field(..., min_length=1)
+    purpose: str = ""
+    estimated_completion_time: str = ""
+    sections: list[ChapterSection] = []
+    decision_gates: list[ChapterDecisionGate] = []
+
+
+class ExpandedChapter(BaseModel):
+    """Schema for a single chapter expansion call (per-domain loop)."""
+    model_config = ConfigDict(extra="allow")
+
+    chapter_number: int = 0
+    domain_id: str = ""
+    chapter_title: str = Field(..., min_length=1)
+    narrative: str = Field(..., min_length=100)
+    quick_reference_rules: list[str] = []
+    worksheets: list[ExpandedWorksheet] = []
+    cascade_triggers: list[str] = []
+
+
+class ChapterExpansionOutput(BaseModel):
+    """Accumulated output from all per-chapter loop calls — saved to DB."""
+    model_config = ConfigDict(extra="allow")
+
+    document_title: str = ""
+    total_chapters: int = 0
+    total_worksheets: int = 0
+    chapters: list[ExpandedChapter] = Field(..., min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _compute_totals(cls, values: Any) -> Any:
+        if not isinstance(values, dict):
+            return values
+        chapters = values.get("chapters", [])
+        if isinstance(chapters, list):
+            values.setdefault("total_chapters", len(chapters))
+            total_ws = sum(
+                len(c.get("worksheets", [])) if isinstance(c, dict) else 0
+                for c in chapters
+            )
+            values.setdefault("total_worksheets", total_ws)
+        return values

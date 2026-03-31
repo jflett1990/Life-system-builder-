@@ -4,7 +4,8 @@ from pydantic import BaseModel
 
 STAGE_NAMES = [
     "system_architecture",
-    "worksheet_system",
+    "document_outline",
+    "chapter_expansion",
     "layout_mapping",
     "render_blueprint",
     "validation_audit",

@@ -1,0 +1,27 @@
+{
+  "name": "chapter_expansion",
+  "version": "1.0",
+  "stage": "chapter_expansion",
+  "model_role": "executor",
+  "execution_mode": "loop_per_chapter",
+  "description": "Expands a single chapter from the document outline into full operational content — a detailed narrative and all worksheets with complete fields, sections, and decision gates. Executed once per chapter in the document outline.",
+  "output_mode": "json",
+  "upstream_dependencies": ["system_architecture", "document_outline"],
+  "system_instructions": "You are expanding ONE chapter from a pre-approved master document outline. You have the full outline for context — use it to stay consistent with the document's structure and to avoid duplicating content from other chapters. Your job is to write the complete chapter: a detailed operational narrative and all worksheets listed in the chapter plan. Match every worksheet title in the plan exactly. Do not add or remove worksheets from the plan. The narrative must be operational, specific, and immediately useful — not generic advice. Every field in every worksheet must be real and actionable. Decision gates must have real conditions and clear pass/fail actions.",
+  "user_prompt_template": "CHAPTER TO EXPAND:\n{current_chapter_json}\n\nPROJECT CONTEXT:\nLife Event: {life_event}\nDocument: {document_title}\nAudience: {audience}\nTone: {tone}\n\nExpand Chapter {chapter_number} ({domain_name}) into complete operational content.\n\nREQUIREMENTS:\n1. Narrative: 1500-2500 words of operational content specific to this domain and life event. Cover: what this domain governs, why it matters, common failure patterns, step-by-step operational approach, professional guidance triggers, key decisions the operator must make.\n2. Worksheets: Create ALL worksheets listed in the chapter plan above. For each:\n   - 3-5 sections with clear operational purpose\n   - 8-15 fields per section (mix of text, date, boolean, number, select, textarea types)\n   - Real placeholder examples and validation hints\n   - 1-3 decision gates with concrete conditions and pass/fail actions\n3. Quick-reference rules: 5-8 short, sharp operating rules for this domain\n4. Cascade triggers: when completion of this chapter triggers action in another domain\n\nReturn ONLY the following JSON object. No prose. No markdown. No code fences.\n\n{{\n  \"chapter_number\": {chapter_number},\n  \"domain_id\": \"domain ID from the chapter plan\",\n  \"chapter_title\": \"Chapter title from the plan\",\n  \"narrative\": \"Full 1500-2500 word operational narrative for this chapter\",\n  \"quick_reference_rules\": [\n    \"Rule 1 — short, specific, actionable\"\n  ],\n  \"worksheets\": [\n    {{\n      \"id\": \"ws-XX-a\",\n      \"title\": \"Exact title from chapter plan\",\n      \"purpose\": \"One sentence purpose\",\n      \"estimated_completion_time\": \"e.g. '45 minutes'\",\n      \"sections\": [\n        {{\n          \"section_id\": \"s-01\",\n          \"section_title\": \"Section title\",\n          \"instructions\": \"Brief operator instructions for this section\",\n          \"fields\": [\n            {{\n              \"field_id\": \"f-001\",\n              \"label\": \"Field label\",\n              \"type\": \"text|date|boolean|number|select|multi-select|textarea\",\n              \"placeholder\": \"Concrete example or hint\",\n              \"options\": [],\n              \"required\": true,\n              \"validation_hint\": \"What a correct answer looks like\"\n            }}\n          ]\n        }}\n      ],\n      \"decision_gates\": [\n        {{\n          \"gate_id\": \"g-01\",\n          \"gate_title\": \"Gate name\",\n          \"condition\": \"The specific condition that determines the outcome\",\n          \"pass_action\": \"What to do when the condition is met\",\n          \"fail_action\": \"What to do when the condition is not met\",\n          \"blocks_completion\": true\n        }}\n      ]\n    }}\n  ],\n  \"cascade_triggers\": [\n    \"When [specific action] is complete in this chapter, it triggers [specific requirement] in [Domain Name]\"\n  ]\n}}",
+  "output_schema": {
+    "chapter_number": "integer",
+    "domain_id": "string",
+    "chapter_title": "string",
+    "narrative": "string — 1500+ words",
+    "quick_reference_rules": "array of strings",
+    "worksheets": "array of worksheet objects",
+    "cascade_triggers": "array of strings"
+  },
+  "required_output_fields": [
+    "chapter_number",
+    "chapter_title",
+    "narrative",
+    "worksheets"
+  ]
+}

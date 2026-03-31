@@ -35,6 +35,10 @@ class ContractDefinition:
     # "executor" uses the fast execution model for all content-generation stages.
     # Defaults to "executor" so new contracts are cheap and fast unless explicitly promoted.
     model_role: str = "executor"
+    # "loop_per_chapter" stages are executed once per chapter in the document_outline
+    # rather than as a single LLM call.  PipelineService detects this and calls
+    # _run_chapter_loop() instead of the normal single-call path.
+    execution_mode: str | None = None
     raw: dict[str, Any] = field(repr=False, default_factory=dict)
 
     @property
@@ -107,6 +111,7 @@ def load_contract(filepath: Path) -> ContractDefinition:
         output_schema=data.get("output_schema"),
         required_output_fields=data.get("required_output_fields", []),
         model_role=data.get("model_role", "executor"),
+        execution_mode=data.get("execution_mode"),
         raw=data,
     )
     logger.debug("Loaded contract %s v%s from %s", contract.name, contract.version, filepath.name)

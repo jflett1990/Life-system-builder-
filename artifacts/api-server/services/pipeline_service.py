@@ -27,6 +27,7 @@ Error handling:
 """
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any
 
@@ -116,8 +117,6 @@ class PipelineService:
         registry = get_registry()
         contract_name = orchestrator.resolve_contract_name(stage)
         contract = registry.resolve(contract_name)
-        assembler = _get_assembler()
-        prompt = assembler.assemble(contract, payload, upstream_outputs=upstream)
 
         # Upsert stage row → "running"
         stage_row = self._repo.find_by_project_and_stage(project_id, stage)
@@ -134,13 +133,43 @@ class PipelineService:
                 revision_number=1,
             )
             self._repo.insert(stage_row)
+        self._repo.save(stage_row)
 
-        # ── Run model pipeline ────────────────────────────────────────────────
+        # ── Route to loop or single-call path ─────────────────────────────────
+        if contract.execution_mode == "loop_per_chapter":
+            self._run_chapter_loop(
+                project_id=project_id,
+                stage=stage,
+                project=project,
+                stage_row=stage_row,
+                contract=contract,
+                all_outputs=all_outputs,
+            )
+        else:
+            assembler = _get_assembler()
+            prompt = assembler.assemble(contract, payload, upstream_outputs=upstream)
+            self._run_single_call(
+                stage=stage,
+                project_id=project_id,
+                stage_row=stage_row,
+                contract=contract,
+                prompt=prompt,
+            )
+
+        return stage_row
+
+    def _run_single_call(
+        self,
+        stage: str,
+        project_id: int,
+        stage_row: Any,
+        contract: Any,
+        prompt: Any,
+    ) -> None:
+        """Execute a standard single-LLM-call stage."""
         try:
             structured, parse_result = self._model.generate_structured_output(prompt, contract)
 
-            # Always persist raw model output immediately — before any further processing
-            # that might raise so we never lose the LLM response on schema failure.
             stage_row.set_raw_output(structured.raw_text)
 
             if structured.was_repaired:
@@ -149,7 +178,6 @@ class PipelineService:
                     stage, project_id, structured.repair_attempts,
                 )
 
-            # If schema validation failed, mark as schema_failed now that raw text is saved
             if not parse_result.success and parse_result.has_schema:
                 stage_row.status = "schema_failed"
                 stage_row.error_message = parse_result.for_error_message()
@@ -158,7 +186,6 @@ class PipelineService:
                     stage, project_id, parse_result.error_summary(5),
                 )
             else:
-                # Log structural field-presence validation (non-fatal)
                 field_validation = self._model.validate_output(
                     stage=stage,
                     output=structured.data,
@@ -172,13 +199,9 @@ class PipelineService:
                     )
                     stage_row.set_validation(field_validation.to_dict())
 
-                # Persist the validated (or best-available) output dict
                 stage_row.set_output(structured.data)
-
-                # Generate and store preview text
                 preview = self._model.generate_preview_text(stage, structured.data)
                 stage_row.preview_text = preview.text
-
                 stage_row.status = "complete"
 
                 logger.info(
@@ -194,16 +217,151 @@ class PipelineService:
         except (ModelProviderError, ModelOutputError) as e:
             stage_row.status = "failed"
             stage_row.error_message = str(e)
-            logger.error(
-                "Stage '%s' FAILED | project=%d | %s",
-                stage, project_id, str(e)[:300],
-            )
+            logger.error("Stage '%s' FAILED | project=%d | %s", stage, project_id, str(e)[:300])
 
         finally:
             stage_row.updated_at = datetime.now(timezone.utc)
             self._repo.save(stage_row)
 
-        return stage_row
+    def _run_chapter_loop(
+        self,
+        project_id: int,
+        stage: str,
+        project: Any,
+        stage_row: Any,
+        contract: Any,
+        all_outputs: dict[str, Any],
+    ) -> None:
+        """
+        Execute the chapter_expansion stage by running one LLM call per chapter
+        in the document_outline, then accumulating all results into a single output.
+
+        Each per-chapter call is validated against ExpandedChapter.
+        The accumulated output is wrapped in ChapterExpansionOutput.
+        Partial failure (some chapters fail) saves what succeeded; total failure
+        marks the stage as failed.
+        """
+        from schemas.stage_outputs.chapter_expansion import ExpandedChapter, ChapterExpansionOutput
+
+        outline_data = all_outputs.get("document_outline", {})
+        chapters_plan = outline_data.get("chapters", [])
+
+        if not chapters_plan:
+            stage_row.status = "failed"
+            stage_row.error_message = "document_outline contains no chapters to expand"
+            stage_row.updated_at = datetime.now(timezone.utc)
+            self._repo.save(stage_row)
+            logger.error("chapter_expansion aborted: document_outline has no chapters")
+            return
+
+        # For upstream context injection, the assembler needs system_architecture + document_outline
+        upstream = orchestrator.collect_upstream_outputs(stage, all_outputs)
+        assembler = _get_assembler()
+
+        base_payload = {
+            "life_event": project.life_event,
+            "audience": project.audience or "general adult",
+            "tone": project.tone or "professional",
+            "context": project.context or "",
+            "document_title": outline_data.get("document_title", project.life_event),
+        }
+
+        expanded_chapters: list[dict] = []
+        failed_chapter_numbers: list[int] = []
+        raw_texts: list[str] = []
+
+        logger.info(
+            "chapter_expansion | project=%d | starting loop over %d chapters",
+            project_id, len(chapters_plan),
+        )
+
+        for i, chapter_plan in enumerate(chapters_plan):
+            chapter_number = chapter_plan.get("chapter_number", i + 1)
+            domain_name = chapter_plan.get("domain_name", f"Chapter {chapter_number}")
+
+            logger.info(
+                "chapter_expansion | project=%d | chapter %d/%d | domain='%s'",
+                project_id, chapter_number, len(chapters_plan), domain_name,
+            )
+
+            chapter_payload = {
+                **base_payload,
+                "current_chapter_json": json.dumps(chapter_plan, indent=2, ensure_ascii=False),
+                "chapter_number": str(chapter_number),
+                "domain_name": domain_name,
+            }
+
+            try:
+                prompt = assembler.assemble(contract, chapter_payload, upstream_outputs=upstream)
+                structured, parse_result = self._model.generate_structured_output(
+                    prompt, contract,
+                    schema_class_override=ExpandedChapter,
+                )
+                raw_texts.append(structured.raw_text)
+
+                if parse_result.success and parse_result.parsed_data:
+                    expanded_chapters.append(parse_result.parsed_data)
+                    logger.info(
+                        "chapter_expansion | chapter %d OK | worksheets=%d",
+                        chapter_number,
+                        len(parse_result.parsed_data.get("worksheets", [])),
+                    )
+                else:
+                    # Use raw data (schema failed but we have something)
+                    expanded_chapters.append(structured.data)
+                    logger.warning(
+                        "chapter_expansion | chapter %d schema soft-fail — using raw data",
+                        chapter_number,
+                    )
+
+            except (ModelProviderError, ModelOutputError) as e:
+                failed_chapter_numbers.append(chapter_number)
+                logger.error(
+                    "chapter_expansion | chapter %d FAILED | %s",
+                    chapter_number, str(e)[:200],
+                )
+
+        # Save all raw model output combined (for debugging)
+        stage_row.set_raw_output("\n\n---CHAPTER SEPARATOR---\n\n".join(raw_texts))
+
+        if not expanded_chapters:
+            stage_row.status = "failed"
+            stage_row.error_message = f"All {len(chapters_plan)} chapters failed to expand"
+            stage_row.updated_at = datetime.now(timezone.utc)
+            self._repo.save(stage_row)
+            logger.error("chapter_expansion | ALL chapters failed | project=%d", project_id)
+            return
+
+        # Build accumulated output
+        total_worksheets = sum(len(c.get("worksheets", [])) for c in expanded_chapters)
+        accumulated = {
+            "document_title": outline_data.get("document_title", ""),
+            "total_chapters": len(expanded_chapters),
+            "total_worksheets": total_worksheets,
+            "chapters": expanded_chapters,
+        }
+
+        stage_row.set_output(accumulated)
+        stage_row.preview_text = (
+            f"{len(expanded_chapters)} chapters expanded | "
+            f"{total_worksheets} worksheets generated"
+            + (f" | {len(failed_chapter_numbers)} chapter(s) failed" if failed_chapter_numbers else "")
+        )
+        stage_row.status = "complete"
+
+        if failed_chapter_numbers:
+            stage_row.error_message = (
+                f"Partial expansion: chapters {failed_chapter_numbers} failed — "
+                f"{len(expanded_chapters)}/{len(chapters_plan)} succeeded"
+            )
+
+        stage_row.updated_at = datetime.now(timezone.utc)
+        self._repo.save(stage_row)
+
+        logger.info(
+            "chapter_expansion COMPLETE | project=%d | chapters=%d/%d | worksheets=%d",
+            project_id, len(expanded_chapters), len(chapters_plan), total_worksheets,
+        )
 
     def run_full_pipeline(self, project_id: int) -> list[StageOutput]:
         results: list[StageOutput] = []

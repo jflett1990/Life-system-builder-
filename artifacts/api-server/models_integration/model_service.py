@@ -87,8 +87,9 @@ class ModelService:
 
     def generate_structured_output(
         self,
-        prompt: Any,     # AssembledPrompt
-        contract: Any,   # ContractDefinition
+        prompt: Any,                            # AssembledPrompt
+        contract: Any,                          # ContractDefinition
+        schema_class_override: type | None = None,
     ) -> tuple[StructuredOutput, ParseResult]:
         """
         Generate structured JSON for a pipeline stage, with schema enforcement.
@@ -111,7 +112,7 @@ class ModelService:
           OutputValidationError — schema validation failed after all retries (strict mode)
         """
         stage = getattr(prompt, "stage", None) or "unknown"
-        schema_class = get_schema(stage)
+        schema_class = schema_class_override or get_schema(stage)
 
         if schema_class is not None:
             logger.debug("Stage '%s' → schema=%s", stage, schema_class.__name__)

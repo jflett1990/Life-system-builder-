@@ -1,0 +1,30 @@
+{
+  "name": "document_outline",
+  "version": "1.0",
+  "stage": "document_outline",
+  "model_role": "planner",
+  "description": "Converts the system architecture into a complete document blueprint — every chapter title, every worksheet title, cascade chain, and master operating rules. No content is written here; this is the architectural map that drives all downstream chapter expansion.",
+  "output_mode": "json",
+  "upstream_dependencies": ["system_architecture"],
+  "system_instructions": "You are a document architect. You receive a completed system architecture and produce the master outline for a premium operational manual. You are NOT writing chapter content. You are defining the complete document structure: every chapter title, every worksheet title, the cascade chain between domains, and the master operating rules. Downstream stages will expand each chapter independently using this outline as their single source of truth. Every chapter must map exactly to a named control domain from the upstream architecture. Every worksheet title must be distinct, specific, and directly actionable. The quality of this outline determines the quality of the entire document.",
+  "user_prompt_template": "UPSTREAM SYSTEM ARCHITECTURE:\n{upstream_system_architecture}\n\nPROJECT CONTEXT:\nLife Event: {life_event}\nAudience: {audience}\nTone: {tone}\n\nProduce the master document outline for this operational manual. One chapter per control domain. Each chapter must include a worksheet plan with 3-7 worksheet titles.\n\nReturn ONLY the following JSON object. No prose. No markdown. No code fences.\n\n{{\n  \"document_title\": \"Full manual title — e.g. 'The Estate Administrator Control Manual'\",\n  \"document_subtitle\": \"A working reference system for [specific audience and life event]\",\n  \"system_name\": \"Exact system_name from upstream architecture\",\n  \"version\": \"1.0\",\n  \"total_chapters\": 0,\n  \"master_operating_rules\": [\n    \"Rule 1 — a universal operating principle for managing this life event\",\n    \"Rule 2\"\n  ],\n  \"cascade_chain\": [\n    {{\n      \"source_domain\": \"Domain name\",\n      \"triggers\": [\"Domain name\"],\n      \"condition\": \"When X is complete or identified, it triggers required action in Y\"\n    }}\n  ],\n  \"disclaimer_required\": true,\n  \"introduction_text\": \"2-3 sentence overview of what this manual is and how to use it\",\n  \"chapters\": [\n    {{\n      \"chapter_number\": 1,\n      \"domain_id\": \"domain-01\",\n      \"domain_name\": \"Must match upstream control domain name exactly\",\n      \"chapter_title\": \"Specific chapter title — descriptive, not generic\",\n      \"chapter_purpose\": \"One sentence: what operating problem this chapter solves\",\n      \"key_topics\": [\n        \"Topic 1\",\n        \"Topic 2\",\n        \"Topic 3\"\n      ],\n      \"common_gap\": \"The single most common failure families have in this domain\",\n      \"cascade_triggers\": [\n        \"When [X] is done in this chapter, it triggers [Y] in [Domain Name]\"\n      ],\n      \"worksheet_plan\": [\n        {{\n          \"worksheet_id\": \"ws-01-a\",\n          \"title\": \"Specific, actionable worksheet title\",\n          \"purpose\": \"One sentence: what decision or action this worksheet enables\",\n          \"section_count\": 4,\n          \"estimated_field_count\": 15\n        }}\n      ]\n    }}\n  ]\n}}",
+  "output_schema": {
+    "document_title": "string",
+    "document_subtitle": "string",
+    "system_name": "string",
+    "version": "string",
+    "total_chapters": "integer",
+    "master_operating_rules": "array of strings",
+    "cascade_chain": "array of cascade objects",
+    "introduction_text": "string",
+    "chapters": "array of chapter plan objects"
+  },
+  "required_output_fields": [
+    "document_title",
+    "document_subtitle",
+    "total_chapters",
+    "master_operating_rules",
+    "cascade_chain",
+    "chapters"
+  ]
+}

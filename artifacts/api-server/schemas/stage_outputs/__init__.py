@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel
 
 from schemas.stage_outputs.system_architecture import SystemArchitectureOutput
-from schemas.stage_outputs.worksheet_system import WorksheetSystemOutput
+from schemas.stage_outputs.document_outline import DocumentOutlineOutput
+from schemas.stage_outputs.chapter_expansion import ChapterExpansionOutput, ExpandedChapter
 from schemas.stage_outputs.layout_mapping import LayoutMappingOutput
 from schemas.stage_outputs.render_blueprint import RenderBlueprintOutput
 from schemas.stage_outputs.validation_audit import ValidationAuditOutput
@@ -18,7 +19,8 @@ from schemas.stage_outputs.validation_audit import ValidationAuditOutput
 # Maps internal stage name (underscores) → Pydantic model class
 STAGE_SCHEMA_REGISTRY: dict[str, type[BaseModel]] = {
     "system_architecture": SystemArchitectureOutput,
-    "worksheet_system":    WorksheetSystemOutput,
+    "document_outline":    DocumentOutlineOutput,
+    "chapter_expansion":   ChapterExpansionOutput,
     "layout_mapping":      LayoutMappingOutput,
     "render_blueprint":    RenderBlueprintOutput,
     "validation_audit":    ValidationAuditOutput,
@@ -37,7 +39,9 @@ __all__ = [
     "STAGE_SCHEMA_REGISTRY",
     "get_schema",
     "SystemArchitectureOutput",
-    "WorksheetSystemOutput",
+    "DocumentOutlineOutput",
+    "ChapterExpansionOutput",
+    "ExpandedChapter",
     "LayoutMappingOutput",
     "RenderBlueprintOutput",
     "ValidationAuditOutput",
