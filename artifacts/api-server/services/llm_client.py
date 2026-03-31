@@ -1,7 +1,11 @@
 """
-LLMClient — thin wrapper around the OpenAI client.
-All LLM calls in service modules go through this class.
-Centralises retry logic, error handling, and model config.
+DEPRECATED — LLMClient is no longer used.
+
+All model calls now go through models_integration.ModelService.
+This file is kept temporarily for reference and will be removed
+in the next cleanup pass.
+
+See: models_integration/model_service.py
 """
 from __future__ import annotations
 

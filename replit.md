@@ -57,9 +57,66 @@ Each repository owns **all SQLAlchemy queries** for its model. Services never to
 ### Services (`services/`)
 Services contain business logic only — no SQLAlchemy sessions, no `.query()` calls.
 - `ProjectService` → `ProjectRepository`
-- `PipelineService` → `StageOutputRepository` + `ProjectService`
+- `PipelineService` → `StageOutputRepository` + `ProjectService` + **`ModelService`**
 - `ValidationService` → `ValidationRepository` + `PipelineService` (persists both summary and per-stage rows)
 - `RenderService` → `RenderArtifactRepository` + `PipelineService`
+
+`services/llm_client.py` is **deprecated** — all model calls now go through `models_integration.ModelService`.
+
+## Model Integration Layer (`models_integration/`)
+
+Provider-agnostic abstraction for all LLM calls. Pipeline services import `ModelService` only.
+
+### Architecture
+
+```
+BaseModelProvider (ABC, base.py)
+  └── OpenAIProvider (openai_provider.py) ← only active provider
+        ├── generate_structured_output   — chat completion → JSON extraction → repair → validate
+        ├── validate_output              — structural check (no model call)
+        └── generate_preview_text        — heuristic extraction → LLM fallback
+
+ModelService (model_service.py)          ← used by PipelineService
+  ├── provider factory (reads config.model_provider)
+  ├── strict_validation toggle (raises OutputValidationError if True)
+  └── wraps all three provider methods with unified logging
+```
+
+### Result Types
+
+| Type | Source | Description |
+|------|--------|-------------|
+| `StructuredOutput` | `base.py` | Frozen dataclass: `data: dict`, `raw_text`, `was_repaired`, `repair_attempts` |
+| `PreviewText` | `base.py` | Frozen dataclass: `text`, `stage`, `from_llm` |
+| `OutputValidation` | `output_validator.py` | `valid`, `missing_fields`, `empty_fields`, `type_errors`, `.errors` |
+
+### Error Hierarchy
+
+| Error | When raised |
+|-------|------------|
+| `ModelProviderError` | API failure (rate limit, timeout, auth) |
+| `ModelOutputError` | Cannot extract JSON from response after all repair strategies |
+| `OutputValidationError` | Parsed JSON missing required contract fields (strict mode only) |
+
+### JSON Repair Strategies (in order)
+
+1. Direct `json.loads` on stripped text
+2. Extract from markdown code fence (`` ```json ... ``` ``)
+3. Greedy `{...}` regex extraction
+4. Brace/bracket balance repair (handles truncated responses — closes unclosed `{` and `[`)
+5. Unclosed string repair (`"hello` → `"hello"`) before bracket close
+6. Last-comma truncation (drops partial trailing field)
+7. One-shot LLM repair prompt if all local strategies fail
+
+### Config Keys
+
+| Key | Default | Purpose |
+|-----|---------|---------|
+| `model_provider` | `"openai"` | Which provider class to use |
+| `openai_model` | `"gpt-5.2"` | Model identifier |
+| `model_max_retries` | `3` | API retry attempts with exponential backoff |
+| `model_timeout_s` | `120` | Per-request timeout in seconds |
+| `model_repair_attempts` | `1` | JSON repair passes before giving up |
 
 ### Migrations (`storage/migrations.py`)
 Structured migration runner with a `schema_migrations` version table. Dialect-aware — handles both SQLite and PostgreSQL differences (types, constraint syntax, table recreation). Runs at startup via `init_db()`. Add new migrations as functions, append to `MIGRATIONS` list.

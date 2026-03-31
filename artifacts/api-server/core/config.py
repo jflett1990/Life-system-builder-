@@ -3,10 +3,21 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    # ── OpenAI ────────────────────────────────────────────────────────────────
     openai_api_key: str = ""
     openai_base_url: str = ""
     openai_model: str = "gpt-5.2"
+
+    # ── Model provider ────────────────────────────────────────────────────────
+    model_provider: str = "openai"
+    model_max_retries: int = 3
+    model_timeout_s: int = 120
+    model_repair_attempts: int = 1
+
+    # ── Database ──────────────────────────────────────────────────────────────
     database_url: str = "sqlite:///./life_system.db"
+
+    # ── Server ────────────────────────────────────────────────────────────────
     log_level: str = "INFO"
     port: int = 8080
 
