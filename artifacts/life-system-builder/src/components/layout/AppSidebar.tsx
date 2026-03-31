@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { getListProjectsQueryOptions } from "@workspace/api-client-react";
-import { Layers, Plus, FolderOpen, Activity } from "lucide-react";
+import { getListProjectsQueryOptions, getListProjectStagesQueryOptions } from "@workspace/api-client-react";
+import { Layers, Plus, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Project } from "@workspace/api-client-react";
 
@@ -9,8 +9,14 @@ function ProjectItem({ project }: { project: Project }) {
   const [location] = useLocation();
   const href = `/projects/${project.id}`;
   const isActive = location.startsWith(href);
-  const stages = (project as any).stages ?? [];
-  const completedCount = stages.filter((s: any) => s.status === "complete").length;
+
+  const { data: stages } = useQuery({
+    ...getListProjectStagesQueryOptions(project.id),
+    staleTime: 30_000,
+  });
+
+  const completedCount = stages?.filter((s) => s.status === "complete").length ?? 0;
+  const totalStages = 5;
 
   return (
     <Link href={href}>
@@ -31,14 +37,12 @@ function ProjectItem({ project }: { project: Project }) {
             {project.lifeEvent}
           </div>
         </div>
-        {completedCount > 0 && (
-          <div
-            className="flex-shrink-0 text-[9px] font-mono text-sidebar-foreground/30 mt-0.5"
-            title={`${completedCount} stages complete`}
-          >
-            {completedCount}/5
-          </div>
-        )}
+        <div
+          className="flex-shrink-0 text-[9px] font-mono text-sidebar-foreground/30 mt-0.5"
+          title={`${completedCount} of ${totalStages} stages complete`}
+        >
+          {completedCount}/{totalStages}
+        </div>
       </div>
     </Link>
   );
@@ -69,7 +73,6 @@ export default function AppSidebar() {
 
       {/* Nav */}
       <div className="flex-1 overflow-y-auto py-3 min-h-0">
-        {/* Health indicator */}
         <div className="px-3 mb-3">
           <Link href="/projects">
             <div
@@ -80,13 +83,12 @@ export default function AppSidebar() {
                   : "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
               )}
             >
-              <Activity className="w-3.5 h-3.5" />
+              <Layers className="w-3.5 h-3.5" />
               <span>Dashboard</span>
             </div>
           </Link>
         </div>
 
-        {/* Projects section */}
         <div className="px-3 mb-1">
           <div className="text-[9px] font-semibold tracking-widest uppercase text-sidebar-foreground/25 px-3 mb-1">
             Projects
@@ -95,14 +97,10 @@ export default function AppSidebar() {
 
         <div className="px-3 space-y-0.5">
           {isLoading && (
-            <div className="px-3 py-2 text-[10px] text-sidebar-foreground/30">
-              Loading…
-            </div>
+            <div className="px-3 py-2 text-[10px] text-sidebar-foreground/30">Loading…</div>
           )}
           {!isLoading && (!projects || projects.length === 0) && (
-            <div className="px-3 py-2 text-[10px] text-sidebar-foreground/30">
-              No projects yet
-            </div>
+            <div className="px-3 py-2 text-[10px] text-sidebar-foreground/30">No projects yet</div>
           )}
           {projects?.map((project) => (
             <ProjectItem key={project.id} project={project} />

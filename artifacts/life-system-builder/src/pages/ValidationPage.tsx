@@ -1,11 +1,9 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import {
-  getGetProjectQueryOptions,
-  getListProjectStagesQueryOptions,
   useValidateProject,
-  type ProjectWithStages,
+  useGetValidationResult,
 } from "@workspace/api-client-react";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -14,6 +12,8 @@ import { ValidationSummary } from "@/components/validation/ValidationSummary";
 import { DefectList } from "@/components/validation/DefectList";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, RefreshCw } from "lucide-react";
+import { extractApiError } from "@/lib/error";
+import { useProjectWithStages } from "@/hooks/use-project";
 import type { Defect } from "@/components/validation/DefectList";
 
 interface RawValidationResult {
@@ -24,12 +24,7 @@ interface RawValidationResult {
   summary?: string;
   passed?: boolean;
   issueCount?: number;
-  issues?: Array<{
-    severity: string;
-    field: string;
-    stage: string;
-    message: string;
-  }>;
+  issues?: Array<{ severity: string; field: string; stage: string; message: string }>;
 }
 
 function parseDefects(result: RawValidationResult): Defect[] {
@@ -51,29 +46,34 @@ export default function ValidationPage() {
   const { id } = useParams<{ id: string }>();
   const projectId = Number(id);
   const queryClient = useQueryClient();
-  const [validationResult, setValidationResult] = useState<RawValidationResult | null>(null);
+  const [liveResult, setLiveResult] = useState<RawValidationResult | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
 
-  const { data: project, isLoading: projectLoading } = useQuery(getGetProjectQueryOptions(projectId));
-  const { data: stages } = useQuery(getListProjectStagesQueryOptions(projectId));
+  const { projectWithStages, isLoading: projectLoading } = useProjectWithStages(projectId);
+
+  // Load persisted validation result on mount
+  const { data: persistedResult } = useGetValidationResult(projectId, {
+    query: { retry: false, staleTime: 30_000 },
+  });
 
   const { mutate: validate, isPending } = useValidateProject({
     mutation: {
       onSuccess: (data: any) => {
-        setValidationResult(data as RawValidationResult);
+        setLiveResult(data as RawValidationResult);
         setRunError(null);
         queryClient.invalidateQueries({ queryKey: ["validation", projectId] });
       },
-      onError: (err: any) => {
-        setRunError(err?.body?.message ?? err?.message ?? "Validation failed");
+      onError: (err) => {
+        setRunError(extractApiError(err, "Validation failed"));
       },
     },
   });
 
-  if (projectLoading) return <LoadingState message="Loading project…" />;
-  if (!project) return <ErrorState title="Project not found" />;
+  // The active result is the live run result (if any), otherwise the persisted one
+  const validationResult = liveResult ?? (persistedResult as unknown as RawValidationResult | null);
 
-  const projectWithStages: ProjectWithStages = { ...project, stages: stages ?? [] };
+  if (projectLoading) return <LoadingState message="Loading project…" />;
+  if (!projectWithStages) return <ErrorState title="Project not found" />;
 
   const defects = validationResult ? parseDefects(validationResult) : [];
   const fatalCount = defects.filter((d) => d.severity === "fatal").length;
@@ -93,7 +93,7 @@ export default function ValidationPage() {
                 Validation Audit
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Runs 26+ compiler-style checks across all stage outputs.
+                Runs compiler-style checks across all stage outputs. No LLM calls.
               </p>
             </div>
             <Button
@@ -128,15 +128,13 @@ export default function ValidationPage() {
               <div className="space-y-1">
                 <p className="text-sm font-medium text-foreground">No validation run yet</p>
                 <p className="text-xs text-muted-foreground">
-                  Run the validation audit to check all stage outputs for completeness and coherence.
+                  Run validation to check all stage outputs for completeness and coherence.
                 </p>
               </div>
             </div>
           )}
 
-          {isPending && (
-            <LoadingState message="Running validation checks…" />
-          )}
+          {isPending && <LoadingState message="Running validation checks…" />}
 
           {validationResult && !isPending && (
             <>

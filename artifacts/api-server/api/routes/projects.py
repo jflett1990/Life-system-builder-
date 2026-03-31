@@ -53,6 +53,15 @@ def delete_project(project_id: int, svc: ProjectService = Depends(_project_svc))
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
 
 
+@router.post("/{project_id}/duplicate", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+def duplicate_project(project_id: int, svc: ProjectService = Depends(_project_svc)):
+    """Create a copy of a project with a fresh pipeline (no stage outputs)."""
+    try:
+        return svc.duplicate(project_id)
+    except ProjectNotFound:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+
+
 @router.get("/{project_id}/stages", response_model=list[StageOutputResponse])
 def list_stages(project_id: int, pipeline: PipelineService = Depends(_pipeline_svc)):
     rows = pipeline.list_stage_outputs(project_id)

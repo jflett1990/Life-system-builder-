@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
-from schemas.render import RenderResult
+from repositories.render_repo import RenderArtifactRepository
+from schemas.render import RenderResult, CachedRenderInfo
 from services.render_service import RenderService, RenderServiceError
 from storage.database import get_db
 
@@ -19,6 +20,25 @@ def render_project(project_id: int, svc: RenderService = Depends(_render_svc)):
         return svc.render(project_id)
     except RenderServiceError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{project_id}", response_model=CachedRenderInfo)
+def get_cached_render(project_id: int, db: Session = Depends(get_db)):
+    """Return metadata about the most recent render for a project without re-rendering."""
+    repo = RenderArtifactRepository(db)
+    artifact = repo.find_by_project(project_id)
+    if not artifact:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No render found for project {project_id}. POST to render first.",
+        )
+    manifest = artifact.get_manifest() or {}
+    return CachedRenderInfo(
+        project_id=project_id,
+        page_count=artifact.page_count or 0,
+        document_title=manifest.get("document_title", ""),
+        updated_at=artifact.updated_at,
+    )
 
 
 @router.get("/{project_id}/manifest")

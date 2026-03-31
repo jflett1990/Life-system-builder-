@@ -9,6 +9,13 @@ class RenderResult(BaseModel):
     page_count: int
 
 
+class CachedRenderInfo(BaseModel):
+    project_id: int
+    page_count: int
+    document_title: str
+    updated_at: datetime
+
+
 class ExportBundle(BaseModel):
     project_id: int
     html: str

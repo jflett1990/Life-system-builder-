@@ -309,12 +309,46 @@ workspace/
 - `GET /api/projects` — List all projects
 - `POST /api/projects` — Create project (body: `{title, lifeEvent, context}`)
 - `GET /api/projects/:id` — Get project
+- `PATCH /api/projects/:id` — Update project
+- `DELETE /api/projects/:id` — Delete project
+- `POST /api/projects/:id/duplicate` — Duplicate project (fresh pipeline, same metadata)
 - `GET /api/projects/:id/stages` — List stage outputs
 - `GET /api/projects/:id/stages/:stage` — Get specific stage output
-- `POST /api/pipeline/:id/run/:stage` — Run a specific pipeline stage
-- `POST /api/pipeline/:id/validate` — Run validation audit
-- `POST /api/render/:id` — Render project to HTML
-- `GET /api/export/:id` — Get export bundle (HTML + JSON)
+- `GET /api/projects/:id/summary` — Pipeline progress summary
+- `POST /api/pipeline/:id/run/:stage` — Run stage (`?force=true` to re-run even if complete)
+- `POST /api/pipeline/:id/run-all` — Run all pending stages
+- `POST /api/pipeline/:id/validate` — Run validation audit (persists result)
+- `GET /api/pipeline/:id/validate` — Get persisted validation result (no re-run)
+- `POST /api/render/:id` — Render project to HTML (caches result)
+- `GET /api/render/:id` — Get cached render metadata (`CachedRenderInfo`: page_count, document_title, updated_at)
+- `GET /api/render/:id/preview` — HTML preview (always re-renders)
+- `GET /api/export/:id` — Get export bundle JSON (HTML + all stage JSON)
+- `GET /api/export/:id/download` — Download zip bundle
+- `GET /api/export/:id/html` — Download HTML file attachment
+- `GET /api/export/:id/json` — Download combined stage JSON
+- `GET /api/export/:id/json/:stage` — Download single-stage JSON
+- `GET /api/export/:id/manifest` — Bundle manifest metadata
+
+## Frontend Shared Utilities
+
+Added in hardening pass — use these, never inline equivalents:
+
+| File | Export | Use For |
+|------|--------|---------|
+| `src/lib/stages.ts` | `PIPELINE_STAGES`, `STAGE_META`, `getStageLabel()`, `getStageMeta()` | All stage metadata — single source of truth |
+| `src/lib/error.ts` | `extractApiError(error)` | Extract human-readable error string from any API error |
+| `src/hooks/use-project.ts` | `useProjectWithStages(id)`, `useStagePolling(id)` | Project + stages combined query; 3s polling when any stage is running |
+| `src/components/shared/ErrorBoundary.tsx` | `<ErrorBoundary fallback={...}>` | Wrap any component that might throw |
+
+## API Client Hooks (Extended)
+
+Hooks added beyond Orval codegen output (in `lib/api-client-react/src/generated/api.ts`):
+
+| Hook | Added Parameter | Notes |
+|------|----------------|-------|
+| `useRunStage` | `force?: boolean` → `?force=true` query param | Force re-run of already-complete stage |
+| `useGetValidationResult` | — | GET persisted validation result (no re-run) |
+| `useDuplicateProject` | — | POST duplicate → navigates to new project |
 
 ## CSS Design Language
 

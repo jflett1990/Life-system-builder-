@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { useState } from "react";
 import {
-  getGetProjectQueryOptions,
   getListProjectStagesQueryOptions,
   getListProjectStagesQueryKey,
   useRunStage,
@@ -15,20 +14,9 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { ProjectHeader } from "@/components/layout/ProjectHeader";
 import { StageCard } from "@/components/pipeline/StageCard";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
-import type { ProjectWithStages } from "@workspace/api-client-react";
-
-const PIPELINE_STAGES: StageName[] = [
-  "system-architecture",
-  "worksheet-system",
-  "layout-mapping",
-  "render-blueprint",
-  "validation-audit",
-];
-
-function getStageOrder(stageName: string): number {
-  return PIPELINE_STAGES.indexOf(stageName as StageName);
-}
+import { Play, RotateCcw } from "lucide-react";
+import { PIPELINE_STAGES } from "@/lib/stages";
+import { useProjectWithStages, useStagePolling } from "@/hooks/use-project";
 
 function canRunStage(stages: StageOutput[], stageName: string): boolean {
   const idx = PIPELINE_STAGES.indexOf(stageName as StageName);
@@ -44,13 +32,8 @@ export default function PipelinePage() {
   const queryClient = useQueryClient();
   const [runningAll, setRunningAll] = useState(false);
 
-  const { data: project, isLoading: projectLoading, error: projectError } = useQuery(
-    getGetProjectQueryOptions(projectId)
-  );
-
-  const { data: stages, isLoading: stagesLoading } = useQuery(
-    getListProjectStagesQueryOptions(projectId)
-  );
+  const { project, stages, projectWithStages, isLoading, projectError } = useProjectWithStages(projectId);
+  useStagePolling(projectId);
 
   const { mutateAsync: runStageAsync } = useRunStage({
     mutation: {
@@ -60,14 +43,14 @@ export default function PipelinePage() {
     },
   });
 
-  async function handleRunAll() {
+  async function handleRunAll(force = false) {
     if (!stages) return;
     setRunningAll(true);
     try {
       for (const stageName of PIPELINE_STAGES) {
         const existing = stages.find((s) => s.stage === stageName);
-        if (existing?.status === StageStatus.complete) continue;
-        await runStageAsync({ id: projectId, stage: stageName });
+        if (!force && existing?.status === StageStatus.complete) continue;
+        await runStageAsync({ id: projectId, stage: stageName, ...(force ? { force: true } : {}) });
         await queryClient.invalidateQueries({ queryKey: getListProjectStagesQueryKey(projectId) });
       }
     } finally {
@@ -76,19 +59,12 @@ export default function PipelinePage() {
     }
   }
 
-  const isLoading = projectLoading || stagesLoading;
-
   if (isLoading) return <LoadingState message="Loading project…" className="flex-1" />;
   if (projectError) return <ErrorState title="Project not found" />;
-  if (!project) return null;
-
-  const projectWithStages: ProjectWithStages = {
-    ...project,
-    stages: stages ?? [],
-  };
+  if (!project || !projectWithStages) return null;
 
   const orderedStages = PIPELINE_STAGES.map((name) => {
-    const existing = stages?.find((s) => s.stage === name);
+    const existing = stages.find((s) => s.stage === name);
     return (
       existing ?? {
         id: 0,
@@ -105,7 +81,7 @@ export default function PipelinePage() {
   });
 
   const allComplete = orderedStages.every((s) => s.status === StageStatus.complete);
-  const anyRunning = orderedStages.some((s) => s.status === StageStatus.running);
+  const anyRunning = orderedStages.some((s) => s.status === StageStatus.running) || runningAll;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -123,30 +99,31 @@ export default function PipelinePage() {
                 Run stages sequentially to generate the operational system.
               </p>
             </div>
-            <Button
-              size="sm"
-              className="gap-1.5 text-xs h-8"
-              onClick={handleRunAll}
-              disabled={runningAll || anyRunning || allComplete}
-              variant={allComplete ? "outline" : "default"}
-            >
-              {runningAll || anyRunning ? (
-                <>
-                  <Pause className="w-3.5 h-3.5 animate-pulse" />
-                  Running…
-                </>
-              ) : allComplete ? (
-                <>
-                  <Play className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-2">
+              {allComplete && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs h-8"
+                  onClick={() => handleRunAll(true)}
+                  disabled={anyRunning}
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
                   Re-run All
-                </>
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5" />
-                  Run All
-                </>
+                </Button>
               )}
-            </Button>
+              {!allComplete && (
+                <Button
+                  size="sm"
+                  className="gap-1.5 text-xs h-8"
+                  onClick={() => handleRunAll(false)}
+                  disabled={anyRunning}
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  {anyRunning ? "Running…" : "Run All"}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Stage cards */}
@@ -161,7 +138,7 @@ export default function PipelinePage() {
             ))}
           </div>
 
-          {/* Pipeline context */}
+          {/* Project context */}
           {project.context && (
             <div className="mt-6 border rounded-sm p-4 bg-muted/20">
               <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground mb-2">

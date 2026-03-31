@@ -11,10 +11,8 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { ProjectHeader } from "@/components/layout/ProjectHeader";
 import { Button } from "@/components/ui/button";
 import { Archive, Download, FileCode, FileText, RefreshCw } from "lucide-react";
+import { getStageLabel } from "@/lib/stages";
 
-// ── Download helpers ──────────────────────────────────────────────────────────
-
-/** Client-side download from an in-memory string (for HTML and JSON). */
 function downloadBlob(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -25,28 +23,12 @@ function downloadBlob(content: string, filename: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-/** Server-side download from an API endpoint (for zip and file downloads). */
-function downloadFromUrl(url: string) {
+function downloadFromUrl(path: string) {
+  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
   const a = document.createElement("a");
-  a.href = url;
+  a.href = `${base}${path}`;
   a.click();
 }
-
-// ── Stage name formatting ─────────────────────────────────────────────────────
-
-const STAGE_LABELS: Record<string, string> = {
-  system_architecture: "System Architecture",
-  worksheet_system: "Worksheet System",
-  layout_mapping: "Layout Mapping",
-  render_blueprint: "Render Blueprint",
-  validation_audit: "Validation Audit",
-};
-
-function formatStageName(stage: string): string {
-  return STAGE_LABELS[stage] ?? stage.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ExportPage() {
   const { id } = useParams<{ id: string }>();
@@ -97,7 +79,6 @@ export default function ExportPage() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto space-y-6">
 
-          {/* Section header */}
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Export Bundle
@@ -112,8 +93,10 @@ export default function ExportPage() {
           {exportError && (
             <div className="space-y-3">
               <div className="border border-amber-200 bg-amber-50 rounded-sm p-3">
+                <p className="text-xs text-amber-800 font-medium mb-0.5">Export unavailable</p>
                 <p className="text-xs text-amber-700">
-                  Export bundle could not be generated. Complete all pipeline stages first.
+                  Complete all pipeline stages before exporting. At least the system architecture
+                  stage must be complete.
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5 text-xs h-8">
@@ -210,7 +193,7 @@ export default function ExportPage() {
                   <div className="border rounded-sm divide-y bg-card">
                     {completedStages.map((stage) => (
                       <div key={stage} className="flex items-center justify-between px-3 py-2">
-                        <span className="text-xs text-foreground">{formatStageName(stage)}</span>
+                        <span className="text-xs text-foreground">{getStageLabel(stage)}</span>
                         <button
                           onClick={() => handleDownloadStageJson(stage)}
                           className="text-[10px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
@@ -230,7 +213,8 @@ export default function ExportPage() {
                 <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">PDF Export</div>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
                   Server-side PDF rendering is not yet implemented. The HTML document is print-ready —
-                  open it in any browser and use <span className="font-mono">File → Print → Save as PDF</span>.
+                  open it in any browser and use{" "}
+                  <span className="font-mono">File → Print → Save as PDF</span>.
                   The zip bundle includes <span className="font-mono">pdf/PENDING.txt</span> with full instructions.
                 </p>
               </div>

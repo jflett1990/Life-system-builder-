@@ -61,6 +61,22 @@ class ProjectService:
         self._repo.delete(project)
         logger.info("Deleted project id=%d", project_id)
 
+    def duplicate(self, project_id: int) -> Project:
+        source = self.get(project_id)
+        copy = Project(
+            title=f"{source.title} (copy)",
+            life_event=source.life_event,
+            audience=source.audience,
+            tone=source.tone,
+            context=source.context,
+            formatting_profile=source.formatting_profile,
+            artifact_density=source.artifact_density,
+            status="draft",
+        )
+        copy = self._repo.insert(copy)
+        logger.info("Duplicated project id=%d → new id=%d", project_id, copy.id)
+        return copy
+
     def mark_status(self, project_id: int, status: str) -> None:
         project = self.get(project_id)
         project.status = status

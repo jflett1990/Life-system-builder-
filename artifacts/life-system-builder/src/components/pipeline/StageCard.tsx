@@ -1,39 +1,13 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Play, ChevronRight, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Play, ChevronRight, Clock, AlertCircle, CheckCircle2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useRunStage, getListProjectStagesQueryKey, StageName, StageStatus, type StageOutput } from "@workspace/api-client-react";
+import { getStageMeta } from "@/lib/stages";
+import { extractApiError } from "@/lib/error";
 import { cn } from "@/lib/utils";
-
-const STAGE_META: Record<string, { label: string; description: string; order: number }> = {
-  "system-architecture": {
-    label: "System Architecture",
-    description: "Maps the life event into a structural operating system with domains and roles.",
-    order: 1,
-  },
-  "worksheet-system": {
-    label: "Worksheet System",
-    description: "Generates task worksheets, trackers, and checklists for each domain.",
-    order: 2,
-  },
-  "layout-mapping": {
-    label: "Layout Mapping",
-    description: "Assigns document archetypes and page layout structures to each worksheet.",
-    order: 3,
-  },
-  "render-blueprint": {
-    label: "Render Blueprint",
-    description: "Produces the final render manifest with page-level content and formatting.",
-    order: 4,
-  },
-  "validation-audit": {
-    label: "Validation Audit",
-    description: "Runs compiler-style validation checks across all stage outputs.",
-    order: 5,
-  },
-};
 
 interface StageCardProps {
   projectId: number;
@@ -45,11 +19,7 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
   const queryClient = useQueryClient();
   const [runError, setRunError] = useState<string | null>(null);
 
-  const meta = STAGE_META[stage.stage] ?? {
-    label: stage.stage,
-    description: "",
-    order: 99,
-  };
+  const meta = getStageMeta(stage.stage);
 
   const { mutate: runStage, isPending } = useRunStage({
     mutation: {
@@ -57,9 +27,8 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
         setRunError(null);
         queryClient.invalidateQueries({ queryKey: getListProjectStagesQueryKey(projectId) });
       },
-      onError: (err: any) => {
-        const msg = err?.body?.message ?? err?.message ?? "Stage run failed";
-        setRunError(msg);
+      onError: (err) => {
+        setRunError(extractApiError(err, "Stage run failed"));
         queryClient.invalidateQueries({ queryKey: getListProjectStagesQueryKey(projectId) });
       },
     },
@@ -67,11 +36,13 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
 
   const isRunning = stage.status === StageStatus.running || isPending;
   const isComplete = stage.status === StageStatus.complete;
-  const isFailed = stage.status === StageStatus.failed;
+  const isFailed = stage.status === StageStatus.failed || stage.status === "schema_failed";
 
-  function handleRun() {
+  const revisionNumber = (stage as any).revisionNumber ?? (stage as any).revision_number;
+
+  function handleRun(force = false) {
     setRunError(null);
-    runStage({ id: projectId, stage: stage.stage as StageName });
+    runStage({ id: projectId, stage: stage.stage as StageName, ...(force ? { force: true } : {}) });
   }
 
   return (
@@ -99,12 +70,16 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-semibold text-foreground">{meta.label}</h3>
             <StatusBadge status={isRunning ? "running" : stage.status} size="xs" />
+            {revisionNumber > 1 && (
+              <span className="text-[9px] font-mono text-muted-foreground/60">
+                rev {revisionNumber}
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
             {meta.description}
           </p>
 
-          {/* Error message */}
           {(isFailed || runError) && (
             <div className="mt-2 flex items-start gap-1.5">
               <AlertCircle className="w-3.5 h-3.5 text-destructive mt-0.5 flex-shrink-0" />
@@ -114,7 +89,6 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
             </div>
           )}
 
-          {/* Completion time */}
           {isComplete && stage.updatedAt && (
             <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
               <CheckCircle2 className="w-3 h-3 text-green-600" />
@@ -133,31 +107,41 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
               </Button>
             </Link>
           )}
-          <Button
-            size="sm"
-            variant={isComplete ? "outline" : "default"}
-            className="h-7 text-xs gap-1.5"
-            onClick={handleRun}
-            disabled={isRunning || !canRun}
-            title={!canRun ? "Complete earlier stages first" : undefined}
-          >
-            {isRunning ? (
-              <>
-                <Clock className="w-3 h-3 animate-spin" />
-                Running…
-              </>
-            ) : isComplete ? (
-              <>
-                <Play className="w-3 h-3" />
-                Re-run
-              </>
-            ) : (
-              <>
-                <Play className="w-3 h-3" />
-                Run
-              </>
-            )}
-          </Button>
+
+          {isComplete ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5"
+              onClick={() => handleRun(true)}
+              disabled={isRunning}
+              title="Force re-run — generates fresh output"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Re-run
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant={isFailed ? "destructive" : "default"}
+              className="h-7 text-xs gap-1.5"
+              onClick={() => handleRun(false)}
+              disabled={isRunning || !canRun}
+              title={!canRun ? "Complete earlier stages first" : undefined}
+            >
+              {isRunning ? (
+                <>
+                  <Clock className="w-3 h-3 animate-spin" />
+                  Running…
+                </>
+              ) : (
+                <>
+                  <Play className="w-3 h-3" />
+                  {isFailed ? "Retry" : "Run"}
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>
