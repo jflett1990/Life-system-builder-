@@ -1,0 +1,90 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/section_header.html' import section_header %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# COMPARISON MATRIX                                                           #}
+{# data keys: matrix_title, matrix_label, subtitle, rows (list of dicts),    #}
+{#            columns (list of col header strings), notes                     #}
+{# Supports: roles×domains, domains×outputs, any NxM comparison              #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{{ section_header(label=data.matrix_label | default("Reference Matrix"), title=data.matrix_title | default("Comparison Matrix"), subtitle=data.subtitle | default("")) }}
+
+{% if data.rows and data.columns %}
+<div style="overflow:visible">
+  <table class="data-table" style="table-layout:fixed;width:100%">
+    <thead>
+      <tr>
+        <th style="width:30%">{{ data.row_header | default("") }}</th>
+        {% for col in data.columns %}
+        <th style="width:{{ (70 / data.columns|length) | round(0,'floor') | int }}%">{{ col }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in data.rows %}
+      <tr class="matrix-row">
+        <td>
+          <strong>{{ row.label }}</strong>
+          {% if row.sublabel %}<br><span style="font-size:var(--text-xs);color:var(--color-text-muted)">{{ row.sublabel }}</span>{% endif %}
+        </td>
+        {% for col in data.columns %}
+        {% set cell = row.cells.get(col, "") if row.cells is mapping else "" %}
+        <td>
+          {% if cell == True or cell | lower in ("yes", "✓", "x", "lead", "owner") %}
+            <span style="font-weight:700;color:var(--color-pass)">{{ cell if cell != True else "✓" }}</span>
+          {% elif cell == False or cell | lower in ("no", "—", "-", "") %}
+            <span style="color:var(--color-text-muted)">{{ cell if cell not in (False, "") else "—" }}</span>
+          {% else %}
+            <span class="body-text" style="font-size:var(--text-sm)">{{ cell }}</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif data.role_domain_matrix %}
+{# Auto-render a role × domain matrix from roles + domains #}
+{% set roles = data.role_domain_matrix.roles | default([]) %}
+{% set domains = data.role_domain_matrix.domains | default([]) %}
+<table class="data-table" style="table-layout:fixed;width:100%">
+  <thead>
+    <tr>
+      <th style="width:30%">Role</th>
+      {% for domain in domains %}
+      <th>{{ domain.name }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for role in roles %}
+    <tr class="matrix-row">
+      <td>
+        <strong>{{ role.role }}</strong><br>
+        <span class="badge badge--ghost" style="margin-top:var(--space-1)">{{ role.authority_level | default("executor") | replace("-"," ") }}</span>
+      </td>
+      {% for domain in domains %}
+      <td>
+        {% set rel = "" %}
+        {% for r in role.domain_relations | default([]) %}{% if r.domain_id == domain.id %}{% set rel = r.relation %}{% endif %}{% endfor %}
+        {% if rel %}
+        <span style="font-size:var(--text-sm)">{{ rel }}</span>
+        {% else %}
+        <span style="color:var(--color-text-muted)">—</span>
+        {% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if data.notes %}
+<div class="mt-8 callout callout--secondary">
+  <div class="callout__label"><span class="eyebrow">Notes</span></div>
+  <p class="body-text body-text--secondary">{{ data.notes }}</p>
+</div>
+{% endif %}
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

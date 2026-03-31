@@ -1,0 +1,10 @@
+{% macro callout(label="", text="", variant="") %}
+<div class="callout{% if variant %} callout--{{ variant }}{% endif %}">
+  {% if label %}
+  <div class="callout__label">
+    <span class="eyebrow{% if variant == 'secondary' %} eyebrow--muted{% endif %}">{{ label }}</span>
+  </div>
+  {% endif %}
+  <div class="callout__text">{{ text }}</div>
+</div>
+{% endmacro %}

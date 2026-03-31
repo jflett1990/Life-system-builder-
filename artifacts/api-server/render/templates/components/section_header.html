@@ -1,0 +1,17 @@
+{% macro section_header(label="", title="", subtitle="", inverse=False) %}
+<div class="section-header{% if inverse %} section-header--inverse{% endif %}">
+  {% if label %}
+  <div class="section-header__label">
+    <span class="eyebrow{% if inverse %} eyebrow--inverse{% endif %}">{{ label }}</span>
+  </div>
+  {% endif %}
+  <div class="section-header__title">
+    <{% if inverse %}h1 class="heading-title" style="color:#fff"{% else %}h1 class="heading-title"{% endif %}>{{ title }}</{% if inverse %}h1{% else %}h1{% endif %}>
+  </div>
+  {% if subtitle %}
+  <div class="section-header__subtitle">
+    <p class="body-text{% if inverse %}" style="color:rgba(255,255,255,.65){% else %} body-text--secondary{% endif %}">{{ subtitle }}</p>
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}

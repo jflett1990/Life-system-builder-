@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from schemas.render import ExportBundle
-from services.render_service import RenderService, RenderError
+from services.render_service import RenderService, RenderServiceError
 from storage.database import get_db
 
 router = APIRouter(prefix="/export", tags=["export"])
@@ -16,7 +16,7 @@ def _render_svc(db: Session = Depends(get_db)) -> RenderService:
 def export_project(project_id: int, svc: RenderService = Depends(_render_svc)):
     try:
         return svc.export(project_id)
-    except RenderError as e:
+    except RenderServiceError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 

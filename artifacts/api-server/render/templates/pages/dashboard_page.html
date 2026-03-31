@@ -1,0 +1,84 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/section_header.html' import section_header %}
+{% from 'templates/components/milestone_list.html' import milestone_list %}
+{% from 'templates/components/criteria_checklist.html' import criteria_checklist %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# DASHBOARD PAGE                                                              #}
+{# data keys: page_title, page_label, kpis, milestones, success_criteria,    #}
+{#            system_name, time_horizon, domain_count, worksheet_count        #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{{ section_header(label=data.page_label | default("System Dashboard"), title=data.page_title | default("Operational Overview")) }}
+
+<!-- KPI Stats Row -->
+{% if data.kpis or data.domain_count or data.worksheet_count or data.time_horizon %}
+<div class="grid-{{ [data.kpis|default([])|length + (1 if data.domain_count else 0) + (1 if data.worksheet_count else 0) + (1 if data.time_horizon else 0), 4] | min }}" style="margin-bottom:var(--space-10)">
+  {% if data.domain_count %}
+  <div class="stat-box">
+    <div class="stat-box__value">{{ data.domain_count }}</div>
+    <div class="stat-box__label">Control Domains</div>
+  </div>
+  {% endif %}
+  {% if data.worksheet_count %}
+  <div class="stat-box">
+    <div class="stat-box__value">{{ data.worksheet_count }}</div>
+    <div class="stat-box__label">Worksheets</div>
+  </div>
+  {% endif %}
+  {% if data.time_horizon %}
+  <div class="stat-box">
+    <div class="stat-box__value" style="font-size:var(--text-xl)">{{ data.time_horizon }}</div>
+    <div class="stat-box__label">Time Horizon</div>
+  </div>
+  {% endif %}
+  {% for kpi in data.kpis | default([]) %}
+  <div class="stat-box">
+    <div class="stat-box__value" style="font-size:{{ 'var(--text-xl)' if (kpi.value|string)|length > 5 else 'var(--text-3xl)' }}">{{ kpi.value }}</div>
+    <div class="stat-box__label">{{ kpi.label }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Two-column layout: milestones + success criteria -->
+<div class="grid-2" style="gap:var(--space-10);align-items:start">
+  {% if data.milestones %}
+  <div>
+    <span class="heading-component">Milestones</span>
+    <div class="mt-4">
+      {{ milestone_list(milestones=data.milestones) }}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if data.success_criteria %}
+  <div>
+    {{ criteria_checklist(items=data.success_criteria, label="Success Criteria") }}
+  </div>
+  {% endif %}
+</div>
+
+<!-- System Identification Footer Bar -->
+{% if data.system_name %}
+<div style="
+  margin-top:var(--space-10);
+  padding:var(--space-5) var(--space-6);
+  background:var(--color-surface);
+  border-top:var(--border-weight-lg) solid var(--color-text-primary);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+">
+  <div>
+    <div class="eyebrow" style="margin-bottom:var(--space-1)">System</div>
+    <div style="font-family:var(--font-heading);font-size:var(--text-md)">{{ data.system_name }}</div>
+  </div>
+  {% if data.generated_date %}
+  <div style="text-align:right">
+    <div class="eyebrow" style="margin-bottom:var(--space-1)">Generated</div>
+    <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">{{ data.generated_date }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

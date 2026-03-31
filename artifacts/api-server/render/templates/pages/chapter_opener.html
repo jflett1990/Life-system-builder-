@@ -1,0 +1,78 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/callout_block.html' import callout %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# CHAPTER OPENER                                                              #}
+{# data keys: chapter_number, chapter_title, chapter_summary, domain_name,    #}
+{#            domain_purpose, scope_items, primary_outputs                    #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+
+<!-- Chapter bar — full-width dark strip at top -->
+<div style="
+  background: var(--color-chapter-bar);
+  margin: calc(-1 * var(--page-margin-v)) calc(-1 * var(--page-margin-h)) var(--space-10);
+  padding: var(--space-6) var(--page-margin-h);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+">
+  {% if data.chapter_number %}
+  <span style="
+    font-family: var(--font-label);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--color-accent);
+  ">Chapter {{ data.chapter_number }}</span>
+  <span style="color:rgba(255,255,255,.2);font-size:var(--text-xs)">|</span>
+  {% endif %}
+  <span style="
+    font-family: var(--font-label);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  ">{{ data.domain_name | default("") }}</span>
+</div>
+
+<!-- Chapter title -->
+<h2 class="heading-title" style="margin-bottom:var(--space-3);max-width:140mm">{{ data.chapter_title | default("Chapter") }}</h2>
+
+<!-- Summary -->
+{% if data.chapter_summary %}
+<p class="body-text body-text--secondary" style="max-width:130mm;margin-bottom:var(--space-10)">{{ data.chapter_summary }}</p>
+{% endif %}
+
+<hr class="rule rule--heavy" style="margin-bottom:var(--space-10)">
+
+<!-- Domain context -->
+{% if data.domain_purpose %}
+{{ callout(label="Domain Purpose", text=data.domain_purpose) }}
+{% endif %}
+
+{% if data.scope_items %}
+<div class="mt-8">
+  <span class="heading-component">Scope</span>
+  <div class="mt-4">
+    {% for item in data.scope_items %}
+    <div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:var(--border-rule);align-items:flex-start">
+      <span style="color:var(--color-accent);font-size:var(--text-xs);flex-shrink:0;margin-top:2px">→</span>
+      <span class="body-text">{{ item }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if data.primary_outputs %}
+<div class="mt-8">
+  <span class="heading-component">Primary Outputs</span>
+  <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-4)">
+    {% for output in data.primary_outputs %}
+    <span class="badge badge--accent">{{ output }}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

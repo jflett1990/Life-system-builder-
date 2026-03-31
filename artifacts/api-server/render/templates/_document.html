@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ manifest.document_title | default("Life System Document") }}</title>
+  <style>
+/* ── Tokens ───────────────────────────────────────────────────────── */
+{% include 'styles/tokens.css' %}
+
+/* ── Runtime Token Overrides (from render_blueprint theme) ────────── */
+:root {
+{% for key, val in manifest.theme_tokens.items() %}  {{ key }}: {{ val }};
+{% endfor %}}
+
+/* ── Base Styles ──────────────────────────────────────────────────── */
+{% include 'styles/base.css' %}
+
+/* ── Print Styles ─────────────────────────────────────────────────── */
+{% include 'styles/print.css' %}
+  </style>
+</head>
+<body>
+{% for page in manifest.pages %}
+<div class="page page--{{ page.archetype }}" id="{{ page.page_id }}">
+  {% set data = page.data %}
+  {% set doc_title = manifest.document_title %}
+  {% set seq = page.sequence %}
+  {% if page.archetype == "cover_page" %}{% include 'templates/pages/cover_page.html' %}
+  {% elif page.archetype == "section_divider" %}{% include 'templates/pages/section_divider.html' %}
+  {% elif page.archetype == "chapter_opener" %}{% include 'templates/pages/chapter_opener.html' %}
+  {% elif page.archetype == "explanation_page" %}{% include 'templates/pages/explanation_page.html' %}
+  {% elif page.archetype == "worksheet_page" %}{% include 'templates/pages/worksheet_page.html' %}
+  {% elif page.archetype == "comparison_matrix" %}{% include 'templates/pages/comparison_matrix.html' %}
+  {% elif page.archetype == "rapid_response" %}{% include 'templates/pages/rapid_response.html' %}
+  {% elif page.archetype == "dashboard_page" %}{% include 'templates/pages/dashboard_page.html' %}
+  {% endif %}
+</div>
+{% endfor %}
+</body>
+</html>

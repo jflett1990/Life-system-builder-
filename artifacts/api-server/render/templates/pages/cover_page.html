@@ -1,0 +1,89 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# COVER PAGE                                                                  #}
+{# data keys: system_name, life_event, system_objective, time_horizon,        #}
+{#            audience, generated_date, document_id                           #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+<div class="cover__body" style="
+  background: var(--color-cover-bg);
+  min-height: var(--page-height);
+  margin: calc(-1 * var(--page-margin-v)) calc(-1 * var(--page-margin-h));
+  padding: 48mm var(--page-margin-h) var(--page-margin-v);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+">
+
+  <div>
+    <!-- Eyebrow -->
+    <div style="margin-bottom: var(--space-8)">
+      <span class="eyebrow eyebrow--inverse">{{ data.life_event | default("Life Operations System") }}</span>
+    </div>
+
+    <!-- System Name -->
+    <h1 style="
+      font-family: var(--font-heading);
+      font-size: var(--text-3xl);
+      font-weight: normal;
+      letter-spacing: var(--tracking-tight);
+      line-height: var(--leading-tight);
+      color: #fff;
+      max-width: 140mm;
+      margin-bottom: var(--space-10);
+    ">{{ data.system_name | default("Operational Control System") }}</h1>
+
+    <!-- Horizontal rule — accent gold -->
+    <div style="
+      height: 2px;
+      background: var(--color-accent);
+      width: 60mm;
+      margin-bottom: var(--space-10);
+    "></div>
+
+    <!-- Objective -->
+    {% if data.system_objective %}
+    <p style="
+      font-family: var(--font-heading);
+      font-size: var(--text-md);
+      color: rgba(255,255,255,0.75);
+      line-height: var(--leading-normal);
+      max-width: 130mm;
+    ">{{ data.system_objective }}</p>
+    {% endif %}
+  </div>
+
+  <!-- Cover Metadata Bar -->
+  <div style="
+    border-top: 0.5px solid rgba(255,255,255,0.2);
+    padding-top: var(--space-6);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  ">
+    {% if data.time_horizon %}
+    <div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Time Horizon</div>
+      <div style="font-size:var(--text-sm);color:rgba(255,255,255,.85)">{{ data.time_horizon }}</div>
+    </div>
+    {% endif %}
+    {% if data.audience %}
+    <div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Prepared For</div>
+      <div style="font-size:var(--text-sm);color:rgba(255,255,255,.85)">{{ data.audience }}</div>
+    </div>
+    {% endif %}
+    {% if data.generated_date %}
+    <div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Generated</div>
+      <div style="font-size:var(--text-sm);color:rgba(255,255,255,.85)">{{ data.generated_date }}</div>
+    </div>
+    {% endif %}
+    {% if data.document_id %}
+    <div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Document ID</div>
+      <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:rgba(255,255,255,.55)">{{ data.document_id }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>

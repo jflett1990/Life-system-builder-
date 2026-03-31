@@ -1,0 +1,116 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/field_row.html' import field_row %}
+{% from 'templates/components/decision_gate.html' import decision_gate %}
+{% from 'templates/components/criteria_checklist.html' import criteria_checklist %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# WORKSHEET PAGE                                                              #}
+{# data keys: id, title, domain_name, purpose, sections, decision_gates,     #}
+{#            completion_criteria, version                                    #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+
+<!-- Worksheet header bar -->
+<div style="
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: var(--space-4);
+  border-bottom: var(--border-weight-lg) solid var(--color-text-primary);
+  margin-bottom: var(--space-8);
+">
+  <div>
+    <div style="margin-bottom:var(--space-2)">
+      <span class="eyebrow">Worksheet</span>
+      {% if data.domain_name %}
+      <span style="margin-left:var(--space-2);color:var(--color-text-muted);font-size:var(--text-xs)">→ {{ data.domain_name }}</span>
+      {% endif %}
+    </div>
+    <h2 class="heading-section">{{ data.title | default("Worksheet") }}</h2>
+    {% if data.purpose %}
+    <p class="body-text body-text--secondary" style="margin-top:var(--space-2);max-width:120mm">{{ data.purpose }}</p>
+    {% endif %}
+  </div>
+  <div style="text-align:right;flex-shrink:0">
+    <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-muted)">{{ data.id | default("ws") }}</div>
+    {% if data.version %}
+    <div style="font-size:var(--text-xs);color:var(--color-text-muted)">v{{ data.version }}</div>
+    {% endif %}
+    <div style="margin-top:var(--space-2)">
+      <span class="badge badge--ghost">
+        {% set total = namespace(n=0) %}
+        {% for section in data.sections | default([]) %}{% set total.n = total.n + (section.fields | default([]) | length) %}{% endfor %}
+        {{ total.n }} fields
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Sections -->
+{% for section in data.sections | default([]) %}
+<div class="worksheet-section" style="margin-bottom:var(--space-10);break-inside:avoid;page-break-inside:avoid">
+  {% if section.section_title %}
+  <div style="margin-bottom:var(--space-5);display:flex;align-items:center;gap:var(--space-4)">
+    <span class="heading-component">{{ section.section_title }}</span>
+    <div style="flex:1;height:0.5px;background:var(--color-rule)"></div>
+    {% if section.section_id %}
+    <span style="font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--color-text-muted)">{{ section.section_id }}</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if section.description %}
+  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-5)">{{ section.description }}</p>
+  {% endif %}
+
+  <!-- Field grid — wide fields go full width, short fields go 2-col -->
+  <div>
+    {% for field in section.fields | default([]) %}
+    {% set is_wide = field.type in ("textarea", "multi-select") or (field.label | length) > 48 %}
+    {% if is_wide %}
+    <div class="field-grid field-grid--full">
+    {% else %}
+    <div class="field-grid">
+    {% endif %}
+      {{ field_row(
+          label=field.label,
+          field_type=field.type | default("text"),
+          required=field.required | default(False),
+          placeholder=field.placeholder | default(""),
+          hint=field.description | default(""),
+          options=field.options | default([])
+        ) }}
+    {% if not is_wide %}
+      <!-- second column placeholder if no pair -->
+    {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+<!-- Decision Gates -->
+{% if data.decision_gates %}
+<div style="margin-top:var(--space-10)">
+  <div style="margin-bottom:var(--space-5)">
+    <span class="heading-component">Decision Gates</span>
+  </div>
+  {% for gate in data.decision_gates %}
+  {{ decision_gate(
+      gate_title=gate.gate_title | default(""),
+      condition=gate.condition,
+      pass_action=gate.pass_action | default("Proceed to next step."),
+      fail_action=gate.fail_action | default("Resolve outstanding items."),
+      gate_id=gate.gate_id | default(""),
+      blocks_completion=gate.blocks_completion | default(True)
+    ) }}
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Completion Criteria -->
+{% if data.completion_criteria %}
+<div style="margin-top:var(--space-8)">
+  {{ criteria_checklist(items=data.completion_criteria, label="Completion Criteria") }}
+</div>
+{% endif %}
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

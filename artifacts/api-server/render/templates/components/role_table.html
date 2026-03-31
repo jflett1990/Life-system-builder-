@@ -1,0 +1,26 @@
+{% macro role_table(roles=[]) %}
+{% if roles %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width:22%">Role</th>
+      <th style="width:12%">Authority</th>
+      <th>Responsibility</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for role in roles %}
+    <tr>
+      <td><strong>{{ role.role }}</strong></td>
+      <td>
+        <span class="badge {% if role.authority_level == 'decision-maker' %}badge--primary{% else %}badge--ghost{% endif %}">
+          {{ role.authority_level | default("executor") | replace("-", " ") }}
+        </span>
+      </td>
+      <td class="body-text">{{ role.responsibility }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endmacro %}

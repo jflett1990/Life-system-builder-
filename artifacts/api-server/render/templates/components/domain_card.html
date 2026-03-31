@@ -1,0 +1,33 @@
+{% macro domain_card(domain={}, index=0) %}
+<div class="domain-card">
+  <div class="domain-card__id">
+    <span class="eyebrow">{{ domain.id | default("domain-0" + (index+1)|string) }}</span>
+  </div>
+  <div class="domain-card__name">
+    <h3 class="heading-sub">{{ domain.name }}</h3>
+  </div>
+  {% if domain.purpose %}
+  <div class="domain-card__purpose">
+    <p class="body-text">{{ domain.purpose }}</p>
+  </div>
+  {% endif %}
+  {% if domain.scope_in %}
+  <div>
+    <div class="domain-card__scope-label">
+      <span class="eyebrow">In Scope</span>
+    </div>
+    <ul class="domain-card__scope-list">
+      {% for item in domain.scope_in %}
+      <li class="domain-card__scope-item">{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if domain.primary_outputs %}
+  <div>
+    <span class="eyebrow">Outputs: </span>
+    <span class="body-text--muted" style="font-size:var(--text-sm)">{{ domain.primary_outputs | join(" · ") }}</span>
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}

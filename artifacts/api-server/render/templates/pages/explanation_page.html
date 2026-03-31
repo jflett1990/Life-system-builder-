@@ -1,0 +1,84 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/callout_block.html' import callout %}
+{% from 'templates/components/section_header.html' import section_header %}
+{% from 'templates/components/role_table.html' import role_table %}
+{% from 'templates/components/domain_card.html' import domain_card %}
+{% from 'templates/components/criteria_checklist.html' import criteria_checklist %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# EXPLANATION PAGE                                                            #}
+{# Renders: operating premise, objectives, constraints, failure modes,        #}
+{#          roles, domains, success criteria                                  #}
+{# data keys: page_title, page_label, operating_premise, system_objective,   #}
+{#            operating_constraints, failure_modes, key_roles, control_domains,#}
+{#            success_criteria, time_horizon                                  #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{{ section_header(label=data.page_label | default("System Overview"), title=data.page_title | default("System Architecture")) }}
+
+{% if data.operating_premise %}
+{{ callout(label="Operating Premise", text=data.operating_premise) }}
+{% endif %}
+
+{% if data.system_objective %}
+<div class="mt-6">
+{{ callout(label="System Objective", text=data.system_objective, variant="secondary") }}
+</div>
+{% endif %}
+
+{% if data.key_roles %}
+<div class="mt-10">
+  <span class="heading-component">Key Roles</span>
+  <div class="mt-4">
+    {{ role_table(roles=data.key_roles) }}
+  </div>
+</div>
+{% endif %}
+
+{% if data.control_domains %}
+<div class="mt-10">
+  <span class="heading-component">Control Domains</span>
+  <div class="mt-4">
+    {% for domain in data.control_domains %}
+    {{ domain_card(domain=domain, index=loop.index0) }}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if data.success_criteria or data.failure_modes %}
+<div class="mt-10 grid-2">
+  {% if data.success_criteria %}
+  <div>
+    {{ criteria_checklist(items=data.success_criteria, label="Success Criteria") }}
+  </div>
+  {% endif %}
+  {% if data.failure_modes %}
+  <div>
+    <div class="mb-4"><span class="heading-component">Known Failure Modes</span></div>
+    <ul class="checklist">
+      {% for mode in data.failure_modes %}
+      <li class="checklist__item" style="color:var(--color-fail)">
+        <span style="flex-shrink:0;color:var(--color-fail);font-weight:700;font-size:var(--text-xs)">✕</span>
+        <span style="color:var(--color-text-primary)">{{ mode }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if data.operating_constraints %}
+<div class="mt-10">
+  <span class="heading-component">Operating Constraints</span>
+  <div class="mt-4">
+    {% for constraint in data.operating_constraints %}
+    <div style="display:flex;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:var(--border-rule)">
+      <span style="flex-shrink:0;font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px">⊘</span>
+      <span class="body-text">{{ constraint }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

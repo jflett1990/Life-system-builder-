@@ -1,0 +1,23 @@
+{% macro decision_gate(gate_title="", condition="", pass_action="", fail_action="", gate_id="", blocks_completion=True) %}
+<div class="gate">
+  <div class="gate__label">
+    <span class="eyebrow">Decision Gate{% if gate_id %} — {{ gate_id }}{% endif %}{% if blocks_completion %} <span style="color:var(--color-fail);font-size:var(--text-2xs)">BLOCKS COMPLETION</span>{% endif %}</span>
+  </div>
+  {% if gate_title %}
+  <div style="margin-bottom:var(--space-2)">
+    <span class="heading-component">{{ gate_title }}</span>
+  </div>
+  {% endif %}
+  <div class="gate__condition">{{ condition }}</div>
+  <div class="gate__paths">
+    <div class="gate__path gate__path--pass">
+      <div class="gate__path-label">Pass → Proceed</div>
+      <div class="gate__path-text">{{ pass_action }}</div>
+    </div>
+    <div class="gate__path gate__path--fail">
+      <div class="gate__path-label">Fail → Remediate</div>
+      <div class="gate__path-text">{{ fail_action }}</div>
+    </div>
+  </div>
+</div>
+{% endmacro %}

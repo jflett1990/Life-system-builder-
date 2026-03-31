@@ -1,0 +1,137 @@
+/* ==========================================================================
+   PRINT STYLES — Life System Builder
+   Applied only in @media print and @page contexts.
+   Governs: page geometry, page breaks, orphan/widow control, grayscale safety.
+   ========================================================================== */
+
+@page {
+  size: A4 portrait;
+  margin: 22mm 20mm;
+}
+
+@page :first {
+  margin-top: 0;
+}
+
+@media print {
+
+  /* ── Document Shell ────────────────────────────────────────────────────── */
+  body {
+    background: transparent;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* ── Page Containers ───────────────────────────────────────────────────── */
+  .page {
+    width: 100%;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* ── Page Break Rules ──────────────────────────────────────────────────── */
+  .page-break-before  { page-break-before: always !important; break-before: page !important; }
+  .page-break-after   { page-break-after:  always !important; break-after:  page !important; }
+  .page-break-avoid   { page-break-inside: avoid  !important; break-inside: avoid  !important; }
+
+  /* Cover, dividers, chapter openers always start on a new page */
+  .page--cover_page,
+  .page--section_divider,
+  .page--chapter_opener {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* Never break inside these components */
+  .callout,
+  .gate,
+  .domain-card,
+  .milestone-item,
+  .checklist__item,
+  .field-row,
+  .stat-box,
+  .data-table thead,
+  .data-table tbody tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Worksheet and matrix pages: avoid breaking mid-section */
+  .worksheet-section,
+  .matrix-row {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Prevent headings from being orphaned at bottom of page */
+  .heading-section,
+  .heading-sub,
+  .heading-component,
+  .section-header {
+    page-break-after: avoid;
+    break-after: avoid;
+    orphans: 2;
+    widows: 2;
+  }
+
+  /* ── Orphan / Widow Control ────────────────────────────────────────────── */
+  p, li, td, .body-text {
+    orphans: 2;
+    widows: 2;
+  }
+
+  /* ── Footer ────────────────────────────────────────────────────────────── */
+  .page-footer {
+    position: fixed;
+    bottom: 12mm;
+  }
+
+  /* ── Grayscale Safety Overrides ────────────────────────────────────────── */
+  /*
+    All interactive colors map to grayscale equivalents.
+    Any color that relies purely on hue for meaning gets a secondary indicator.
+  */
+
+  /* Gold accent → dark grey */
+  .callout { border-left-color: #333 !important; }
+  .rule--accent { border-top-color: #555 !important; }
+  .badge--accent { background: #E8E8E8 !important; color: #111 !important; border-color: #555 !important; }
+
+  /* Pass / fail paths — add text prefix so color not the only signal */
+  .gate__path--pass { background: #EBEBEB !important; border-left-color: #333 !important; }
+  .gate__path--fail { background: #D8D8D8 !important; border-left-color: #111 !important; }
+
+  /* Cover — keep dark background, force text to white */
+  .page--cover_page .cover__body {
+    background: #111 !important;
+  }
+
+  /* Section divider — keep dark */
+  .page--section_divider .divider__body {
+    background: #222 !important;
+  }
+
+  /* ── No-Print Elements ─────────────────────────────────────────────────── */
+  .no-print { display: none !important; }
+
+  /* ── Table Page Break ──────────────────────────────────────────────────── */
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+}

@@ -1,0 +1,85 @@
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# SECTION DIVIDER                                                             #}
+{# data keys: section_number, section_title, section_subtitle, domain_count   #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+<div class="divider__body" style="
+  background: var(--color-divider-bg);
+  min-height: var(--page-height);
+  margin: calc(-1 * var(--page-margin-v)) calc(-1 * var(--page-margin-h));
+  padding: var(--page-margin-v) var(--page-margin-h);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+">
+  <!-- Large number watermark -->
+  {% if data.section_number %}
+  <div style="
+    position: absolute;
+    right: var(--page-margin-h);
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-heading);
+    font-size: 180px;
+    font-weight: normal;
+    color: rgba(255,255,255,0.04);
+    line-height: 1;
+    user-select: none;
+  ">{{ data.section_number }}</div>
+  {% endif %}
+
+  <div style="max-width: 120mm; position: relative; z-index: 1;">
+    {% if data.section_number %}
+    <div style="margin-bottom: var(--space-6)">
+      <span style="
+        font-family: var(--font-label);
+        font-size: var(--text-xs);
+        font-weight: 700;
+        letter-spacing: var(--tracking-widest);
+        text-transform: uppercase;
+        color: var(--color-accent);
+      ">Section {{ data.section_number }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Thin gold rule -->
+    <div style="height:1px;background:rgba(255,255,255,0.15);width:48mm;margin-bottom:var(--space-8)"></div>
+
+    <h2 style="
+      font-family: var(--font-heading);
+      font-size: var(--text-2xl);
+      font-weight: normal;
+      letter-spacing: var(--tracking-tight);
+      line-height: var(--leading-tight);
+      color: #fff;
+      margin-bottom: var(--space-6);
+    ">{{ data.section_title | default("Section") }}</h2>
+
+    {% if data.section_subtitle %}
+    <p style="
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      color: rgba(255,255,255,0.6);
+      line-height: var(--leading-normal);
+      max-width: 100mm;
+    ">{{ data.section_subtitle }}</p>
+    {% endif %}
+  </div>
+
+  <!-- Bottom label bar -->
+  <div style="
+    position: absolute;
+    bottom: var(--page-margin-v);
+    left: var(--page-margin-h);
+    right: var(--page-margin-h);
+    display: flex;
+    justify-content: space-between;
+    border-top: 0.5px solid rgba(255,255,255,0.12);
+    padding-top: var(--space-4);
+  ">
+    <span style="font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:rgba(255,255,255,.3)">{{ doc_title }}</span>
+    {% if data.domain_count %}
+    <span style="font-size:var(--text-xs);color:rgba(255,255,255,.3)">{{ data.domain_count }} control domain{{ "s" if data.domain_count != 1 }}</span>
+    {% endif %}
+  </div>
+</div>

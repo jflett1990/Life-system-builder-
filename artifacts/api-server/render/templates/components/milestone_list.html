@@ -1,0 +1,17 @@
+{% macro milestone_list(milestones=[]) %}
+{% if milestones %}
+<ol class="milestone-list">
+  {% for m in milestones %}
+  <li class="milestone-item">
+    <div class="milestone-item__number">{{ m.sequence | default(loop.index) }}</div>
+    <div class="milestone-item__content">
+      <div class="milestone-item__title">{{ m.milestone }}</div>
+      {% if m.description %}
+      <div class="milestone-item__desc">{{ m.description }}</div>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% endif %}
+{% endmacro %}

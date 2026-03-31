@@ -1,0 +1,17 @@
+{% macro criteria_checklist(items=[], label="") %}
+{% if items %}
+{% if label %}
+<div class="mb-4">
+  <span class="heading-component">{{ label }}</span>
+</div>
+{% endif %}
+<ul class="checklist">
+  {% for item in items %}
+  <li class="checklist__item">
+    <div class="checklist__box"></div>
+    <span>{{ item }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endmacro %}
