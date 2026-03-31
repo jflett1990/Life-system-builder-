@@ -1,0 +1,44 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/section_header.html' import section_header %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# TABLE OF CONTENTS PAGE                                                       #}
+{# data keys: chapters (list of {chapter_number, chapter_title,                #}
+{#            worksheet_count, worksheets}), system_name, total_worksheets      #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{{ section_header(label="Document Guide", title="Table of Contents") }}
+
+{% if data.chapters %}
+<div class="toc">
+  {% for ch in data.chapters %}
+  <div class="toc__entry">
+    <div class="toc__chapter-row">
+      <span class="toc__chapter-num">{{ "%02d" | format(ch.chapter_number | int) }}</span>
+      <span class="toc__chapter-title">{{ ch.chapter_title }}</span>
+      <span class="toc__chapter-count">
+        {{ ch.worksheet_count }} worksheet{{ "s" if ch.worksheet_count != 1 else "" }}
+      </span>
+    </div>
+    {% if ch.worksheets %}
+    <div class="toc__ws-list">
+      {% for ws in ch.worksheets %}
+      <div class="toc__ws-row">
+        <span class="toc__ws-indicator">—</span>
+        <span class="toc__ws-title">{{ ws }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% if data.total_worksheets %}
+<div class="toc__summary">
+  <span class="eyebrow">{{ data.chapters | length }} chapter{{ "s" if data.chapters | length != 1 else "" }}</span>
+  <span class="toc__summary-sep">·</span>
+  <span class="eyebrow">{{ data.total_worksheets }} worksheet{{ "s" if data.total_worksheets != 1 else "" }}</span>
+</div>
+{% endif %}
+{% endif %}
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

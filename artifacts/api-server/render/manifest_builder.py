@@ -98,6 +98,18 @@ class ManifestBuilder:
             seq += 1
             return seq
 
+        # ── Pre-compute TOC data ────────────────────────────────────────────────
+        toc_chapters = []
+        if chapters:
+            for ch in chapters:
+                ch_ws = ch.get("worksheets", [])
+                toc_chapters.append({
+                    "chapter_number": ch.get("chapter_number", chapters.index(ch) + 1),
+                    "chapter_title": ch.get("chapter_title", ""),
+                    "worksheet_count": len(ch_ws),
+                    "worksheets": [ws.get("title", "") for ws in ch_ws],
+                })
+
         # ── 1. Cover Page ──────────────────────────────────────────────────────
         pages.append(ManifestPage(
             page_id="pg-cover",
@@ -115,7 +127,20 @@ class ManifestBuilder:
             },
         ))
 
-        # ── 2. Dashboard Page ──────────────────────────────────────────────────
+        # ── 2. Table of Contents Page ──────────────────────────────────────────
+        if toc_chapters:
+            pages.append(ManifestPage(
+                page_id="pg-toc",
+                sequence=next_seq(),
+                archetype="toc_page",
+                data={
+                    "chapters": toc_chapters,
+                    "total_worksheets": total_worksheets,
+                    "system_name": system_name,
+                },
+            ))
+
+        # ── 3. Dashboard Page ──────────────────────────────────────────────────
         # Milestones = chapter titles (differentiated, content-specific).
         # Falls back to success_criteria only when no chapters exist.
         success_criteria = arch.get("success_criteria", [])
@@ -240,6 +265,21 @@ class ManifestBuilder:
                     },
                 ))
 
+                # Quick Reference Card — inserted after chapter_opener
+                pages.append(ManifestPage(
+                    page_id=f"pg-refcard-{domain_id or ch_num}",
+                    sequence=next_seq(),
+                    archetype="reference_card_page",
+                    data={
+                        "chapter_number": ch_num,
+                        "chapter_title": ch_title,
+                        "domain_name": domain_name,
+                        "quick_reference_rules": ch_rules,
+                        "cascade_triggers": cascade_triggers,
+                        "primary_outputs": [ws.get("title", "") for ws in ch_worksheets],
+                    },
+                ))
+
                 # One worksheet page per worksheet in this chapter
                 for ws_idx, ws in enumerate(ch_worksheets):
                     ws_id = ws.get("id", f"ws-{ch_num}-{ws_idx + 1:02d}")
@@ -297,7 +337,35 @@ class ManifestBuilder:
                     data=ws,
                 ))
 
-        # ── 7. Rapid Response Page ─────────────────────────────────────────────
+        # ── 7. Worksheet Index Page ────────────────────────────────────────────
+        # Alphabetically sorted index of all worksheets (chapter_expansion path only)
+        if chapters:
+            all_ws_entries = []
+            for ch in chapters:
+                ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
+                ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
+                for ws in ch.get("worksheets", []):
+                    ws_title = ws.get("title", "")
+                    if ws_title:
+                        all_ws_entries.append({
+                            "title": ws_title,
+                            "chapter_number": ch_num,
+                            "chapter_title": ch_title,
+                        })
+            if all_ws_entries:
+                all_ws_entries.sort(key=lambda e: e["title"].lower())
+                pages.append(ManifestPage(
+                    page_id="pg-ws-index",
+                    sequence=next_seq(),
+                    archetype="worksheet_index_page",
+                    data={
+                        "index_entries": all_ws_entries,
+                        "total_worksheets": len(all_ws_entries),
+                        "total_chapters": len(chapters),
+                    },
+                ))
+
+        # ── 8. Rapid Response Page ─────────────────────────────────────────────
         failure_modes = arch.get("failure_modes", [])
         if failure_modes or arch.get("operating_constraints"):
             structured_modes = []

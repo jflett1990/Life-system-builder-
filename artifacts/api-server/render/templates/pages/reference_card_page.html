@@ -1,0 +1,102 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# QUICK REFERENCE CARD PAGE                                                    #}
+{# Dense single-page summary inserted after each chapter_opener.               #}
+{# data keys: chapter_number, chapter_title, domain_name,                      #}
+{#            quick_reference_rules, cascade_triggers, primary_outputs          #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+
+<!-- Reference card header bar -->
+<div class="ref-card__header">
+  <div class="ref-card__header-left">
+    {% if data.chapter_number %}
+    <span class="ref-card__chapter-label">Chapter {{ data.chapter_number }}</span>
+    <span class="ref-card__sep">·</span>
+    {% endif %}
+    <span class="ref-card__type-label">Quick Reference</span>
+  </div>
+  {% if data.domain_name %}
+  <span class="ref-card__domain">{{ data.domain_name }}</span>
+  {% endif %}
+</div>
+
+<h2 class="heading-title" style="margin-bottom:var(--space-8);max-width:140mm">{{ data.chapter_title | default("Chapter Reference") }}</h2>
+
+<hr class="rule rule--heavy" style="margin-bottom:var(--space-8)">
+
+<!-- Two-column dense layout -->
+<div class="ref-card__body">
+
+  <!-- Left column: Operating Rules -->
+  <div class="ref-card__col">
+    {% if data.quick_reference_rules %}
+    <div class="ref-card__section">
+      <span class="heading-component">Operating Rules</span>
+      <div class="ref-card__rules">
+        {% for rule in data.quick_reference_rules %}
+        <div class="ref-card__rule-row">
+          <span class="ref-card__rule-num">{{ "%02d" | format(loop.index) }}</span>
+          <span class="ref-card__rule-text">{{ rule }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if data.primary_outputs %}
+    <div class="ref-card__section mt-8">
+      <span class="heading-component">Worksheets</span>
+      <div class="mt-4">
+        {% for ws in data.primary_outputs %}
+        <div class="ref-card__ws-row">
+          <span style="color:var(--color-accent);flex-shrink:0">→</span>
+          <span class="body-text" style="font-size:var(--text-sm)">{{ ws }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right column: Cascade Triggers + Key Contacts -->
+  <div class="ref-card__col">
+    {% if data.cascade_triggers %}
+    <div class="ref-card__section">
+      <span class="heading-component">Cascade Triggers</span>
+      <p class="body-text body-text--muted" style="margin-top:var(--space-1);margin-bottom:var(--space-3)">Downstream impacts if this chapter fails.</p>
+      <div>
+        {% for trigger in data.cascade_triggers %}
+        <div class="ref-card__trigger-row">
+          <span class="ref-card__trigger-icon">!</span>
+          <span class="body-text body-text--secondary" style="font-size:var(--text-sm)">{{ trigger }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Key Contacts write-in table -->
+    <div class="ref-card__section mt-8">
+      <span class="heading-component">Key Contacts</span>
+      <table class="ref-card__contacts-table">
+        <thead>
+          <tr>
+            <th class="ref-card__contacts-th">Role</th>
+            <th class="ref-card__contacts-th">Name / Contact</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(5) %}
+          <tr>
+            <td class="ref-card__contacts-td ref-card__contacts-td--write"></td>
+            <td class="ref-card__contacts-td ref-card__contacts-td--write"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

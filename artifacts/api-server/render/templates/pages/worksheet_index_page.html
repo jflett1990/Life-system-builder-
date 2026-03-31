@@ -1,0 +1,46 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/section_header.html' import section_header %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# WORKSHEET INDEX PAGE                                                         #}
+{# Alphabetically sorted list of all worksheet titles with chapter context.    #}
+{# data keys: index_entries (list of {title, chapter_number, chapter_title}),  #}
+{#            total_worksheets, total_chapters                                  #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{{ section_header(label="Back Matter", title="Worksheet Index") }}
+
+{% if data.index_entries %}
+<div class="ws-index">
+  {% set ns = namespace(current_letter="") %}
+  {% for entry in data.index_entries %}
+  {% set first_letter = entry.title[0] | upper %}
+  {% if first_letter != ns.current_letter %}
+  {% set ns.current_letter = first_letter %}
+  <div class="ws-index__letter-group">
+    <span class="ws-index__letter">{{ first_letter }}</span>
+  </div>
+  {% endif %}
+  <div class="ws-index__row">
+    <span class="ws-index__title">{{ entry.title }}</span>
+    <span class="ws-index__rule-fill"></span>
+    <span class="ws-index__chapter-ref">Ch. {{ "%02d" | format(entry.chapter_number | int) }}</span>
+    <span class="ws-index__chapter-title">{{ entry.chapter_title }}</span>
+  </div>
+  {% endfor %}
+</div>
+
+{% if data.total_worksheets or data.total_chapters %}
+<div class="ws-index__footer-note">
+  {% if data.total_chapters %}
+  <span class="eyebrow">{{ data.total_chapters }} chapter{{ "s" if data.total_chapters != 1 else "" }}</span>
+  {% endif %}
+  {% if data.total_chapters and data.total_worksheets %}
+  <span class="ws-index__sep">·</span>
+  {% endif %}
+  {% if data.total_worksheets %}
+  <span class="eyebrow">{{ data.total_worksheets }} worksheet{{ "s" if data.total_worksheets != 1 else "" }}</span>
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

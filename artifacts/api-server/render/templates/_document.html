@@ -120,6 +120,9 @@
   {% elif page.archetype == "comparison_matrix" %}{% include 'templates/pages/comparison_matrix.html' %}
   {% elif page.archetype == "rapid_response" %}{% include 'templates/pages/rapid_response.html' %}
   {% elif page.archetype == "dashboard_page" %}{% include 'templates/pages/dashboard_page.html' %}
+  {% elif page.archetype == "toc_page" %}{% include 'templates/pages/toc_page.html' %}
+  {% elif page.archetype == "reference_card_page" %}{% include 'templates/pages/reference_card_page.html' %}
+  {% elif page.archetype == "worksheet_index_page" %}{% include 'templates/pages/worksheet_index_page.html' %}
   {% endif %}
 </div>
 {% endfor %}
