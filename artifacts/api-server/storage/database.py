@@ -1,3 +1,5 @@
+import time
+import threading
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from core.config import settings
@@ -8,13 +10,41 @@ logger = get_logger(__name__)
 engine = create_engine(
     settings.database_url,
     connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
+    pool_pre_ping=True,
     echo=False,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Readiness flag — set True once init_db() succeeds.
+# Routes call require_db_ready() to gate access until DB is available.
+_db_ready = threading.Event()
+
+
+def mark_db_ready() -> None:
+    _db_ready.set()
+
+
+def is_db_ready() -> bool:
+    return _db_ready.is_set()
+
+
+def require_db_ready() -> None:
+    """Raise HTTP 503 if the database has not yet initialised.
+
+    Import and call this from FastAPI route dependencies so callers get a
+    clean 503 rather than an internal SQLAlchemy connection error.
+    """
+    if not _db_ready.is_set():
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=503,
+            detail="Database is initialising — please retry in a moment.",
+        )
+
 
 def get_db():
+    require_db_ready()
     db: Session = SessionLocal()
     try:
         yield db
@@ -37,14 +67,11 @@ def init_db():
     run_migrations(engine)
 
     _recover_orphaned_running_stages()
+    mark_db_ready()
 
 
 def _recover_orphaned_running_stages() -> None:
-    """Reset any stages left in 'running' state from a previous server crash or restart.
-
-    Stages in 'running' state with no active request are permanently stuck — the background
-    thread was killed when the server died. Mark them 'failed' so users can re-run them.
-    """
+    """Reset any stages left in 'running' state from a previous server crash or restart."""
     from sqlalchemy import text
     with SessionLocal() as db:
         result = db.execute(

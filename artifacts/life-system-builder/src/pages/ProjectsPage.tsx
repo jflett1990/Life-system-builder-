@@ -6,7 +6,7 @@ import {
   getListProjectsQueryKey,
   useDuplicateProject,
 } from "@workspace/api-client-react";
-import { Plus, Layers, Clock, Copy, Search, X } from "lucide-react";
+import { Plus, Layers, Clock, Copy, Search, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -73,7 +73,13 @@ export default function ProjectsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
 
-  const { data: projects, isLoading, error, refetch } = useQuery(getListProjectsQueryOptions());
+  const is503 = (err: unknown) => (err as any)?.status === 503 || (err as any)?.statusCode === 503;
+
+  const { data: projects, isLoading, error, refetch } = useQuery({
+    ...getListProjectsQueryOptions(),
+    retry: (failureCount, err) => is503(err) ? failureCount < 20 : failureCount < 2,
+    retryDelay: (failureCount, err) => is503(err) ? 3000 : 1000,
+  });
 
   const { mutate: duplicate } = useDuplicateProject({
     mutation: {
@@ -116,9 +122,15 @@ export default function ProjectsPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-8">
-        {isLoading && <LoadingState message="Loading projects…" />}
+        {(isLoading || (error && is503(error))) && (
+          <LoadingState message={
+            error && is503(error)
+              ? "Database is starting up — connecting automatically…"
+              : "Loading projects…"
+          } />
+        )}
 
-        {error && (
+        {error && !is503(error) && (
           <ErrorState
             title="Could not load projects"
             message={(error as any)?.body?.detail ?? (error as any)?.message}

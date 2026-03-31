@@ -2,8 +2,8 @@
 Life System Builder — FastAPI backend entry point.
 
 Startup sequence:
-  1. Initialise database (create tables)
-  2. Load and validate all prompt contracts from disk
+  1. Load and validate all prompt contracts from disk
+  2. Start background DB initialisation (non-blocking — server comes up immediately)
   3. Mount all routers under /api
   4. Serve
 """
@@ -13,16 +13,58 @@ import sys
 # Ensure the api-server directory is on sys.path so all relative imports resolve
 sys.path.insert(0, os.path.dirname(__file__))
 
+import threading
+import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.logging import get_logger
 from core.contract_registry import validate_and_load
-from storage.database import init_db
-from api.routes import health, projects, pipeline, render, export
 
 logger = get_logger("main")
+
+# ── Database readiness flag ───────────────────────────────────────────
+_db_ready = threading.Event()
+_db_error: str | None = None
+
+_DB_RETRY_INTERVAL = 5  # seconds between retries
+
+
+def _db_init_worker() -> None:
+    """Background thread: keep trying to initialise the DB until it succeeds."""
+    global _db_error
+    attempt = 0
+    while not _db_ready.is_set():
+        attempt += 1
+        try:
+            from storage.database import init_db
+            init_db()
+            _db_ready.set()
+            _db_error = None
+            logger.info("Database initialised successfully (attempt %d)", attempt)
+            return
+        except Exception as exc:
+            _db_error = str(exc)
+            logger.warning(
+                "DB init attempt %d failed: %s — retrying in %ds…",
+                attempt, exc, _DB_RETRY_INTERVAL,
+            )
+            time.sleep(_DB_RETRY_INTERVAL)
+
+
+def get_db_ready() -> bool:
+    return _db_ready.is_set()
+
+
+def require_db():
+    """Dependency: raises 503 if DB is not yet available."""
+    from fastapi import HTTPException
+    if not _db_ready.is_set():
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database initialising — please retry in a moment. ({_db_error or 'connecting…'})",
+        )
 
 
 @asynccontextmanager
@@ -30,10 +72,7 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown lifecycle."""
     logger.info("=== Life System Builder — starting up ===")
 
-    # 1. Initialise database
-    init_db()
-
-    # 2. Load and validate all prompt contracts — fail fast on any error
+    # 1. Load and validate all prompt contracts — fail fast on any error
     try:
         registry = validate_and_load()
         logger.info(
@@ -44,8 +83,13 @@ async def lifespan(app: FastAPI):
         logger.error("FATAL: Contract registry failed to load: %s", e)
         raise
 
-    logger.info("=== Startup complete ===")
+    # 2. Start DB initialisation in background so server comes up immediately
+    db_thread = threading.Thread(target=_db_init_worker, daemon=True, name="db-init")
+    db_thread.start()
+    logger.info("=== Startup complete (DB initialising in background) ===")
+
     yield
+
     logger.info("=== Shutting down ===")
 
 
@@ -69,6 +113,8 @@ app.add_middleware(
 )
 
 # ── Routers ──────────────────────────────────────────────────────────
+from api.routes import health, projects, pipeline, render, export
+
 app.include_router(health.router,    prefix="/api")
 app.include_router(projects.router,  prefix="/api")
 app.include_router(pipeline.router,  prefix="/api")
