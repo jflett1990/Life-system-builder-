@@ -49,6 +49,26 @@ class ExpandedWorksheet(BaseModel):
     title: str = Field(..., min_length=1)
     purpose: str = ""
     estimated_completion_time: str = ""
+
+    # Layout selector — determines which rendering template is used
+    # "form"       — default: sections + fields (form-style write-in blocks)
+    # "table"      — grid with column headers and blank rows (inventory/directory)
+    # "checklist"  — column of checkbox items (audit/verification lists)
+    # "two-column" — two parties/states side by side with shared fields
+    layout: str = "form"
+
+    # table layout
+    table_columns: list[str] = []
+    table_row_count: int = 12
+
+    # checklist layout
+    checklist_items: list[str] = []
+
+    # two-column layout
+    left_column_label: str = ""
+    right_column_label: str = ""
+
+    # form + two-column layouts
     sections: list[ChapterSection] = []
     decision_gates: list[ChapterDecisionGate] = []
 

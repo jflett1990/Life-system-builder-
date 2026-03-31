@@ -2,14 +2,19 @@
 {% from 'templates/components/field_row.html' import field_row %}
 {% from 'templates/components/decision_gate.html' import decision_gate %}
 {% from 'templates/components/criteria_checklist.html' import criteria_checklist %}
+{% from 'templates/components/table_worksheet.html' import table_worksheet %}
+{% from 'templates/components/checklist_worksheet.html' import checklist_worksheet %}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 {# WORKSHEET PAGE                                                              #}
-{# data keys: id, title, domain_name, purpose, sections, decision_gates,     #}
-{#            completion_criteria, version, chapter_number, chapter_title,    #}
-{#            system_name, repeat_use                                         #}
+{# data keys: id, title, domain_name, purpose, layout, sections,             #}
+{#            decision_gates, table_columns, table_row_count,                 #}
+{#            checklist_items, left_column_label, right_column_label,        #}
+{#            chapter_number, chapter_title, system_name, repeat_use         #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 
-<!-- Running chapter header — mirrors the reference manual format -->
+{% set ws_layout = data.layout | default("form") %}
+
+<!-- Running chapter header -->
 <div style="
   display: flex;
   justify-content: space-between;
@@ -39,19 +44,93 @@
 
 <!-- Worksheet identity block -->
 <div style="margin-bottom: var(--space-8)">
-  <div style="margin-bottom:var(--space-3)">
+  <div style="margin-bottom:var(--space-3);display:flex;align-items:center;gap:var(--space-4)">
     <span class="eyebrow">Worksheet</span>
+    {% if ws_layout != "form" %}
+    <span class="ws-format-badge ws-format-badge--{{ ws_layout }}">{{ ws_layout | replace("-", " ") | upper }}</span>
+    {% endif %}
     {% if data.domain_name %}
-    <span style="margin-left:var(--space-3);color:var(--color-text-muted);font-size:var(--text-xs)">→ {{ data.domain_name }}</span>
+    <span style="color:var(--color-text-muted);font-size:var(--text-xs)">→ {{ data.domain_name }}</span>
     {% endif %}
   </div>
   <h2 class="heading-section" style="margin-bottom: var(--space-3)">{{ data.title | default("Worksheet") }}</h2>
   {% if data.purpose %}
   <p class="body-text body-text--secondary" style="max-width:140mm;line-height:var(--leading-normal)">{{ data.purpose }}</p>
   {% endif %}
+  {% if data.estimated_completion_time %}
+  <p style="font-family:var(--font-label);font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-2)">Estimated time: {{ data.estimated_completion_time }}</p>
+  {% endif %}
 </div>
 
-<!-- Sections -->
+{# ── TABLE LAYOUT ─────────────────────────────────────────────────────────── #}
+{% if ws_layout == "table" %}
+{{ table_worksheet(
+    columns=data.table_columns | default([]),
+    row_count=data.table_row_count | default(12)
+  ) }}
+
+{# ── CHECKLIST LAYOUT ─────────────────────────────────────────────────────── #}
+{% elif ws_layout == "checklist" %}
+{% if data.checklist_items %}
+{{ checklist_worksheet(items=data.checklist_items) }}
+{% else %}
+<p class="body-text body-text--secondary" style="color:var(--color-text-muted)">No checklist items defined.</p>
+{% endif %}
+
+{# ── TWO-COLUMN LAYOUT ────────────────────────────────────────────────────── #}
+{% elif ws_layout == "two-column" %}
+<!-- Column headers -->
+<div class="ws-two-col-headers">
+  <div class="ws-two-col-header">{{ data.left_column_label | default("Column A") }}</div>
+  <div class="ws-two-col-header">{{ data.right_column_label | default("Column B") }}</div>
+</div>
+
+{% for section in data.sections | default([]) %}
+<div class="worksheet-section" style="margin-bottom:var(--space-8);break-inside:avoid;page-break-inside:avoid">
+  {% if section.section_title %}
+  <div style="margin-bottom:var(--space-4);display:flex;align-items:center;gap:var(--space-4)">
+    <span class="heading-component">{{ section.section_title }}</span>
+    <div style="flex:1;height:0.5px;background:var(--color-rule)"></div>
+  </div>
+  {% endif %}
+  {% if section.instructions %}
+  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-4)">{{ section.instructions }}</p>
+  {% endif %}
+
+  {% for field in section.fields | default([]) %}
+  <div class="ws-two-col-row">
+    <div class="ws-two-col-label">{{ field.label }}{% if field.required %} <span class="field-row__required">*</span>{% endif %}</div>
+    <div class="ws-two-col-cell">
+      {% if field.type == "boolean" %}
+      <div style="display:flex;gap:var(--space-6)">
+        <label style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm)"><div class="checklist__box"></div> Yes</label>
+        <label style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm)"><div class="checklist__box"></div> No</label>
+      </div>
+      {% elif field.type == "date" %}
+      <div class="field-row__input">__ / __ / ________</div>
+      {% else %}
+      <div class="field-row__input"></div>
+      {% endif %}
+    </div>
+    <div class="ws-two-col-cell">
+      {% if field.type == "boolean" %}
+      <div style="display:flex;gap:var(--space-6)">
+        <label style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm)"><div class="checklist__box"></div> Yes</label>
+        <label style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm)"><div class="checklist__box"></div> No</label>
+      </div>
+      {% elif field.type == "date" %}
+      <div class="field-row__input">__ / __ / ________</div>
+      {% else %}
+      <div class="field-row__input"></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+{# ── FORM LAYOUT (default) ────────────────────────────────────────────────── #}
+{% else %}
 {% for section in data.sections | default([]) %}
 <div class="worksheet-section" style="margin-bottom:var(--space-10);break-inside:avoid;page-break-inside:avoid">
   {% if section.section_title %}
@@ -64,11 +143,10 @@
   </div>
   {% endif %}
 
-  {% if section.description %}
-  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-5)">{{ section.description }}</p>
+  {% if section.instructions %}
+  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-5)">{{ section.instructions }}</p>
   {% endif %}
 
-  <!-- Field grid — wide fields full-width; short paired side-by-side -->
   <div>
     {% for field in section.fields | default([]) %}
     {% set is_wide = field.type in ("textarea", "multi-select") or (field.label | length) > 52 %}
@@ -90,6 +168,7 @@
   </div>
 </div>
 {% endfor %}
+{% endif %}
 
 <!-- Decision Gates -->
 {% if data.decision_gates %}
@@ -117,7 +196,7 @@
 </div>
 {% endif %}
 
-<!-- Worksheet completion footer — print-use line at bottom of each sheet -->
+<!-- Worksheet completion footer -->
 <div style="
   margin-top: var(--space-12);
   padding-top: var(--space-5);

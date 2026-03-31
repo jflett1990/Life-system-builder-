@@ -1,0 +1,32 @@
+{% macro table_worksheet(columns=[], row_count=12) %}
+{#
+  table_worksheet — Renders an inventory/directory/registry worksheet as a grid.
+
+  Used when layout == "table". Produces a print-ready table with column
+  headers and blank write-in rows sized for comfortable handwriting.
+  No placeholder text or pre-filled content inside cells.
+#}
+
+<div class="ws-table-wrap">
+  <table class="ws-table">
+    <thead>
+      <tr>
+        <th class="ws-table__rownum">#</th>
+        {% for col in columns %}
+        <th class="ws-table__header">{{ col }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in range(row_count | int) %}
+      <tr class="ws-table__row{% if loop.index is odd %} ws-table__row--alt{% endif %}">
+        <td class="ws-table__rownum ws-table__cell">{{ loop.index }}</td>
+        {% for col in columns %}
+        <td class="ws-table__cell"></td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}

@@ -1,0 +1,33 @@
+{% macro checklist_worksheet(items=[]) %}
+{#
+  checklist_worksheet — Renders an audit/verification worksheet as a
+  two-column checkbox list.
+
+  Used when layout == "checklist". Items are split across two columns
+  to maximise page density while keeping each item on a single line.
+  Each item has a print-ready checkbox box on the left.
+#}
+
+{% set half = (items | length // 2) %}
+{% set col_a = items[:half] %}
+{% set col_b = items[half:] %}
+
+<div class="ws-checklist">
+  <div class="ws-checklist__col">
+    {% for item in col_a %}
+    <div class="ws-checklist__item">
+      <div class="checklist__box"></div>
+      <span class="ws-checklist__text">{{ item }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="ws-checklist__col">
+    {% for item in col_b %}
+    <div class="ws-checklist__item">
+      <div class="checklist__box"></div>
+      <span class="ws-checklist__text">{{ item }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}
