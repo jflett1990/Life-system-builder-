@@ -1,0 +1,28 @@
+{
+  "name": "render_system_builder",
+  "version": "1.0",
+  "stage": "render",
+  "description": "Produces the final render manifest — a structured instruction set for the HTML/CSS template engine to assemble the complete document package. Not a pipeline stage; called by the render service.",
+  "output_mode": "json",
+  "upstream_dependencies": ["system_architecture", "worksheet_system", "layout_mapping", "render_blueprint"],
+  "system_instructions": "You are a document assembly coordinator. You receive validated pipeline outputs and produce a render manifest — a complete, ordered list of render instructions that the template engine will execute to produce the final HTML document. The manifest must be executable without further interpretation. Every instruction must reference a real data path, a real template, and a real section.",
+  "user_prompt_template": "ALL PIPELINE STAGES (VALIDATED):\n\nSYSTEM ARCHITECTURE:\n{upstream_system_architecture}\n\nWORKSHEET SYSTEM:\n{upstream_worksheet_system}\n\nLAYOUT MAP:\n{upstream_layout_mapping}\n\nRENDER BLUEPRINT:\n{upstream_render_blueprint}\n\nProduce the final render manifest. This is the assembly instruction set for the document renderer.\n\nReturn ONLY the following JSON object. No prose. No markdown. No code fences.\n\n{{\n  \"manifest_version\": \"1.0\",\n  \"document_id\": \"Unique document identifier\",\n  \"document_title\": \"Full document title from layout map\",\n  \"theme_tokens\": {{\n    \"--color-primary\": \"#hex\",\n    \"--color-secondary\": \"#hex\",\n    \"--color-accent\": \"#hex\",\n    \"--color-background\": \"#hex\",\n    \"--color-surface\": \"#hex\",\n    \"--color-text-primary\": \"#hex\",\n    \"--color-text-secondary\": \"#hex\",\n    \"--color-border\": \"#hex\",\n    \"--font-heading\": \"font name\",\n    \"--font-body\": \"font name\",\n    \"--font-mono\": \"font name\",\n    \"--font-size-base\": \"14px\",\n    \"--line-height-base\": \"1.6\",\n    \"--spacing-page-margin\": \"20mm\",\n    \"--spacing-section-gap\": \"48px\"\n  }},\n  \"pages\": [\n    {{\n      \"page_id\": \"pg-01\",\n      \"sequence\": 1,\n      \"template\": \"cover|toc|section|worksheet|appendix\",\n      \"page_break_before\": true,\n      \"blocks\": [\n        {{\n          \"block_id\": \"blk-01\",\n          \"component\": \"document-title|section-heading|body-text|field-row|field-grid|decision-gate|milestone-list|role-table|criteria-checklist|divider|page-footer\",\n          \"content\": \"Static content string OR null if from data_path\",\n          \"data_path\": \"Dot-path into the assembled data object OR null if static\",\n          \"style\": \"default|highlight|muted|accent|print-only\"\n        }}\n      ]\n    }}\n  ],\n  \"total_pages\": 0,\n  \"assembled_data\": {{\n    \"system_architecture\": {{}},\n    \"worksheet_system\": {{}},\n    \"layout_mapping\": {{}},\n    \"render_blueprint\": {{}}\n  }}\n}}",
+  "output_schema": {
+    "manifest_version": "string",
+    "document_id": "string",
+    "document_title": "string",
+    "theme_tokens": "object of CSS custom property key-value pairs",
+    "pages": "array of page objects",
+    "total_pages": "integer",
+    "assembled_data": "object containing all upstream stage outputs"
+  },
+  "required_output_fields": [
+    "manifest_version",
+    "document_id",
+    "document_title",
+    "theme_tokens",
+    "pages",
+    "total_pages",
+    "assembled_data"
+  ]
+}

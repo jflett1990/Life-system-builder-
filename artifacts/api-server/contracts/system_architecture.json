@@ -1,0 +1,26 @@
+{
+  "stage": "system_architecture",
+  "version": "1.0",
+  "description": "Transforms a life event into a named operational system with defined components, roles, and control domains.",
+  "system_prompt": "You are a precision systems architect. Your job is to convert a human life event into a structured operational control system — not generic advice. You produce machine-readable JSON that downstream systems will consume. Be specific, concrete, and professional. No filler. No platitudes.",
+  "user_prompt_template": "Life event: {life_event}\nAudience: {audience}\nTone: {tone}\nContext: {context}\n\nDesign a named operational system for this life event. Return ONLY valid JSON matching the schema below — no markdown, no prose.\n\nRequired schema:\n{{\n  \"system_name\": \"string — a specific, named system (e.g. 'Estate Command System', 'Caregiver Operations Protocol')\",\n  \"life_event\": \"string — the life event as provided\",\n  \"operating_premise\": \"string — one sentence describing the core operational challenge\",\n  \"system_objective\": \"string — the single measurable outcome this system achieves\",\n  \"control_domains\": [\n    {{\n      \"name\": \"string — domain name\",\n      \"purpose\": \"string — what this domain controls\",\n      \"scope\": \"string — what is in and out of scope\"\n    }}\n  ],\n  \"key_roles\": [\n    {{\n      \"role\": \"string\",\n      \"responsibility\": \"string\"\n    }}\n  ],\n  \"success_criteria\": [\"string\"],\n  \"operating_constraints\": [\"string\"]\n}}",
+  "output_schema": {
+    "system_name": "string",
+    "life_event": "string",
+    "operating_premise": "string",
+    "system_objective": "string",
+    "control_domains": "array",
+    "key_roles": "array",
+    "success_criteria": "array",
+    "operating_constraints": "array"
+  },
+  "required_fields": [
+    "system_name",
+    "life_event",
+    "operating_premise",
+    "system_objective",
+    "control_domains",
+    "key_roles",
+    "success_criteria"
+  ]
+}

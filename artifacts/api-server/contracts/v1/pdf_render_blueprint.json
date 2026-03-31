@@ -1,0 +1,23 @@
+{
+  "name": "pdf_render_blueprint",
+  "version": "1.0",
+  "stage": "render_blueprint",
+  "description": "Converts the layout map into a full render blueprint — a complete instruction set for the HTML/CSS rendering engine, including CSS tokens, component directives, and print specifications.",
+  "output_mode": "json",
+  "upstream_dependencies": ["system_architecture", "worksheet_system", "layout_mapping"],
+  "system_instructions": "You are a document rendering engineer. You receive a completed layout architecture and produce a machine-readable render blueprint — the instruction set that the HTML/CSS template engine will execute to produce the printed manual. You are not producing HTML. You are producing the specification that tells the renderer what to render, in what order, with what visual treatment. Every render directive must reference a specific section and slot from the layout map. Do not invent sections that do not exist in the layout.",
+  "user_prompt_template": "UPSTREAM SYSTEM ARCHITECTURE:\n{upstream_system_architecture}\n\nUPSTREAM WORKSHEET SYSTEM:\n{upstream_worksheet_system}\n\nUPSTREAM LAYOUT MAP:\n{upstream_layout_mapping}\n\nPRODUCE a complete render blueprint for the HTML/CSS rendering engine.\n\nReturn ONLY the following JSON object. No prose. No markdown. No code fences.\n\n{{\n  \"blueprint_name\": \"Render blueprint name\",\n  \"theme\": {{\n    \"color_palette\": {{\n      \"primary\": \"#hex\",\n      \"secondary\": \"#hex\",\n      \"accent\": \"#hex\",\n      \"background\": \"#hex\",\n      \"surface\": \"#hex\",\n      \"text_primary\": \"#hex\",\n      \"text_secondary\": \"#hex\",\n      \"border\": \"#hex\"\n    }},\n    \"typography\": {{\n      \"heading_font\": \"Font name — e.g. 'Georgia'\",\n      \"body_font\": \"Font name — e.g. 'Arial'\",\n      \"mono_font\": \"Font name — e.g. 'Courier New'\",\n      \"base_size_px\": 14,\n      \"line_height\": 1.6\n    }},\n    \"spacing\": {{\n      \"page_margin_mm\": 20,\n      \"section_gap_px\": 48,\n      \"field_gap_px\": 16\n    }}\n  }},\n  \"render_directives\": [\n    {{\n      \"directive_id\": \"rd-01\",\n      \"section_id\": \"sec-01\",\n      \"sequence\": 1,\n      \"template\": \"cover|toc|domain-overview|worksheet|reference-table\",\n      \"page_break_before\": true,\n      \"slots\": [\n        {{\n          \"slot_id\": \"slot-01\",\n          \"component\": \"heading-1|heading-2|body-paragraph|field-row|decision-gate-block|milestone-timeline|role-table|criteria-checklist|divider\",\n          \"data_path\": \"JSON path into assembled data — e.g. 'system_architecture.system_name'\",\n          \"style_variant\": \"default|highlight|muted|accent\",\n          \"print_safe\": true\n        }}\n      ]\n    }}\n  ],\n  \"page_count_estimate\": 0,\n  \"render_notes\": [\"Any specific rendering constraints or instructions\"]\n}}",
+  "output_schema": {
+    "blueprint_name": "string",
+    "theme": "object with color_palette, typography, spacing",
+    "render_directives": "array of directive objects",
+    "page_count_estimate": "integer",
+    "render_notes": "array of strings"
+  },
+  "required_output_fields": [
+    "blueprint_name",
+    "theme",
+    "render_directives",
+    "page_count_estimate"
+  ]
+}

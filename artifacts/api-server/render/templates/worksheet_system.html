@@ -1,0 +1,90 @@
+{% set ws = section.data %}
+<div class="doc-section">
+  <div class="worksheet-header">
+    <div class="worksheet-header__id">{{ ws.id | default('ws') }} — Stage 2: Worksheet</div>
+    <div class="worksheet-header__title">{{ ws.title | default('Worksheet') }}</div>
+    <div class="worksheet-header__meta">
+      Domain: {{ ws.domain_name | default('—') }}
+      {% if ws.estimated_completion_time %}
+        &nbsp;·&nbsp; Est. {{ ws.estimated_completion_time }}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="body-text">{{ ws.purpose | default('') }}</div>
+
+  {% if ws.sections %}
+    {% for ws_section in ws.sections %}
+    <div class="worksheet-section">
+      <div class="worksheet-section__title">{{ ws_section.section_title }}</div>
+      {% if ws_section.instructions %}
+      <p class="body-text body-text--muted">{{ ws_section.instructions }}</p>
+      {% endif %}
+      {% if ws_section.fields %}
+        {% for f in ws_section.fields %}
+        <div class="field-row">
+          <div class="field-row__label">
+            {{ f.label }}{% if f.required %}<span class="field-row__required">*</span>{% endif %}
+          </div>
+          {% if f.type in ['textarea', 'text'] %}
+          <div class="field-row__input {% if f.type == 'textarea' %}field-row__input--textarea{% endif %}">
+            {{ f.placeholder | default('') }}
+          </div>
+          {% elif f.type == 'select' and f.options %}
+          <div class="field-row__input" style="color:var(--color-text-secondary)">
+            Options: {{ f.options | join(' / ') }}
+          </div>
+          {% elif f.type == 'date' %}
+          <div class="field-row__input">__ / __ / ____</div>
+          {% elif f.type == 'boolean' %}
+          <div style="display:flex;gap:16px;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+              <div class="checklist__box"></div> Yes
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+              <div class="checklist__box"></div> No
+            </label>
+          </div>
+          {% else %}
+          <div class="field-row__input">{{ f.placeholder | default('') }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if ws.decision_gates %}
+  <div class="worksheet-section">
+    <div class="worksheet-section__title">Decision Gates</div>
+    {% for gate in ws.decision_gates %}
+    <div class="decision-gate">
+      <div class="decision-gate__label">{{ gate.gate_title | default(gate.gate_id) }}</div>
+      <div class="decision-gate__condition">{{ gate.condition }}</div>
+      <div class="decision-gate__paths">
+        <div class="decision-gate__path decision-gate__path--pass">
+          <div class="decision-gate__path-label">Pass</div>
+          {{ gate.pass_action }}
+        </div>
+        <div class="decision-gate__path decision-gate__path--fail">
+          <div class="decision-gate__path-label">Fail</div>
+          {{ gate.fail_action }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if ws.completion_criteria %}
+  <div class="worksheet-section">
+    <div class="worksheet-section__title">Completion Criteria</div>
+    <ul class="checklist">
+      {% for item in ws.completion_criteria %}
+      <li><div class="checklist__box"></div>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</div>

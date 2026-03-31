@@ -1,0 +1,24 @@
+{
+  "name": "worksheet_generation_engine",
+  "version": "1.0",
+  "stage": "worksheet_system",
+  "description": "Converts system architecture into a complete worksheet system. Each worksheet maps to a control domain and contains actionable fields, decision gates, and completion criteria.",
+  "output_mode": "json",
+  "upstream_dependencies": ["system_architecture"],
+  "system_instructions": "You are an operational worksheet designer. You receive a completed system architecture JSON and convert it into a rigorous, domain-specific worksheet system. Every worksheet must be derived directly from a named control domain in the upstream architecture. Do not invent domains that were not defined upstream. Each worksheet is a functional decision-support tool — not a form, not a checklist. It guides the operator through a defined process and captures structured decisions.",
+  "user_prompt_template": "UPSTREAM SYSTEM ARCHITECTURE:\n{upstream_system_architecture}\n\nPROJECT CONTEXT:\nLife Event: {life_event}\nAudience: {audience}\nTone: {tone}\n\nGenerate a complete worksheet system. One worksheet per control domain. Reference domain IDs exactly as they appear in the upstream architecture.\n\nReturn ONLY the following JSON object. No prose. No markdown. No code fences.\n\n{{\n  \"worksheet_system_name\": \"Name of the worksheet system — derived from the system name above\",\n  \"version\": \"1.0\",\n  \"total_worksheets\": 0,\n  \"completion_sequence\": [\"ws-01\", \"ws-02\"],\n  \"worksheets\": [\n    {{\n      \"id\": \"ws-01\",\n      \"title\": \"Worksheet title\",\n      \"domain_id\": \"domain-01\",\n      \"domain_name\": \"Must match upstream control domain name exactly\",\n      \"purpose\": \"One sentence: what this worksheet enables the operator to do\",\n      \"estimated_completion_time\": \"e.g. '45 minutes', '2-3 hours'\",\n      \"sections\": [\n        {{\n          \"section_id\": \"s-01\",\n          \"section_title\": \"Section title\",\n          \"instructions\": \"Brief instructions for completing this section\",\n          \"fields\": [\n            {{\n              \"field_id\": \"f-001\",\n              \"label\": \"Field label\",\n              \"type\": \"text|date|boolean|number|select|multi-select|textarea\",\n              \"placeholder\": \"Example or hint text\",\n              \"options\": [],\n              \"required\": true,\n              \"validation_hint\": \"What a correct answer looks like\"\n            }}\n          ]\n        }}\n      ],\n      \"decision_gates\": [\n        {{\n          \"gate_id\": \"g-01\",\n          \"gate_title\": \"Gate name\",\n          \"condition\": \"The logical condition that determines the gate outcome\",\n          \"pass_action\": \"What to do if condition is true\",\n          \"fail_action\": \"What to do if condition is false\",\n          \"blocks_completion\": true\n        }}\n      ],\n      \"completion_criteria\": [\"Specific condition that marks this worksheet complete\"]\n    }}\n  ]\n}}",
+  "output_schema": {
+    "worksheet_system_name": "string",
+    "version": "string",
+    "total_worksheets": "integer",
+    "completion_sequence": "array of worksheet IDs",
+    "worksheets": "array of worksheet objects"
+  },
+  "required_output_fields": [
+    "worksheet_system_name",
+    "version",
+    "total_worksheets",
+    "completion_sequence",
+    "worksheets"
+  ]
+}

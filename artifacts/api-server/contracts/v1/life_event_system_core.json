@@ -1,0 +1,35 @@
+{
+  "name": "life_event_system_core",
+  "version": "1.0",
+  "stage": "system_architecture",
+  "description": "Transforms a life event into a named operational control system with defined domains, roles, and success criteria.",
+  "output_mode": "json",
+  "upstream_dependencies": [],
+  "system_instructions": "You are a precision systems architect. Your task is to convert a human life event into a named, structured operational control system — not advice, not commentary. You are designing an operational system the way a management consultant would design an enterprise operating model. The output will feed every downstream stage of this pipeline.",
+  "user_prompt_template": "LIFE EVENT: {life_event}\nAUDIENCE: {audience}\nTONE: {tone}\nADDITIONAL CONTEXT: {context}\n\nDesign a complete operational system for this life event. Every field is mandatory. Be specific to this exact life event — no generic frameworks.\n\nReturn ONLY the following JSON object. No prose. No markdown. No code fences.\n\n{{\n  \"system_name\": \"A specific, named operational system — e.g. 'Estate Command System', 'Caregiver Protocol v1', 'Relocation Operations Hub'\",\n  \"life_event\": \"The life event exactly as provided\",\n  \"operating_premise\": \"One sentence: the core operational challenge this system addresses\",\n  \"system_objective\": \"One sentence: the single measurable outcome this system achieves when fully executed\",\n  \"time_horizon\": \"Estimated operational duration — e.g. '90 days', '6-18 months', 'Ongoing'\",\n  \"control_domains\": [\n    {{\n      \"id\": \"domain-01\",\n      \"name\": \"Domain name\",\n      \"purpose\": \"What this domain governs\",\n      \"scope_in\": [\"What is inside this domain\"],\n      \"scope_out\": [\"What is explicitly excluded\"],\n      \"primary_outputs\": [\"Tangible outputs this domain produces\"]\n    }}\n  ],\n  \"key_roles\": [\n    {{\n      \"role\": \"Role name\",\n      \"responsibility\": \"What this role owns and decides\",\n      \"authority_level\": \"decision-maker | advisor | executor | observer\"\n    }}\n  ],\n  \"critical_milestones\": [\n    {{\n      \"milestone\": \"Milestone name\",\n      \"description\": \"What it means to reach this milestone\",\n      \"sequence\": 1\n    }}\n  ],\n  \"success_criteria\": [\"Specific, verifiable outcome — not vague goals\"],\n  \"failure_modes\": [\"Specific ways this system could fail or derail\"],\n  \"operating_constraints\": [\"Concrete constraints the system must operate within\"]\n}}",
+  "output_schema": {
+    "system_name": "string",
+    "life_event": "string",
+    "operating_premise": "string",
+    "system_objective": "string",
+    "time_horizon": "string",
+    "control_domains": "array of domain objects",
+    "key_roles": "array of role objects",
+    "critical_milestones": "array of milestone objects",
+    "success_criteria": "array of strings",
+    "failure_modes": "array of strings",
+    "operating_constraints": "array of strings"
+  },
+  "required_output_fields": [
+    "system_name",
+    "life_event",
+    "operating_premise",
+    "system_objective",
+    "time_horizon",
+    "control_domains",
+    "key_roles",
+    "success_criteria",
+    "failure_modes",
+    "operating_constraints"
+  ]
+}

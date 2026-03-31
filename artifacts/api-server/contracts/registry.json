@@ -1,0 +1,11 @@
+{
+  "contracts": [
+    { "name": "life_system_orchestrator",      "version": "1.0", "file": "v1/life_system_orchestrator.json" },
+    { "name": "life_event_system_core",        "version": "1.0", "file": "v1/life_event_system_core.json" },
+    { "name": "worksheet_generation_engine",   "version": "1.0", "file": "v1/worksheet_generation_engine.json" },
+    { "name": "layout_architecture_mapper",    "version": "1.0", "file": "v1/layout_architecture_mapper.json" },
+    { "name": "pdf_render_blueprint",          "version": "1.0", "file": "v1/pdf_render_blueprint.json" },
+    { "name": "life_system_validation_agent",  "version": "1.0", "file": "v1/life_system_validation_agent.json" },
+    { "name": "render_system_builder",         "version": "1.0", "file": "v1/render_system_builder.json" }
+  ]
+}

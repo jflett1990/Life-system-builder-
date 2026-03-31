@@ -1,0 +1,55 @@
+{% set bp = section.data %}
+<div class="doc-section">
+  <div class="section-header">
+    <div class="section-header__label">Stage 4 — Render Blueprint</div>
+    <div class="section-header__title">{{ bp.blueprint_name | default('Render Blueprint') }}</div>
+    <div class="section-header__subtitle">Estimated {{ bp.page_count_estimate | default(0) }} pages</div>
+  </div>
+
+  {% if bp.theme %}
+  <div class="worksheet-section">
+    <div class="worksheet-section__title">Theme Specification</div>
+    {% set palette = bp.theme.color_palette | default({}) %}
+    {% set typo = bp.theme.typography | default({}) %}
+    <table class="data-table">
+      <thead>
+        <tr><th>Token</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        {% for key, val in palette.items() %}
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:12px">{{ key }}</td>
+          <td>
+            <span style="display:inline-block;width:14px;height:14px;background:{{ val }};border:1px solid #ccc;border-radius:2px;vertical-align:middle;margin-right:6px"></span>
+            {{ val }}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if typo.heading_font %}
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:12px">heading_font</td>
+          <td>{{ typo.heading_font }}</td>
+        </tr>
+        {% endif %}
+        {% if typo.body_font %}
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:12px">body_font</td>
+          <td>{{ typo.body_font }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if bp.render_notes %}
+  <div class="worksheet-section">
+    <div class="worksheet-section__title">Render Notes</div>
+    <ul class="checklist">
+      {% for note in bp.render_notes %}
+      <li><div class="checklist__box"></div>{{ note }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</div>

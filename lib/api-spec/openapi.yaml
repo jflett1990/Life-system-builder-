@@ -1,22 +1,29 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Life System Builder API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: projects
+    description: Project management
+  - name: pipeline
+    description: Pipeline orchestration
+  - name: render
+    description: Document rendering
+  - name: export
+    description: Export operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +31,257 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List all projects
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectWithStages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectBody"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /projects/{id}/stages:
+    get:
+      operationId: listProjectStages
+      tags: [projects]
+      summary: List all stage outputs for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Stage outputs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StageOutput"
+
+  /projects/{id}/stages/{stage}:
+    get:
+      operationId: getStageOutput
+      tags: [projects]
+      summary: Get a specific stage output
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: stage
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/StageName"
+      responses:
+        "200":
+          description: Stage output
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StageOutput"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /projects/{id}/summary:
+    get:
+      operationId: getProjectSummary
+      tags: [projects]
+      summary: Get project completion summary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project summary with stage statuses
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSummary"
+
+  /pipeline/{id}/run/{stage}:
+    post:
+      operationId: runStage
+      tags: [pipeline]
+      summary: Run a specific pipeline stage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: stage
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/StageName"
+      responses:
+        "200":
+          description: Stage output
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StageOutput"
+        "400":
+          description: Bad request (upstream stage not complete)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /pipeline/{id}/validate:
+    post:
+      operationId: validateProject
+      tags: [pipeline]
+      summary: Run validation audit across all completed stages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Validation audit report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationReport"
+
+  /render/{id}:
+    post:
+      operationId: renderProject
+      tags: [render]
+      summary: Render project stages into HTML document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rendered HTML
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RenderResult"
+
+  /export/{id}:
+    get:
+      operationId: exportProject
+      tags: [export]
+      summary: Export full project bundle (HTML + JSON)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Exportable project bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportBundle"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +292,264 @@ components:
       required:
         - status
 
+    StageName:
+      type: string
+      enum:
+        - system-architecture
+        - worksheet-system
+        - layout-mapping
+        - render-blueprint
+        - validation-audit
+
+    StageStatus:
+      type: string
+      enum:
+        - pending
+        - running
+        - complete
+        - failed
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        lifeEvent:
+          type: string
+        context:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - lifeEvent
+        - status
+        - createdAt
+        - updatedAt
+
+    ProjectWithStages:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        lifeEvent:
+          type: string
+        context:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/StageOutput"
+      required:
+        - id
+        - title
+        - lifeEvent
+        - status
+        - createdAt
+        - updatedAt
+        - stages
+
+    StageOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        stage:
+          $ref: "#/components/schemas/StageName"
+        status:
+          $ref: "#/components/schemas/StageStatus"
+        outputJson:
+          type: object
+          additionalProperties: true
+        validationResult:
+          type: object
+          additionalProperties: true
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - stage
+        - status
+        - outputJson
+        - createdAt
+        - updatedAt
+
+    StageStatusEntry:
+      type: object
+      properties:
+        stage:
+          $ref: "#/components/schemas/StageName"
+        status:
+          $ref: "#/components/schemas/StageStatus"
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - stage
+        - status
+
+    ProjectSummary:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        title:
+          type: string
+        lifeEvent:
+          type: string
+        totalStages:
+          type: integer
+        completedStages:
+          type: integer
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/StageStatusEntry"
+      required:
+        - projectId
+        - title
+        - lifeEvent
+        - totalStages
+        - completedStages
+        - stages
+
+    ValidationIssue:
+      type: object
+      properties:
+        stage:
+          $ref: "#/components/schemas/StageName"
+        field:
+          type: string
+        severity:
+          type: string
+          enum:
+            - error
+            - warning
+            - info
+        message:
+          type: string
+      required:
+        - stage
+        - field
+        - severity
+        - message
+
+    ValidationReport:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        passed:
+          type: boolean
+        issueCount:
+          type: integer
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationIssue"
+        summary:
+          type: string
+      required:
+        - projectId
+        - passed
+        - issueCount
+        - issues
+        - summary
+
+    RenderResult:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        html:
+          type: string
+        pageCount:
+          type: integer
+      required:
+        - projectId
+        - html
+        - pageCount
+
+    ExportBundle:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        html:
+          type: string
+        stagesJson:
+          type: object
+          additionalProperties: true
+        exportedAt:
+          type: string
+          format: date-time
+      required:
+        - projectId
+        - html
+        - stagesJson
+        - exportedAt
+
+    CreateProjectBody:
+      type: object
+      properties:
+        title:
+          type: string
+        lifeEvent:
+          type: string
+        context:
+          type: string
+      required:
+        - title
+        - lifeEvent
+
+    UpdateProjectBody:
+      type: object
+      properties:
+        title:
+          type: string
+        lifeEvent:
+          type: string
+        context:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message

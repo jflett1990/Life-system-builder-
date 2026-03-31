@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Life System Builder"
+version = "1.0.0"
+id = "artifacts/life-system-builder"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25676
+
+[services.development]
+run = "pnpm --filter @workspace/life-system-builder run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/life-system-builder", "run", "build" ]
+publicDir = "artifacts/life-system-builder/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25676"
+BASE_PATH = "/"

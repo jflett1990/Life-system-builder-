@@ -1,0 +1,40 @@
+{% set layout = section.data %}
+<div class="doc-section">
+  <div class="section-header">
+    <div class="section-header__label">Stage 3 — Layout Architecture</div>
+    <div class="section-header__title">{{ layout.document_title | default('Document Layout') }}</div>
+    <div class="section-header__subtitle">{{ layout.document_subtitle | default('') }}</div>
+  </div>
+
+  {% if layout.sections %}
+  <div class="worksheet-section">
+    <div class="worksheet-section__title">Document Section Map</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Section</th>
+          <th>Type</th>
+          <th>Page Layout</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sec in layout.sections %}
+        <tr>
+          <td>{{ sec.sequence }}</td>
+          <td><strong>{{ sec.title }}</strong></td>
+          <td><span class="badge badge--scope">{{ sec.section_type }}</span></td>
+          <td>{{ sec.page_type | default('—') }}</td>
+          <td>
+            {% if sec.source %}
+              {{ sec.source.type }}{% if sec.source.reference_id %}: {{ sec.source.reference_id }}{% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
