@@ -187,6 +187,17 @@ def _m004_create_render_artifacts(conn, dialect: str) -> None:
     conn.execute(text("CREATE INDEX ix_render_artifacts_project_id ON render_artifacts(project_id)"))
 
 
+def _m006_add_raw_model_output(conn, dialect: str) -> None:
+    """
+    Add raw_model_output column to stage_outputs.
+
+    This column stores the original model response string exactly as returned,
+    separate from json_output which holds the parsed + validated data.
+    Allows debugging malformed outputs without losing the raw content.
+    """
+    _add_column_if_missing(conn, "stage_outputs", "raw_model_output", "TEXT", dialect)
+
+
 def _m005_create_branding_profiles(conn, dialect: str) -> None:
     """Create branding_profiles table."""
     if _table_exists(conn, "branding_profiles", dialect):
@@ -225,6 +236,7 @@ MIGRATIONS: list[tuple[int, str, MigrationFn]] = [
     (3, "rebuild_validation_results_drop_unique_add_columns", _m003_rebuild_validation_results),
     (4, "create_render_artifacts", _m004_create_render_artifacts),
     (5, "create_branding_profiles", _m005_create_branding_profiles),
+    (6, "add_raw_model_output_to_stage_outputs", _m006_add_raw_model_output),
 ]
 
 

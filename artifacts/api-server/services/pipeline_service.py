@@ -1,17 +1,28 @@
 """
 PipelineService — drives stage execution end-to-end.
 
-Model calls go through ModelService only — no LLMClient imports here.
+Execution flow per stage:
+  1. Verify stage is known; check upstream stages are complete
+  2. Gather project payload + upstream outputs
+  3. Resolve contract from registry; assemble prompt
+  4. ModelService.generate_structured_output →
+       (StructuredOutput, ParseResult)
+       - StructuredOutput.data     = schema-validated dict (or raw if no schema / lenient mode)
+       - StructuredOutput.raw_text = original model response string
+       - ParseResult.parsed_data   = Pydantic-coerced dict
+       - ParseResult.success       = did schema validation pass?
+       - ParseResult.validation_errors = Pydantic error messages
+  5. Persist:
+       json_output       = schema-validated dict (what renders / exports)
+       raw_model_output  = original model string (for debugging)
+  6. ModelService.validate_output → field-presence check (logged, not fatal)
+  7. ModelService.generate_preview_text → short summary
+  8. Upsert StageOutput row
 
-Flow per stage:
-  1. Verify stage is known and upstream stages are complete
-  2. Gather upstream outputs + project payload
-  3. Resolve contract from registry
-  4. Assemble prompt via PromptAssembler
-  5. Call ModelService.generate_structured_output → StructuredOutput
-  6. Run ModelService.validate_output — log warnings, record in stage row
-  7. Call ModelService.generate_preview_text → preview string
-  8. Persist StageOutput (upsert via StageOutputRepository)
+Error handling:
+  - ModelProviderError / ModelOutputError → stage status = "failed"
+  - OutputValidationError (schema + strict) → stage status = "schema_failed"
+    error_message = structured list of Pydantic errors with field paths
 """
 from __future__ import annotations
 
@@ -50,11 +61,9 @@ class PipelineService:
     def __init__(self, db: Session) -> None:
         self._repo = StageOutputRepository(db)
         self._project_svc = ProjectService(db)
-        self._model = ModelService(strict_validation=False)
+        self._model = ModelService(strict_validation=True)
 
-    # ------------------------------------------------------------------ #
-    #  Read helpers                                                        #
-    # ------------------------------------------------------------------ #
+    # ── Read helpers ──────────────────────────────────────────────────────────
 
     def get_stage_output(self, project_id: int, stage: str) -> StageOutput | None:
         return self._repo.find_by_project_and_stage(project_id, stage)
@@ -72,11 +81,11 @@ class PipelineService:
                 outputs[row.stage_name] = row.get_output()
         return outputs
 
-    # ------------------------------------------------------------------ #
-    #  Stage execution                                                     #
-    # ------------------------------------------------------------------ #
+    # ── Stage execution ───────────────────────────────────────────────────────
 
-    def run_stage(self, project_id: int, stage: str, force: bool = False) -> StageOutput:
+    def run_stage(
+        self, project_id: int, stage: str, force: bool = False
+    ) -> StageOutput:
         if stage not in STAGE_NAMES:
             raise PipelineError(f"Unknown stage '{stage}'. Valid: {STAGE_NAMES}")
 
@@ -126,40 +135,69 @@ class PipelineService:
             )
             self._repo.insert(stage_row)
 
-        # Run model pipeline
+        # ── Run model pipeline ────────────────────────────────────────────────
         try:
-            structured = self._model.generate_structured_output(prompt, contract)
+            structured, parse_result = self._model.generate_structured_output(prompt, contract)
 
-            # Store validation result as metadata on the stage row
-            validation = self._model.validate_output(
+            # Always persist raw model output for debugging — regardless of schema result
+            stage_row.set_raw_output(structured.raw_text)
+
+            if structured.was_repaired:
+                logger.warning(
+                    "Stage '%s' project %d: JSON required %d repair pass(es)",
+                    stage, project_id, structured.repair_attempts,
+                )
+
+            # Log structural field-presence validation (non-fatal)
+            field_validation = self._model.validate_output(
                 stage=stage,
                 output=structured.data,
                 required_fields=contract.required_output_fields,
                 schema=contract.output_schema,
             )
-            if not validation.valid:
+            if not field_validation.valid:
                 logger.warning(
-                    "Stage '%s' project %d: %s",
-                    stage, project_id, validation.error_summary,
+                    "Stage '%s' project %d field validation: %s",
+                    stage, project_id, field_validation.error_summary,
                 )
-                stage_row.set_validation(validation.to_dict())
+                stage_row.set_validation(field_validation.to_dict())
 
-            # Generate preview text
+            # Persist the validated (or best-available) output dict
+            stage_row.set_output(structured.data)
+
+            # Generate and store preview text
             preview = self._model.generate_preview_text(stage, structured.data)
             stage_row.preview_text = preview.text
 
-            stage_row.set_output(structured.data)
             stage_row.status = "complete"
 
             logger.info(
-                "Stage '%s' complete for project %d | repaired=%s | preview_from_llm=%s",
-                stage, project_id, structured.was_repaired, preview.from_llm,
+                "Stage '%s' COMPLETE | project=%d | schema_pass=%s | repaired=%s "
+                "| attempt=%d | preview_from_llm=%s",
+                stage, project_id,
+                parse_result.success,
+                structured.was_repaired,
+                parse_result.attempt,
+                preview.from_llm,
             )
 
-        except (ModelProviderError, ModelOutputError, OutputValidationError) as e:
+        except OutputValidationError as e:
+            # Schema validation exhausted all retries — structured failure
+            stage_row.status = "schema_failed"
+            stage_row.error_message = str(e)
+            # raw_model_output is already set above if we got past JSON extraction
+            logger.error(
+                "Stage '%s' SCHEMA FAILED | project=%d | %s",
+                stage, project_id, str(e)[:300],
+            )
+
+        except (ModelProviderError, ModelOutputError) as e:
             stage_row.status = "failed"
             stage_row.error_message = str(e)
-            logger.error("Stage '%s' failed for project %d: %s", stage, project_id, e)
+            logger.error(
+                "Stage '%s' FAILED | project=%d | %s",
+                stage, project_id, str(e)[:300],
+            )
 
         finally:
             stage_row.updated_at = datetime.now(timezone.utc)
@@ -172,7 +210,9 @@ class PipelineService:
         for stage in STAGE_NAMES:
             result = self.run_stage(project_id, stage)
             results.append(result)
-            if result.status == "failed":
-                logger.warning("Pipeline halted at stage '%s' due to failure", stage)
+            if result.status in ("failed", "schema_failed"):
+                logger.warning(
+                    "Pipeline halted at stage '%s' (status=%s)", stage, result.status
+                )
                 break
         return results

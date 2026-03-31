@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     model_max_retries: int = 3
     model_timeout_s: int = 120
     model_repair_attempts: int = 1
+    # Schema validation retry: how many additional attempts after a Pydantic failure
+    schema_retry_attempts: int = 2
 
     # ── Database ──────────────────────────────────────────────────────────────
     database_url: str = "sqlite:///./life_system.db"

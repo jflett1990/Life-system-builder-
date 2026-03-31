@@ -14,7 +14,13 @@ class StageOutput(Base):
     )
     stage_name: Mapped[str] = mapped_column(String(100), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
+
+    # Parsed + schema-validated output (JSON dict)
     json_output: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Original raw model response string — preserved for debugging, never coerced
+    raw_model_output: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     preview_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     validation_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -31,6 +37,8 @@ class StageOutput(Base):
         nullable=False,
     )
 
+    # ── JSON output helpers ───────────────────────────────────────────────────
+
     def get_output(self) -> dict:
         if self.json_output:
             return json.loads(self.json_output)
@@ -38,6 +46,17 @@ class StageOutput(Base):
 
     def set_output(self, data: dict) -> None:
         self.json_output = json.dumps(data)
+
+    # ── Raw model output helpers ──────────────────────────────────────────────
+
+    def get_raw_output(self) -> str | None:
+        return self.raw_model_output
+
+    def set_raw_output(self, text: str) -> None:
+        """Store the original model response string verbatim."""
+        self.raw_model_output = text
+
+    # ── Validation result helpers ─────────────────────────────────────────────
 
     def get_validation(self) -> dict | None:
         if self.validation_result:

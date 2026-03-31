@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from core.contract_loader import ContractDefinition
     from core.prompt_assembler import AssembledPrompt
     from models_integration.output_validator import OutputValidation
+    from models_integration.parser import ParseResult
 
 
 # ---------------------------------------------------------------------------
@@ -98,22 +99,28 @@ class BaseModelProvider(ABC):
         self,
         prompt: "AssembledPrompt",
         contract: "ContractDefinition",
-    ) -> StructuredOutput:
+        schema_class: type | None = None,
+    ) -> "tuple[StructuredOutput, ParseResult]":
         """
-        Call the model with the assembled prompt and return a validated,
-        parsed JSON dict wrapped in a StructuredOutput.
+        Call the model with the assembled prompt and return structured output.
 
-        Implementations MUST:
-          - Call the provider API using the assembled messages
-          - Parse the response into a dict using robust JSON extraction
-          - Attempt at least one repair pass on malformed JSON before raising
-          - Validate that all contract.required_output_fields are present
-          - Return a StructuredOutput with was_repaired=True if repair was needed
+        Args:
+          prompt:       Assembled messages ready for the provider API.
+          contract:     Stage contract (name, required fields, output schema).
+          schema_class: Optional Pydantic model class. When provided, the
+                        implementation must validate the parsed JSON against
+                        it and retry with correction prompts on failure.
+
+        Returns:
+          (StructuredOutput, ParseResult) tuple where:
+            - StructuredOutput.data    = raw dict from JSON extraction
+            - StructuredOutput.raw_text = original model response string
+            - ParseResult.parsed_data  = Pydantic-validated dict (or None)
+            - ParseResult.success      = True if schema validation passed
 
         Raises:
-          ModelProviderError    — API-level failure (rate limit, timeout, auth)
-          ModelOutputError      — Could not parse response into a dict
-          OutputValidationError — Response parsed but failed required fields check
+          ModelProviderError — API-level failure (rate limit, timeout, auth)
+          ModelOutputError   — Could not parse response into a dict after all repairs
         """
         ...
 

@@ -117,6 +117,62 @@ ModelService (model_service.py)          ← used by PipelineService
 | `model_max_retries` | `3` | API retry attempts with exponential backoff |
 | `model_timeout_s` | `120` | Per-request timeout in seconds |
 | `model_repair_attempts` | `1` | JSON repair passes before giving up |
+| `schema_retry_attempts` | `2` | Additional attempts after Pydantic schema failure |
+
+## Stage Output Schemas (`schemas/stage_outputs/`)
+
+Every pipeline stage has a Pydantic model for strict output validation.
+
+| Stage | Schema Class | Key Required Fields |
+|-------|-------------|-------------------|
+| `system_architecture` | `SystemArchitectureOutput` | `system_name`, `life_event`, `operating_premise`, `system_objective`, `control_domains` (min 1), `key_roles` (min 1), `success_criteria` (min 1) |
+| `worksheet_system` | `WorksheetSystemOutput` | `worksheet_system_name`, `worksheets` (min 1), `completion_sequence` (min 1) |
+| `layout_mapping` | `LayoutMappingOutput` | `document_title`, `document_subtitle`, `version`, `total_sections`, `print_structure`, `sections` (min 1) |
+| `render_blueprint` | `RenderBlueprintOutput` | `blueprint_name`, `theme` (non-empty dict), `render_directives` (min 1), `page_count_estimate` |
+| `validation_audit` | `ValidationAuditOutput` | `audit_passed`, `total_issues`, `stages_audited` (min 1), `issues`, `stage_summaries` (min 1), `render_ready`, `export_ready`, `audit_summary` |
+
+All schemas use `ConfigDict(extra="allow")` — unknown fields are preserved but not required.
+
+### ParseResult
+
+`models_integration/parser.py` — `StageOutputParser.parse()` returns a `ParseResult` dataclass:
+- `success` — True if Pydantic validation passed
+- `parsed_data` — schema-coerced dict (None on failure)
+- `raw_data` — unvalidated dict from JSON extraction
+- `raw_text` — original model response string
+- `validation_errors` — list of human-readable Pydantic error messages
+- `for_retry_prompt()` — formats errors for the correction conversation
+- `for_error_message()` — formats errors for `stage_output.error_message`
+
+### Three-Layer Retry System
+
+```
+Layer 1 — API transport retries (model_max_retries=3)
+  ↓ fail: ModelProviderError
+Layer 2 — JSON repair (model_repair_attempts=1)
+  Local repair strategies → LLM repair prompt if all local fail
+  ↓ fail: ModelOutputError
+Layer 3 — Schema correction passes (schema_retry_attempts=2)
+  On Pydantic failure: send [original + bad response + correction user msg] → retry
+  ↓ fail: OutputValidationError (strict) or log warning (lenient)
+```
+
+### Stage Failure Status Values
+
+| `status` | Meaning |
+|----------|---------|
+| `pending` | Not started |
+| `running` | In progress |
+| `complete` | Success — `json_output` has validated data |
+| `failed` | API or JSON extraction failure |
+| `schema_failed` | JSON parsed but Pydantic schema rejected it after all retries |
+
+### Dual Output Storage
+
+| Column | Content |
+|--------|---------|
+| `json_output` | Schema-validated dict (what renders/exports use) |
+| `raw_model_output` | Original model response string verbatim (for debugging) |
 
 ### Migrations (`storage/migrations.py`)
 Structured migration runner with a `schema_migrations` version table. Dialect-aware — handles both SQLite and PostgreSQL differences (types, constraint syntax, table recreation). Runs at startup via `init_db()`. Add new migrations as functions, append to `MIGRATIONS` list.
