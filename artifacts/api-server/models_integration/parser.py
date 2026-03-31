@@ -141,20 +141,23 @@ class StageOutputParser:
         data: dict[str, Any],
         raw_text: str,
         attempt: int = 1,
+        schema_class: type[BaseModel] | None = None,
     ) -> ParseResult:
         """
         Validate `data` against the Pydantic schema for `stage`.
 
         Args:
-            stage:    Pipeline stage name (underscores).
-            data:     Raw dict from JSON extraction (unvalidated).
-            raw_text: Original model response string.
-            attempt:  Attempt number (for logging/error messages).
+            stage:        Pipeline stage name (underscores).
+            data:         Raw dict from JSON extraction (unvalidated).
+            raw_text:     Original model response string.
+            attempt:      Attempt number (for logging/error messages).
+            schema_class: Optional schema override — uses registered stage schema if None.
 
         Returns:
             ParseResult — always. Never raises.
         """
-        schema_class = get_schema(stage)
+        if schema_class is None:
+            schema_class = get_schema(stage)
 
         if schema_class is None:
             logger.debug("No schema registered for stage '%s' — skipping validation", stage)

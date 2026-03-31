@@ -176,6 +176,7 @@ class OpenAIProvider(BaseModelProvider):
                     data=data,
                     raw_text=raw_text,
                     attempt=schema_attempt + 1,
+                    schema_class=schema_class,
                 )
                 last_parse_result = parse_result
 
