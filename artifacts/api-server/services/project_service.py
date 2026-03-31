@@ -1,4 +1,7 @@
-"""ProjectService — project CRUD via storage layer. No HTTP, no LLM."""
+"""ProjectService — project CRUD business logic.
+
+Delegates all DB access to ProjectRepository.  No SQLAlchemy queries here.
+"""
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -7,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from core.logging import get_logger
 from models.project import Project
+from repositories.project_repo import ProjectRepository
 from schemas.project import ProjectCreate, ProjectUpdate
 
 logger = get_logger(__name__)
@@ -18,13 +22,13 @@ class ProjectNotFound(Exception):
 
 class ProjectService:
     def __init__(self, db: Session) -> None:
-        self._db = db
+        self._repo = ProjectRepository(db)
 
     def list_all(self) -> list[Project]:
-        return self._db.query(Project).order_by(Project.created_at.desc()).all()
+        return self._repo.find_all()
 
     def get(self, project_id: int) -> Project:
-        project = self._db.query(Project).filter(Project.id == project_id).first()
+        project = self._repo.find_by_id(project_id)
         if not project:
             raise ProjectNotFound(f"Project {project_id} not found")
         return project
@@ -36,11 +40,11 @@ class ProjectService:
             audience=data.audience,
             tone=data.tone,
             context=data.context,
+            formatting_profile=data.formatting_profile,
+            artifact_density=data.artifact_density,
             status="draft",
         )
-        self._db.add(project)
-        self._db.commit()
-        self._db.refresh(project)
+        project = self._repo.insert(project)
         logger.info("Created project id=%d title='%s'", project.id, project.title)
         return project
 
@@ -50,18 +54,15 @@ class ProjectService:
         for key, value in update_data.items():
             setattr(project, key, value)
         project.updated_at = datetime.now(timezone.utc)
-        self._db.commit()
-        self._db.refresh(project)
-        return project
+        return self._repo.save(project)
 
     def delete(self, project_id: int) -> None:
         project = self.get(project_id)
-        self._db.delete(project)
-        self._db.commit()
+        self._repo.delete(project)
         logger.info("Deleted project id=%d", project_id)
 
     def mark_status(self, project_id: int, status: str) -> None:
         project = self.get(project_id)
         project.status = status
         project.updated_at = datetime.now(timezone.utc)
-        self._db.commit()
+        self._repo.save(project)

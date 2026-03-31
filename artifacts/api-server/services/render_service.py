@@ -1,12 +1,15 @@
 """
 RenderService — produces HTML from validated pipeline outputs.
 
+Delegates render artifact persistence to RenderArtifactRepository.
+
 Flow:
   1. Load all completed stage outputs for a project
   2. Extract theme tokens from render_blueprint (or use defaults)
   3. ManifestBuilder maps outputs → RenderManifest (ordered page list)
   4. Renderer iterates manifest → Jinja2 → single self-contained HTML string
-  5. Return RenderResult / ExportBundle to the API layer
+  5. Persist RenderArtifact (manifest_json + page_count) via repository
+  6. Return RenderResult / ExportBundle to the API layer
 
 No LLM calls. No content decisions. Pure structured-data → HTML transformation.
 """
@@ -15,9 +18,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from core.logging import get_logger
+from models.render_artifact import RenderArtifact
 from render.manifest_builder import ManifestBuilder
 from render.renderer import Renderer, RendererError
+from repositories.render_repo import RenderArtifactRepository
 from schemas.render import RenderResult, ExportBundle
 from services.pipeline_service import PipelineService
 
@@ -31,6 +38,7 @@ class RenderServiceError(Exception):
 class RenderService:
     def __init__(self, db: Any) -> None:
         self._pipeline = PipelineService(db)
+        self._render_repo = RenderArtifactRepository(db)
         self._manifest_builder = ManifestBuilder()
         self._renderer = Renderer()
 
@@ -51,6 +59,8 @@ class RenderService:
             html = self._renderer.render(manifest)
         except RendererError as e:
             raise RenderServiceError(str(e)) from e
+
+        self._persist_artifact(project_id, manifest, page_count=manifest.page_count)
 
         logger.info(
             "Rendered %d pages for project %d (document_id=%s)",
@@ -113,11 +123,36 @@ class RenderService:
 
     # ── Internal ───────────────────────────────────────────────────────────────
 
+    def _persist_artifact(self, project_id: int, manifest: Any, page_count: int) -> None:
+        """Upsert the RenderArtifact row for this project."""
+        now = datetime.now(timezone.utc)
+        row = self._render_repo.find_by_project(project_id)
+        manifest_dict = {
+            "document_id": manifest.document_id,
+            "document_title": manifest.document_title,
+            "system_name": manifest.system_name,
+            "page_count": page_count,
+        }
+
+        if row:
+            row.set_manifest(manifest_dict)
+            row.page_count = page_count
+            row.updated_at = now
+            self._render_repo.save(row)
+        else:
+            row = RenderArtifact(
+                project_id=project_id,
+                page_count=page_count,
+                created_at=now,
+                updated_at=now,
+            )
+            row.set_manifest(manifest_dict)
+            self._render_repo.insert(row)
+
     def _extract_theme_tokens(self, all_outputs: dict[str, Any]) -> dict[str, str]:
         """
         Pull theme overrides from the render_blueprint stage output.
         Falls back to the system defaults defined in tokens.css for any missing key.
-        Only override keys that are explicitly set in the blueprint.
         """
         blueprint = all_outputs.get("render_blueprint", {})
         theme = blueprint.get("theme", {})

@@ -27,6 +27,11 @@ def init_db():
     import models.project           # noqa: F401
     import models.stage_output      # noqa: F401
     import models.validation_result # noqa: F401
+    import models.render_artifact   # noqa: F401
+    import models.branding_profile  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialised")
+
+    from storage.migrations import run_migrations
+    run_migrations(engine)

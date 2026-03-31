@@ -13,6 +13,10 @@ class Project(Base):
     audience: Mapped[str | None] = mapped_column(Text, nullable=True)
     tone: Mapped[str | None] = mapped_column(String(100), nullable=True)
     context: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    formatting_profile: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    artifact_density: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
     status: Mapped[str] = mapped_column(String(50), default="draft", nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

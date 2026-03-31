@@ -11,6 +11,8 @@ class ProjectCreate(BaseModel):
     audience: str | None = None
     tone: str | None = None
     context: str | None = None
+    formatting_profile: str | None = None
+    artifact_density: str | None = None
 
     @field_validator("title", "life_event")
     @classmethod
@@ -29,6 +31,8 @@ class ProjectUpdate(BaseModel):
     tone: str | None = None
     context: str | None = None
     status: str | None = None
+    formatting_profile: str | None = None
+    artifact_density: str | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -38,6 +42,8 @@ class ProjectResponse(BaseModel):
     audience: str | None
     tone: str | None
     context: str | None
+    formatting_profile: str | None = None
+    artifact_density: str | None = None
     status: str
     created_at: datetime
     updated_at: datetime

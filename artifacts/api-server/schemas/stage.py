@@ -32,8 +32,10 @@ class StageOutputResponse(BaseModel):
     stage: str
     status: str
     output_json: dict[str, Any] | None
+    preview_text: str | None
     validation_result: dict[str, Any] | None
     error_message: str | None
+    revision_number: int
     created_at: datetime
     updated_at: datetime
 
@@ -49,8 +51,10 @@ class StageOutputResponse(BaseModel):
             stage=hyphen_name,
             status=obj.status,
             output_json=obj.get_output() if obj.json_output else {},
+            preview_text=obj.preview_text,
             validation_result=obj.get_validation(),
             error_message=obj.error_message,
+            revision_number=obj.revision_number,
             created_at=obj.created_at,
             updated_at=obj.updated_at,
         )

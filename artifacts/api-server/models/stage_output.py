@@ -15,6 +15,7 @@ class StageOutput(Base):
     stage_name: Mapped[str] = mapped_column(String(100), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
     json_output: Mapped[str | None] = mapped_column(Text, nullable=True)
+    preview_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     validation_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     revision_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)

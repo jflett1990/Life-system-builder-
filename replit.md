@@ -21,6 +21,56 @@ pnpm monorepo with:
 - **API Codegen**: Orval (OpenAPI → React Query hooks + TypeScript types)
 - **HTML Render**: Jinja2 templates + custom CSS design system
 
+## Persistence Layer
+
+### Database
+SQLite for local dev (`sqlite:///./life_system.db`). PostgreSQL in production (via `DATABASE_URL` env var). Config in `core/config.py` — no code change needed to switch.
+
+### Entity Relationships
+```
+Project 1──* StageOutput         (cascade delete)
+Project 1──* ValidationResult    (per-stage rows + one project-level summary)
+Project 1──1 RenderArtifact      (unique per project, upserted each render)
+BrandingProfile                  (standalone, not yet FK'd to Project)
+```
+
+### Models (`models/`)
+| Model | Table | Key additions |
+|-------|-------|---------------|
+| `Project` | `projects` | `formatting_profile`, `artifact_density` |
+| `StageOutput` | `stage_outputs` | `preview_text`, `revision_number` |
+| `ValidationResultModel` | `validation_results` | `stage_name` (nullable — NULL=summary row, set=per-stage), `result`, `summary`, `defects_json` |
+| `RenderArtifact` | `render_artifacts` | `manifest_json`, `html_bundle_path`, `page_count` |
+| `BrandingProfile` | `branding_profiles` | Full stub: colors, fonts, logo, CSS token overrides |
+
+### Repository Layer (`repositories/`)
+Each repository owns **all SQLAlchemy queries** for its model. Services never touch the ORM directly.
+
+| Repository | Responsibilities |
+|-----------|-----------------|
+| `ProjectRepository` | `find_all`, `find_by_id`, `insert`, `save`, `delete` |
+| `StageOutputRepository` | `find_by_project_and_stage`, `find_all_for_project`, `find_completed_stage_names` |
+| `ValidationRepository` | `find_project_summary` (stage_name=NULL), `find_stage_result`, `find_all_stage_results` |
+| `RenderArtifactRepository` | `find_by_project`, `insert`, `save`, `delete_for_project` |
+| `BrandingProfileRepository` | `find_all`, `find_by_id`, `find_by_name`, `find_default` |
+
+### Services (`services/`)
+Services contain business logic only — no SQLAlchemy sessions, no `.query()` calls.
+- `ProjectService` → `ProjectRepository`
+- `PipelineService` → `StageOutputRepository` + `ProjectService`
+- `ValidationService` → `ValidationRepository` + `PipelineService` (persists both summary and per-stage rows)
+- `RenderService` → `RenderArtifactRepository` + `PipelineService`
+
+### Migrations (`storage/migrations.py`)
+Structured migration runner with a `schema_migrations` version table. Dialect-aware — handles both SQLite and PostgreSQL differences (types, constraint syntax, table recreation). Runs at startup via `init_db()`. Add new migrations as functions, append to `MIGRATIONS` list.
+
+Applied migrations:
+- 001: Add `formatting_profile`, `artifact_density` to projects
+- 002: Add `preview_text` to stage_outputs
+- 003: Remove UNIQUE constraint from `validation_results.project_id`; add `stage_name`, `result`, `summary`, `defects_json`
+- 004: Create `render_artifacts` table
+- 005: Create `branding_profiles` table
+
 ## Key Design Decisions
 
 1. **snake_case → camelCase**: The FastAPI backend returns snake_case JSON. `lib/api-client-react/src/custom-fetch.ts` contains a `deepCamelKeys` transformer that converts all response keys to camelCase automatically. This means the TypeScript types (camelCase) match what the frontend receives.

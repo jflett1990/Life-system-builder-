@@ -1,6 +1,8 @@
 """
 PipelineService — drives stage execution end-to-end.
-Coordinates: registry → orchestrator → stage service → validator → storage.
+
+Delegates all DB access to StageOutputRepository.
+Coordinates: registry → orchestrator → assembler → LLM → repo.
 """
 from __future__ import annotations
 
@@ -14,6 +16,7 @@ from core.pipeline_orchestrator import PipelineOrchestrator, PipelineError
 from core.prompt_assembler import PromptAssembler
 from core.logging import get_logger
 from models.stage_output import StageOutput
+from repositories.stage_repo import StageOutputRepository
 from schemas.stage import STAGE_NAMES
 from services.llm_client import LLMClient, LLMError
 from services.project_service import ProjectService
@@ -31,46 +34,26 @@ def _get_assembler() -> PromptAssembler:
 
 class PipelineService:
     def __init__(self, db: Session) -> None:
-        self._db = db
+        self._repo = StageOutputRepository(db)
         self._project_svc = ProjectService(db)
         self._llm = LLMClient()
 
     # ------------------------------------------------------------------ #
-    #  Stage output storage helpers                                        #
+    #  Read helpers                                                        #
     # ------------------------------------------------------------------ #
 
     def get_stage_output(self, project_id: int, stage: str) -> StageOutput | None:
-        return (
-            self._db.query(StageOutput)
-            .filter(
-                StageOutput.project_id == project_id,
-                StageOutput.stage_name == stage,
-            )
-            .first()
-        )
+        return self._repo.find_by_project_and_stage(project_id, stage)
 
     def list_stage_outputs(self, project_id: int) -> list[StageOutput]:
-        return (
-            self._db.query(StageOutput)
-            .filter(StageOutput.project_id == project_id)
-            .order_by(StageOutput.created_at)
-            .all()
-        )
+        return self._repo.find_all_for_project(project_id)
 
     def completed_stages(self, project_id: int) -> set[str]:
-        rows = (
-            self._db.query(StageOutput.stage_name)
-            .filter(
-                StageOutput.project_id == project_id,
-                StageOutput.status == "complete",
-            )
-            .all()
-        )
-        return {row.stage_name for row in rows}
+        return self._repo.find_completed_stage_names(project_id)
 
     def all_stage_outputs_as_dict(self, project_id: int) -> dict[str, Any]:
         outputs: dict[str, Any] = {}
-        for row in self.list_stage_outputs(project_id):
+        for row in self._repo.find_all_for_project(project_id):
             if row.status == "complete" and row.json_output:
                 outputs[row.stage_name] = row.get_output()
         return outputs
@@ -87,14 +70,16 @@ class PipelineService:
         completed = self.completed_stages(project_id)
 
         if stage in completed and not force:
-            existing = self.get_stage_output(project_id, stage)
+            existing = self._repo.find_by_project_and_stage(project_id, stage)
             if existing:
-                logger.info("Stage '%s' already complete for project %d — returning cached", stage, project_id)
+                logger.info(
+                    "Stage '%s' already complete for project %d — returning cached",
+                    stage, project_id,
+                )
                 return existing
 
         orchestrator.check_upstream_complete(stage, completed)
 
-        # Gather context
         all_outputs = self.all_stage_outputs_as_dict(project_id)
         upstream = orchestrator.collect_upstream_outputs(stage, all_outputs)
         payload = {
@@ -104,15 +89,13 @@ class PipelineService:
             "context": project.context or "",
         }
 
-        # Resolve contract and assemble prompt
         registry = get_registry()
         contract_name = orchestrator.resolve_contract_name(stage)
         contract = registry.resolve(contract_name)
         assembler = _get_assembler()
         prompt = assembler.assemble(contract, payload, upstream_outputs=upstream)
 
-        # Upsert stage row to "running"
-        stage_row = self.get_stage_output(project_id, stage)
+        stage_row = self._repo.find_by_project_and_stage(project_id, stage)
         if stage_row:
             stage_row.status = "running"
             stage_row.error_message = None
@@ -125,13 +108,12 @@ class PipelineService:
                 status="running",
                 revision_number=1,
             )
-            self._db.add(stage_row)
-        self._db.commit()
+            self._repo.insert(stage_row)
 
-        # Call LLM
         try:
             output_json = self._llm.complete(prompt)
             stage_row.set_output(output_json)
+            stage_row.preview_text = _extract_preview(output_json)
             stage_row.status = "complete"
             logger.info("Stage '%s' complete for project %d", stage, project_id)
         except LLMError as e:
@@ -140,8 +122,7 @@ class PipelineService:
             logger.error("Stage '%s' failed for project %d: %s", stage, project_id, e)
         finally:
             stage_row.updated_at = datetime.now(timezone.utc)
-            self._db.commit()
-            self._db.refresh(stage_row)
+            self._repo.save(stage_row)
 
         return stage_row
 
@@ -154,3 +135,18 @@ class PipelineService:
                 logger.warning("Pipeline halted at stage '%s' due to failure", stage)
                 break
         return results
+
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
+
+def _extract_preview(output: dict[str, Any]) -> str:
+    """
+    Generate a one-line preview text from stage output for quick display.
+    Tries common top-level string fields before falling back to a key listing.
+    """
+    for key in ("systemName", "system_name", "summary", "objective", "operatingPremise"):
+        val = output.get(key)
+        if isinstance(val, str) and val.strip():
+            return val[:200]
+    keys = ", ".join(list(output.keys())[:5])
+    return f"Output keys: {keys}"
