@@ -5,43 +5,50 @@
 {# ─────────────────────────────────────────────────────────────────────────── #}
 {# WORKSHEET PAGE                                                              #}
 {# data keys: id, title, domain_name, purpose, sections, decision_gates,     #}
-{#            completion_criteria, version                                    #}
+{#            completion_criteria, version, chapter_number, chapter_title,    #}
+{#            system_name, repeat_use                                         #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 
-<!-- Worksheet header bar -->
+<!-- Running chapter header — mirrors the reference manual format -->
 <div style="
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  padding-bottom: var(--space-4);
-  border-bottom: var(--border-weight-lg) solid var(--color-text-primary);
-  margin-bottom: var(--space-8);
+  align-items: baseline;
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-weight) solid var(--color-rule);
+  margin-bottom: var(--space-6);
 ">
-  <div>
-    <div style="margin-bottom:var(--space-2)">
-      <span class="eyebrow">Worksheet</span>
-      {% if data.domain_name %}
-      <span style="margin-left:var(--space-2);color:var(--color-text-muted);font-size:var(--text-xs)">→ {{ data.domain_name }}</span>
-      {% endif %}
-    </div>
-    <h2 class="heading-section">{{ data.title | default("Worksheet") }}</h2>
-    {% if data.purpose %}
-    <p class="body-text body-text--secondary" style="margin-top:var(--space-2);max-width:120mm">{{ data.purpose }}</p>
+  <span style="
+    font-family: var(--font-label);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  ">{{ data.system_name | default(doc_title) | upper }}</span>
+  {% if data.chapter_number %}
+  <span style="
+    font-family: var(--font-label);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  ">Chapter {{ data.chapter_number }}{% if data.chapter_title %} — {{ data.chapter_title | truncate(55, True, '…') }}{% endif %}</span>
+  {% endif %}
+</div>
+
+<!-- Worksheet identity block -->
+<div style="margin-bottom: var(--space-8)">
+  <div style="margin-bottom:var(--space-3)">
+    <span class="eyebrow">Worksheet</span>
+    {% if data.domain_name %}
+    <span style="margin-left:var(--space-3);color:var(--color-text-muted);font-size:var(--text-xs)">→ {{ data.domain_name }}</span>
     {% endif %}
   </div>
-  <div style="text-align:right;flex-shrink:0">
-    <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-muted)">{{ data.id | default("ws") }}</div>
-    {% if data.version %}
-    <div style="font-size:var(--text-xs);color:var(--color-text-muted)">v{{ data.version }}</div>
-    {% endif %}
-    <div style="margin-top:var(--space-2)">
-      <span class="badge badge--ghost">
-        {% set total = namespace(n=0) %}
-        {% for section in data.sections | default([]) %}{% set total.n = total.n + (section.fields | default([]) | length) %}{% endfor %}
-        {{ total.n }} fields
-      </span>
-    </div>
-  </div>
+  <h2 class="heading-section" style="margin-bottom: var(--space-3)">{{ data.title | default("Worksheet") }}</h2>
+  {% if data.purpose %}
+  <p class="body-text body-text--secondary" style="max-width:140mm;line-height:var(--leading-normal)">{{ data.purpose }}</p>
+  {% endif %}
 </div>
 
 <!-- Sections -->
@@ -61,10 +68,10 @@
   <p class="body-text body-text--secondary" style="margin-bottom:var(--space-5)">{{ section.description }}</p>
   {% endif %}
 
-  <!-- Field grid — wide fields go full width, short fields go 2-col -->
+  <!-- Field grid — wide fields full-width; short paired side-by-side -->
   <div>
     {% for field in section.fields | default([]) %}
-    {% set is_wide = field.type in ("textarea", "multi-select") or (field.label | length) > 48 %}
+    {% set is_wide = field.type in ("textarea", "multi-select") or (field.label | length) > 52 %}
     {% if is_wide %}
     <div class="field-grid field-grid--full">
     {% else %}
@@ -78,9 +85,6 @@
           hint=field.description | default(""),
           options=field.options | default([])
         ) }}
-    {% if not is_wide %}
-      <!-- second column placeholder if no pair -->
-    {% endif %}
     </div>
     {% endfor %}
   </div>
@@ -112,5 +116,31 @@
   {{ criteria_checklist(items=data.completion_criteria, label="Completion Criteria") }}
 </div>
 {% endif %}
+
+<!-- Worksheet completion footer — print-use line at bottom of each sheet -->
+<div style="
+  margin-top: var(--space-12);
+  padding-top: var(--space-5);
+  border-top: var(--border-weight-md) solid var(--color-rule-heavy);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+">
+  <div style="display:flex;gap:var(--space-10)">
+    <div>
+      <div style="font-family:var(--font-label);font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--color-text-muted);margin-bottom:var(--space-2)">Date Completed</div>
+      <div style="width:44mm;border-bottom:var(--border-weight-md) solid var(--color-rule-heavy);height:var(--space-5)"></div>
+    </div>
+    <div>
+      <div style="font-family:var(--font-label);font-size:var(--text-xs);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--color-text-muted);margin-bottom:var(--space-2)">Reviewed By</div>
+      <div style="width:54mm;border-bottom:var(--border-weight-md) solid var(--color-rule-heavy);height:var(--space-5)"></div>
+    </div>
+  </div>
+  {% if data.repeat_use %}
+  <div style="font-size:var(--text-xs);color:var(--color-text-muted);font-style:italic;text-align:right">
+    Repeat-use worksheet · Photocopy as needed
+  </div>
+  {% endif %}
+</div>
 
 {{ page_footer(doc_title=doc_title, page_num=seq) }}

@@ -241,10 +241,14 @@ class ManifestBuilder:
                 ))
 
                 # One worksheet page per worksheet in this chapter
-                for ws in ch_worksheets:
-                    ws_id = ws.get("id", f"ws-{ch_num}-{ch_worksheets.index(ws) + 1:02d}")
+                for ws_idx, ws in enumerate(ch_worksheets):
+                    ws_id = ws.get("id", f"ws-{ch_num}-{ws_idx + 1:02d}")
                     ws_data = dict(ws)
                     ws_data.setdefault("domain_name", domain_name)
+                    # Pass chapter context so worksheet page can render running header
+                    ws_data["chapter_number"] = ch_num
+                    ws_data["chapter_title"] = ch_title
+                    ws_data["system_name"] = system_name
                     pages.append(ManifestPage(
                         page_id=f"pg-ws-{ws_id}",
                         sequence=next_seq(),

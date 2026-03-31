@@ -394,12 +394,14 @@ body {
   padding: var(--space-3);
 }
 
-/* Placeholder / example text inside input — clearly "write here" guidance   */
-/* Visually distinct from real filled content: muted color + italic           */
-.field-row__placeholder {
-  color: var(--color-text-muted);
-  font-style: italic;
+/* Descriptor line — placeholder text positioned between label and blank line */
+/* Guides the user on what to write without cluttering the write-in area     */
+.field-row__descriptor {
   font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: var(--leading-snug);
+  margin-bottom: var(--space-2);
+  font-style: normal;
 }
 
 /* Hint text below the input line                                             */

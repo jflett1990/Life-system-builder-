@@ -206,11 +206,13 @@
   --radius-md:   2px;
 
   /* ── Field Geometry ─────────────────────────────────────────────────────── */
-  --field-height:       26px;
-  --field-height-tall:  44px;
-  --field-height-area:  72px;
-  --field-gap:          var(--space-4);
-  --field-column-gap:   var(--space-8);
+  /* Calibrated for physical handwriting space on a printed page.              */
+  /* Each write-in field is a usable blank — not a small data entry box.       */
+  --field-height:       52px;   /* single-line write-in: comfortable handwriting */
+  --field-height-tall:  80px;   /* mid-length narrative response                 */
+  --field-height-area:  108px;  /* full textarea: extended prose or multi-item   */
+  --field-gap:          var(--space-8);   /* vertical spacing between fields      */
+  --field-column-gap:   var(--space-10); /* horizontal gap in 2-col field layout  */
 
   /* ── Section and Component Spacing ─────────────────────────────────────── */
   --section-gap:        var(--space-10);

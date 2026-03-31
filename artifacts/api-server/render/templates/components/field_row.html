@@ -1,4 +1,16 @@
 {% macro field_row(label="", field_type="text", required=False, placeholder="", hint="", options=[]) %}
+{#
+  field_row — Print-ready write-in field for worksheets.
+
+  Visual structure (matches reference manual pattern):
+    [LABEL]  [required *]  [type badge]
+    [descriptor — placeholder text in muted gray, below label]
+    [_______blank write-in line / area / control_________]
+    [hint — additional context in italic muted text]
+
+  The write-in area is intentionally EMPTY so the worksheet looks blank and
+  ready to fill, not pre-populated with example content.
+#}
 <div class="field-row">
   <div class="field-row__label">
     <span class="field-row__label-text">{{ label }}</span>
@@ -7,8 +19,15 @@
     <span class="field-type-badge">{{ field_type }}</span>
     {% endif %}
   </div>
+
+  {# Descriptor line — placeholder text sits below the label, above the blank #}
+  {% if placeholder and field_type not in ("date", "boolean") %}
+  <div class="field-row__descriptor">{{ placeholder }}</div>
+  {% endif %}
+
+  {# Write-in area — always blank in print output #}
   {% if field_type == "textarea" %}
-  <div class="field-row__input field-row__input--area">{% if placeholder %}<span class="field-row__placeholder">{{ placeholder }}</span>{% endif %}</div>
+  <div class="field-row__input field-row__input--area"></div>
   {% elif field_type == "date" %}
   <div class="field-row__input">__ / __ / ________</div>
   {% elif field_type == "boolean" %}
@@ -20,11 +39,10 @@
   <div class="field-row__input" style="color:var(--color-text-muted);font-size:var(--text-sm)">
     Select: {{ options | join(" / ") }}
   </div>
-  {% elif field_type == "number" %}
-  <div class="field-row__input">{% if placeholder %}<span class="field-row__placeholder">{{ placeholder }}</span>{% else %}<span class="field-row__placeholder">0</span>{% endif %}</div>
   {% else %}
-  <div class="field-row__input">{% if placeholder %}<span class="field-row__placeholder">{{ placeholder }}</span>{% endif %}</div>
+  <div class="field-row__input"></div>
   {% endif %}
+
   {% if hint %}
   <div class="field-row__hint">{{ hint }}</div>
   {% endif %}
