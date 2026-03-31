@@ -6,7 +6,14 @@ class Settings(BaseSettings):
     # ── OpenAI ────────────────────────────────────────────────────────────────
     openai_api_key: str = ""
     openai_base_url: str = ""
-    openai_model: str = "gpt-5.2"
+
+    # Two-tier model architecture:
+    #   planner_model  — reasoning model for high-level planning stages (system_architecture)
+    #   executor_model — fast model for all content-generation stages (worksheets, layout, etc.)
+    # The contract's model_role field ("planner" | "executor") selects which model to use.
+    openai_model: str = "gpt-5.2"          # legacy fallback / planner default
+    planner_model: str = "gpt-5.2"         # reasoning model — slow, deep
+    executor_model: str = "gpt-4o-mini"    # execution model — fast, cheap
 
     # ── Model provider ────────────────────────────────────────────────────────
     model_provider: str = "openai"

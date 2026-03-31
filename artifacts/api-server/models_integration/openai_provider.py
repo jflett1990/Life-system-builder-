@@ -96,6 +96,7 @@ class OpenAIProvider(BaseModelProvider):
         prompt: Any,                         # AssembledPrompt
         contract: Any,                       # ContractDefinition
         schema_class: type[BaseModel] | None = None,
+        model_override: str | None = None,
     ) -> tuple[StructuredOutput, ParseResult]:
         """
         Call OpenAI, extract JSON, optionally validate against Pydantic schema.
@@ -114,10 +115,11 @@ class OpenAIProvider(BaseModelProvider):
         stage = prompt.stage or "unknown"
         contract_name = prompt.contract_name
         messages = prompt.to_openai_messages()
+        active_model = model_override or self._model
 
         logger.info(
             "ModelProvider | generate_structured_output | model=%s stage=%s",
-            self._model, stage,
+            active_model, stage,
         )
 
         last_parse_result: ParseResult | None = None
@@ -128,7 +130,8 @@ class OpenAIProvider(BaseModelProvider):
             # --- Transport + JSON extraction ---
             if schema_attempt == 0:
                 raw_text = self._call_with_retry(
-                    messages, stage=stage, contract_name=contract_name
+                    messages, stage=stage, contract_name=contract_name,
+                    model=active_model,
                 )
             else:
                 # Subsequent attempts use the correction conversation
@@ -146,6 +149,7 @@ class OpenAIProvider(BaseModelProvider):
                     correction_messages,
                     stage=f"{stage}_schema_fix_{schema_attempt}",
                     contract_name=contract_name,
+                    model=active_model,
                 )
 
             # --- JSON extraction ---
@@ -162,6 +166,7 @@ class OpenAIProvider(BaseModelProvider):
                     stage=stage,
                     contract_name=contract_name,
                     original_error=primary_err,
+                    model=active_model,
                 )
 
             # --- Schema validation ---
@@ -267,14 +272,16 @@ class OpenAIProvider(BaseModelProvider):
         *,
         stage: str,
         contract_name: str,
+        model: str | None = None,
     ) -> str:
         """Exponential-backoff retry on transport-level errors."""
+        active_model = model or self._model
         last_error: Exception | None = None
 
         for attempt in range(self._max_retries):
             try:
                 response = self._client.chat.completions.create(
-                    model=self._model,
+                    model=active_model,
                     messages=messages,  # type: ignore[arg-type]
                 )
                 choice = response.choices[0]
@@ -326,6 +333,7 @@ class OpenAIProvider(BaseModelProvider):
         stage: str,
         contract_name: str,
         original_error: ModelOutputError,
+        model: str | None = None,
     ) -> tuple[dict[str, Any], bool, int]:
         """Ask the model to repair its own malformed JSON (one pass)."""
         logger.warning("JSON parse failed for stage '%s' — attempting repair", stage)
@@ -357,7 +365,8 @@ class OpenAIProvider(BaseModelProvider):
 
         try:
             repaired_text = self._call_with_retry(
-                repair_messages, stage=f"{stage}_repair", contract_name=contract_name
+                repair_messages, stage=f"{stage}_repair", contract_name=contract_name,
+                model=model,
             )
             data = extract_json(repaired_text, output_mode="json", stage=stage, contract_name=contract_name)
             logger.info("LLM repair succeeded for stage '%s'", stage)

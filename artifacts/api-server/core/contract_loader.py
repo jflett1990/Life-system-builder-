@@ -31,7 +31,11 @@ class ContractDefinition:
     user_prompt_template: str | None
     output_schema: dict[str, Any] | None
     required_output_fields: list[str]
-    raw: dict[str, Any] = field(repr=False)
+    # "planner" uses the reasoning model (deep, slow) for strategic architecture stages.
+    # "executor" uses the fast execution model for all content-generation stages.
+    # Defaults to "executor" so new contracts are cheap and fast unless explicitly promoted.
+    model_role: str = "executor"
+    raw: dict[str, Any] = field(repr=False, default_factory=dict)
 
     @property
     def key(self) -> str:
@@ -102,6 +106,7 @@ def load_contract(filepath: Path) -> ContractDefinition:
         user_prompt_template=data.get("user_prompt_template"),
         output_schema=data.get("output_schema"),
         required_output_fields=data.get("required_output_fields", []),
+        model_role=data.get("model_role", "executor"),
         raw=data,
     )
     logger.debug("Loaded contract %s v%s from %s", contract.name, contract.version, filepath.name)

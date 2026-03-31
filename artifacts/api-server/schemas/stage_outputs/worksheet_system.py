@@ -42,10 +42,28 @@ class Worksheet(BaseModel):
 
     id: str = Field(..., min_length=1)
     title: str = Field(..., min_length=1)
-    domain: str = Field(..., min_length=1)
+    # domain may appear as "domain", "domain_name", "domain_id" depending on which
+    # version of the contract the model followed.  Make it optional so the schema
+    # never triggers a correction retry over a missing/wrong-type domain label.
+    domain: str | None = Field(default=None)
     purpose: str = Field(..., min_length=1)
     sections: list[WorksheetSection] = []
     decision_gates: list[DecisionGate] = []
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_domain(cls, values: Any) -> Any:
+        """Promote domain_name or domain_id into domain if domain is absent."""
+        if not isinstance(values, dict):
+            return values
+        if not values.get("domain"):
+            # Prefer domain_name, fall back to domain_id, then empty
+            values["domain"] = (
+                values.get("domain_name")
+                or values.get("domain_id")
+                or ""
+            )
+        return values
 
 
 class WorksheetSystemOutput(BaseModel):

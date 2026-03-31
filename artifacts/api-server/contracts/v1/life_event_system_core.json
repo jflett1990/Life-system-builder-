@@ -2,6 +2,7 @@
   "name": "life_event_system_core",
   "version": "1.0",
   "stage": "system_architecture",
+  "model_role": "planner",
   "description": "Transforms a life event into a named operational control system with defined domains, roles, and success criteria.",
   "output_mode": "json",
   "upstream_dependencies": [],

@@ -118,8 +118,21 @@ class ModelService:
         else:
             logger.debug("Stage '%s' → no schema registered", stage)
 
+        # Resolve the model to use based on the contract's model_role.
+        # "planner" → reasoning model (slow, deep strategic thinking)
+        # "executor" (or unset) → fast execution model (content generation)
+        model_role = getattr(contract, "model_role", "executor")
+        if model_role == "planner":
+            resolved_model = settings.planner_model
+        else:
+            resolved_model = settings.executor_model
+        logger.info(
+            "Stage '%s' | model_role=%s → model=%s",
+            stage, model_role, resolved_model,
+        )
+
         output, parse_result = self._provider.generate_structured_output(
-            prompt, contract, schema_class=schema_class
+            prompt, contract, schema_class=schema_class, model_override=resolved_model
         )
 
         # Decide final data — never raise here; let the caller save raw output first

@@ -100,6 +100,7 @@ class BaseModelProvider(ABC):
         prompt: "AssembledPrompt",
         contract: "ContractDefinition",
         schema_class: type | None = None,
+        model_override: str | None = None,
     ) -> "tuple[StructuredOutput, ParseResult]":
         """
         Call the model with the assembled prompt and return structured output.
