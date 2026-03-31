@@ -10,9 +10,12 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { ProjectHeader } from "@/components/layout/ProjectHeader";
 import { Button } from "@/components/ui/button";
-import { Download, FileCode, FileText, RefreshCw } from "lucide-react";
+import { Archive, Download, FileCode, FileText, RefreshCw } from "lucide-react";
 
-function downloadFile(content: string, filename: string, mimeType: string) {
+// ── Download helpers ──────────────────────────────────────────────────────────
+
+/** Client-side download from an in-memory string (for HTML and JSON). */
+function downloadBlob(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -21,6 +24,29 @@ function downloadFile(content: string, filename: string, mimeType: string) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/** Server-side download from an API endpoint (for zip and file downloads). */
+function downloadFromUrl(url: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.click();
+}
+
+// ── Stage name formatting ─────────────────────────────────────────────────────
+
+const STAGE_LABELS: Record<string, string> = {
+  system_architecture: "System Architecture",
+  worksheet_system: "Worksheet System",
+  layout_mapping: "Layout Mapping",
+  render_blueprint: "Render Blueprint",
+  validation_audit: "Validation Audit",
+};
+
+function formatStageName(stage: string): string {
+  return STAGE_LABELS[stage] ?? stage.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ExportPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,27 +61,33 @@ export default function ExportPage() {
     refetch,
   } = useQuery(getExportProjectQueryOptions(projectId));
 
-  const isLoading = projectLoading || exportLoading;
-
   if (projectLoading) return <LoadingState message="Loading project…" />;
   if (!project) return <ErrorState title="Project not found" />;
 
   const projectWithStages: ProjectWithStages = { ...project, stages: stages ?? [] };
-
   const slug = project.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const completedStages = exportBundle ? Object.keys(exportBundle.stagesJson) : [];
 
   function handleDownloadHtml() {
     if (!exportBundle) return;
-    downloadFile(exportBundle.html, `${slug}-operational-system.html`, "text/html");
+    downloadBlob(exportBundle.html, `${slug}-operational-system.html`, "text/html");
   }
 
   function handleDownloadJson() {
     if (!exportBundle) return;
-    downloadFile(
+    downloadBlob(
       JSON.stringify(exportBundle.stagesJson, null, 2),
       `${slug}-stages.json`,
-      "application/json"
+      "application/json",
     );
+  }
+
+  function handleDownloadZip() {
+    downloadFromUrl(`/api/export/${projectId}/download`);
+  }
+
+  function handleDownloadStageJson(stage: string) {
+    downloadFromUrl(`/api/export/${projectId}/json/${stage}`);
   }
 
   return (
@@ -64,6 +96,7 @@ export default function ExportPage() {
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto space-y-6">
+
           {/* Section header */}
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -91,8 +124,9 @@ export default function ExportPage() {
           )}
 
           {exportBundle && (
-            <div className="space-y-3">
-              {/* Export metadata */}
+            <div className="space-y-5">
+
+              {/* Bundle metadata */}
               <div className="border rounded-sm p-4 bg-muted/20 space-y-1.5">
                 <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">Bundle Info</div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -109,41 +143,96 @@ export default function ExportPage() {
                     <span className="font-mono">{Math.round(exportBundle.html.length / 1024)} KB</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Stages JSON: </span>
-                    <span className="font-mono">{Object.keys(exportBundle.stagesJson).length} stages</span>
+                    <span className="text-muted-foreground">Stages: </span>
+                    <span className="font-mono">{completedStages.length} completed</span>
                   </div>
                 </div>
               </div>
 
-              {/* Download cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="border rounded-sm p-4 bg-card space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-xs font-semibold text-foreground">HTML Document</div>
-                      <div className="text-[10px] text-muted-foreground">Self-contained, print-ready</div>
+              {/* Primary download — zip bundle */}
+              <div className="border border-accent/40 rounded-sm p-4 bg-accent/5 space-y-3">
+                <div className="flex items-start gap-2">
+                  <Archive className="w-4 h-4 mt-0.5 text-accent shrink-0" />
+                  <div>
+                    <div className="text-xs font-semibold text-foreground">Complete Bundle (.zip)</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      manifest.json · html/document.html · json/{"{stage}"}.json · pdf/PENDING.txt
                     </div>
                   </div>
-                  <Button size="sm" className="w-full gap-1.5 text-xs h-8" onClick={handleDownloadHtml}>
-                    <Download className="w-3.5 h-3.5" />
-                    Download HTML
-                  </Button>
                 </div>
+                <Button size="sm" className="w-full gap-1.5 text-xs h-8" onClick={handleDownloadZip}>
+                  <Download className="w-3.5 h-3.5" />
+                  Download Bundle
+                </Button>
+              </div>
 
-                <div className="border rounded-sm p-4 bg-card space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileCode className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-xs font-semibold text-foreground">Stage Outputs</div>
-                      <div className="text-[10px] text-muted-foreground">Structured JSON data</div>
+              {/* Individual file downloads */}
+              <div className="space-y-2">
+                <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">Individual Files</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                  <div className="border rounded-sm p-4 bg-card space-y-3">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <div className="text-xs font-semibold text-foreground">HTML Document</div>
+                        <div className="text-[10px] text-muted-foreground">Self-contained, print-ready</div>
+                      </div>
                     </div>
+                    <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs h-8" onClick={handleDownloadHtml}>
+                      <Download className="w-3.5 h-3.5" />
+                      Download HTML
+                    </Button>
                   </div>
-                  <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs h-8" onClick={handleDownloadJson}>
-                    <Download className="w-3.5 h-3.5" />
-                    Download JSON
-                  </Button>
+
+                  <div className="border rounded-sm p-4 bg-card space-y-3">
+                    <div className="flex items-center gap-2">
+                      <FileCode className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <div className="text-xs font-semibold text-foreground">All Stage Outputs</div>
+                        <div className="text-[10px] text-muted-foreground">Combined JSON</div>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs h-8" onClick={handleDownloadJson}>
+                      <Download className="w-3.5 h-3.5" />
+                      Download JSON
+                    </Button>
+                  </div>
                 </div>
+              </div>
+
+              {/* Per-stage JSON downloads */}
+              {completedStages.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+                    Per-Stage JSON
+                  </div>
+                  <div className="border rounded-sm divide-y bg-card">
+                    {completedStages.map((stage) => (
+                      <div key={stage} className="flex items-center justify-between px-3 py-2">
+                        <span className="text-xs text-foreground">{formatStageName(stage)}</span>
+                        <button
+                          onClick={() => handleDownloadStageJson(stage)}
+                          className="text-[10px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                          title={`Download ${stage}.json`}
+                        >
+                          <Download className="w-3 h-3" />
+                          {stage}.json
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* PDF notice */}
+              <div className="border border-dashed rounded-sm p-3 space-y-1">
+                <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">PDF Export</div>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Server-side PDF rendering is not yet implemented. The HTML document is print-ready —
+                  open it in any browser and use <span className="font-mono">File → Print → Save as PDF</span>.
+                  The zip bundle includes <span className="font-mono">pdf/PENDING.txt</span> with full instructions.
+                </p>
               </div>
 
               {/* Refresh */}

@@ -60,8 +60,51 @@ Services contain business logic only — no SQLAlchemy sessions, no `.query()` c
 - `PipelineService` → `StageOutputRepository` + `ProjectService` + **`ModelService`**
 - `ValidationService` → `ValidationRepository` + `PipelineService` (persists both summary and per-stage rows)
 - `RenderService` → `RenderArtifactRepository` + `PipelineService`
+- `ExportService` → `RenderService` + `PipelineService` (zip packaging — see Export Layer below)
 
 `services/llm_client.py` is **deprecated** — all model calls now go through `models_integration.ModelService`.
+
+## Export Layer (`services/export_service.py`)
+
+Produces downloadable file packages from rendered pipeline outputs. All zip operations are in-memory — no temp files or filesystem writes.
+
+### Bundle Structure
+
+```
+LSB-{id:05d}-export.zip
+├── manifest.json          — bundle metadata + file index (bundle_id, document_id, stages, pdf_status)
+├── html/
+│   └── document.html      — self-contained, print-ready HTML (styles embedded)
+├── json/
+│   └── {stage}.json       — one file per completed pipeline stage
+└── pdf/
+    └── PENDING.txt        — honest PDF notice + instructions for headless generation
+```
+
+### Export Endpoints (`api/routes/export.py`)
+
+| Method | Path | Response | Notes |
+|--------|------|----------|-------|
+| GET | `/api/export/{id}` | `ExportBundle` JSON | Existing — used by frontend ExportPage |
+| GET | `/api/export/{id}/download` | `application/zip` | Full bundle download |
+| GET | `/api/export/{id}/html` | `text/html` attachment | HTML document only |
+| GET | `/api/export/{id}/json` | `application/json` attachment | All stages combined |
+| GET | `/api/export/{id}/json/{stage}` | `application/json` attachment | Single stage JSON |
+| GET | `/api/export/{id}/manifest` | JSON | Bundle metadata preview (no file content) |
+
+### PDF Hook Point
+
+`ExportService.export_pdf()` raises `NotImplementedError` with a clear message. The HTML pipeline produces print-ready output — no content changes are needed when a PDF renderer (WeasyPrint, Playwright, headless Chrome) is integrated. The zip bundle's `pdf/PENDING.txt` gives complete instructions for browser-based and headless PDF generation.
+
+### Key Classes
+
+| Class | File | Responsibility |
+|-------|------|---------------|
+| `ExportService` | `services/export_service.py` | Orchestrates render + packaging; exposes per-format methods |
+| `ZipPackageBuilder` | `services/export_service.py` | In-memory zip builder — writes manifest, html/, json/, pdf/ |
+| `BundleManifest` | `services/export_service.py` | Dataclass serialized as `manifest.json` inside the zip |
+| `ExportError` | `services/export_service.py` | Base export error |
+| `ExportNotReadyError` | `services/export_service.py` | Raised when no stages are complete (→ HTTP 400) |
 
 ## Model Integration Layer (`models_integration/`)
 
