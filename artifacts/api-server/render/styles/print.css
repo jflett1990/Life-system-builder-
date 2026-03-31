@@ -24,20 +24,57 @@
 
 
 /* ══ @page Rules ══════════════════════════════════════════════════════════ */
+/*
+  These rules are read by both the native browser print engine AND Pagedjs.
+  Margin boxes (@top-right, @bottom-center) are Pagedjs-specific — they are
+  ignored by browsers without Pagedjs but activate automatically when Pagedjs
+  is present.
+*/
 
 @page {
   size: letter portrait;        /* 8.5in × 11in = 215.9mm × 279.4mm        */
   margin: 20mm;                 /* Matches --page-margin-v and --page-margin-h */
+
+  /* Page number — top-right margin box (Pagedjs only) */
+  @top-right {
+    content: counter(page);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 8pt;
+    color: #A89F91;
+    letter-spacing: 0.04em;
+    vertical-align: bottom;
+    padding-bottom: 4mm;
+  }
+
+  /* Document title running header — top-left margin box (Pagedjs only) */
+  @top-left {
+    content: string(doc-title);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 8pt;
+    color: #A89F91;
+    letter-spacing: 0.04em;
+    vertical-align: bottom;
+    padding-bottom: 4mm;
+    max-width: 120mm;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* No top margin on the cover page — cover bleeds to the physical page edge  */
 @page :first {
   margin-top: 0;
+  /* Suppress headers on the cover page */
+  @top-left   { content: none; }
+  @top-right  { content: none; }
 }
 
 /* Blank pages (inserted by browser for duplex printing) — suppress content  */
 @page :blank {
   margin: 20mm;
+  @top-left   { content: none; }
+  @top-right  { content: none; }
 }
 
 /*
@@ -362,4 +399,50 @@
   .stat-box {
     border-color: #888 !important;
   }
+}
+
+
+/* ══ Pagedjs Screen Compatibility ════════════════════════════════════════ */
+/*
+  Pagedjs rewrites the DOM — each .page div is nested inside a .pagedjs_page
+  wrapper that already applies the @page margins and size. Without these
+  overrides the .page card styles (shadow, padding, explicit width/height)
+  would double-up inside Pagedjs's own page frame.
+
+  These rules only activate when Pagedjs has run (selector requires
+  .pagedjs_page to exist). They have no effect in @media print or when
+  Pagedjs is absent.
+*/
+
+/* Strip screen card styles when Pagedjs has wrapped the .page div */
+.pagedjs_page .page {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Pagedjs page shell — give it the warm document background that body had   */
+.pagedjs_pages {
+  background: #E2DDD4;
+  padding: var(--space-8) 0;
+}
+
+/* Each Pagedjs page — white card in the previewer */
+.pagedjs_page {
+  background: var(--color-page, #fff);
+  box-shadow: 0 1px 4px rgba(0,0,0,.12), 0 0 0 0.5px rgba(0,0,0,.08);
+  margin-bottom: var(--space-8);
+}
+
+/* Running title — hidden helper element, captured by string-set             */
+/* Pagedjs reads this into the @top-left margin box on every page            */
+.lsb-doc-title-string {
+  string-set: doc-title content();
+  position: absolute;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
 }

@@ -210,12 +210,12 @@ export default function ExportPage() {
 
               {/* PDF notice */}
               <div className="border border-dashed rounded-sm p-3 space-y-1">
-                <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">PDF Export</div>
+                <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">Saving as PDF</div>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Server-side PDF rendering is not yet implemented. The HTML document is print-ready —
-                  open it in any browser and use{" "}
+                  The HTML document includes Pagedjs — a print layout engine that runs in the browser.
+                  Open it in Chrome or Edge, wait for the pagination to finish, then use{" "}
                   <span className="font-mono">File → Print → Save as PDF</span>.
-                  The zip bundle includes <span className="font-mono">pdf/PENDING.txt</span> with full instructions.
+                  This produces a WYSIWYG PDF with running page numbers and accurate page breaks.
                 </p>
               </div>
 

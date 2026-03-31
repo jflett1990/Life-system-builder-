@@ -19,7 +19,7 @@ pnpm monorepo with:
 - **Database**: Replit PostgreSQL (env: `DATABASE_URL`)
 - **AI**: OpenAI via Replit AI Integrations (`AI_INTEGRATIONS_OPENAI_BASE_URL` + `AI_INTEGRATIONS_OPENAI_API_KEY`), model `gpt-5.2`
 - **API Codegen**: Orval (OpenAPI → React Query hooks + TypeScript types)
-- **HTML Render**: Jinja2 templates + custom CSS design system
+- **HTML Render**: Jinja2 templates + custom CSS design system + Pagedjs (CSS Paged Media polyfill)
 
 ## Persistence Layer
 
@@ -94,7 +94,15 @@ LSB-{id:05d}-export.zip
 
 ### PDF Hook Point
 
-`ExportService.export_pdf()` raises `NotImplementedError` with a clear message. The HTML pipeline produces print-ready output — no content changes are needed when a PDF renderer (WeasyPrint, Playwright, headless Chrome) is integrated. The zip bundle's `pdf/PENDING.txt` gives complete instructions for browser-based and headless PDF generation.
+**Pagedjs is now embedded in every rendered HTML document** (`_document.html`). When opened in a browser, Pagedjs (loaded from unpkg CDN) runs automatically and:
+- Rewrites the DOM into properly paginated chunks matching `@page` CSS rules
+- Activates `@page` margin boxes: page number (top-right), running document title (top-left)
+- Enforces `break-inside: avoid` reliably across browsers
+- Produces a WYSIWYG preview — what you see in the browser matches the printed PDF exactly
+
+The `DocumentFrame.tsx` preview iframe uses a Blob URL (not a `data:` URI) with `sandbox="allow-same-origin allow-scripts"` to allow Pagedjs to execute. A Print button in the toolbar calls `window.print()` inside the iframe.
+
+`ExportService.export_pdf()` raises `NotImplementedError` with a clear message. For PDF: open the downloaded HTML in Chrome/Edge, wait for Pagedjs to paginate, then File → Print → Save as PDF.
 
 ### Key Classes
 

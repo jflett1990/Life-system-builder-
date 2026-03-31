@@ -19,8 +19,94 @@
 /* ── Print Styles ─────────────────────────────────────────────────── */
 {% include 'styles/print.css' %}
   </style>
+
+  <!--
+    Pagedjs — CSS Paged Media polyfill
+    https://pagedjs.org
+
+    Pagedjs reads the @page rules and break-* declarations already in print.css
+    and renders a paginated preview in the browser that matches print output exactly.
+    Benefits over raw browser print:
+      • @page margin boxes (running page numbers, headers)
+      • Consistent cross-browser pagination
+      • WYSIWYG — what you see is what prints
+      • break-inside: avoid enforced reliably
+
+    auto:false — we register a completion handler before triggering,
+    so the loading overlay disappears cleanly after pagination.
+
+    Fallback: if CDN is unavailable (offline), the 4-second timeout
+    removes the overlay and the document is still printable via native
+    browser print (the @media print CSS remains fully functional).
+  -->
+  <script>window.PagedConfig = { auto: false };</script>
+  <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"
+          onerror="window.__pagedjs_failed=true"></script>
+  <script>
+  (function () {
+    var TIMEOUT_MS = 4000;
+
+    function hideLoading() {
+      var el = document.getElementById('lsb-loading');
+      if (el) el.remove();
+    }
+
+    // Fallback: remove overlay even if Pagedjs fails or takes too long
+    var fallback = setTimeout(hideLoading, TIMEOUT_MS);
+
+    if (window.__pagedjs_failed || typeof Paged === 'undefined') {
+      // Script failed to load — show document without Pagedjs
+      clearTimeout(fallback);
+      hideLoading();
+      return;
+    }
+
+    // Register a completion handler, then trigger pagination
+    var LSBHandler = (function(_super) {
+      function LSBHandler() { _super.apply(this, arguments); }
+      LSBHandler.prototype = Object.create(_super.prototype);
+      LSBHandler.prototype.afterRendered = function(pages) {
+        clearTimeout(fallback);
+        hideLoading();
+      };
+      return LSBHandler;
+    }(Paged.Handler));
+
+    Paged.registerHandlers(LSBHandler);
+    window.PagedPolyfill.preview();
+  }());
+  </script>
 </head>
 <body>
+
+<!-- Loading overlay — removed by Pagedjs completion handler or timeout fallback -->
+<div id="lsb-loading" aria-hidden="true" style="
+  position: fixed;
+  inset: 0;
+  background: #E2DDD4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 9999;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  color: #8A8375;
+  letter-spacing: 0.05em;
+">
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="opacity:0.4">
+    <rect x="2" y="2" width="16" height="16" rx="1" stroke="#433F34" stroke-width="1.2"/>
+    <line x1="5" y1="6" x2="15" y2="6" stroke="#433F34" stroke-width="1"/>
+    <line x1="5" y1="9" x2="15" y2="9" stroke="#433F34" stroke-width="1"/>
+    <line x1="5" y1="12" x2="12" y2="12" stroke="#433F34" stroke-width="1"/>
+  </svg>
+  <span>Paginating document…</span>
+</div>
+
+<!-- Hidden string capture for Pagedjs running header (@top-left margin box) -->
+<span class="lsb-doc-title-string" aria-hidden="true">{{ manifest.document_title | default("Life System Document") }}</span>
+
 {% for page in manifest.pages %}
 <div class="page page--{{ page.archetype }}" id="{{ page.page_id }}">
   {% set data = page.data %}
