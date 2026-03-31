@@ -1,0 +1,44 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# APPENDIX — NOTES                                                             #}
+{# Blank ruled lines filling the page for handwritten notes                   #}
+{# data keys: page_number (1-indexed within notes sequence), total_pages       #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+
+<!-- Notes page header -->
+<div style="
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-weight-md) solid var(--color-rule-heavy);
+  margin-bottom: var(--space-8);
+">
+  <span style="
+    font-family: var(--font-label);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  ">Notes</span>
+  <span style="
+    font-family: var(--font-label);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-muted);
+  ">Page {{ data.page_number | default(1) }} of {{ data.total_pages | default(3) }}</span>
+</div>
+
+<!-- Ruled lines — 26 lines fills a full page leaving room for header/footer -->
+<div style="flex: 1; display: flex; flex-direction: column; gap: 0;">
+  {% for i in range(26) %}
+  <div style="
+    border-bottom: 0.5px solid var(--color-rule);
+    height: 9.5mm;
+    flex-shrink: 0;
+  "></div>
+  {% endfor %}
+</div>
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

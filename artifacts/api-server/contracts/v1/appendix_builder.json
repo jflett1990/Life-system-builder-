@@ -1,0 +1,27 @@
+{
+  "name": "appendix_builder",
+  "version": "1.0",
+  "stage": "appendix_builder",
+  "model_role": "executor",
+  "execution_mode": "single",
+  "description": "Generates domain-specific appendix content: a glossary of 15–25 terms, a situational guide for when to call a professional (8–12 triggers), and a key resources table — all specific to the life event and audience, not generic boilerplate.",
+  "output_mode": "json",
+  "upstream_dependencies": ["system_architecture", "document_outline", "chapter_expansion"],
+
+  "system_instructions": "You are a specialist reference-document author creating the appendix section of a bespoke operational control manual. Every entry must be specific to the life event domain — never generic boilerplate.\n\nYour output has three sections:\n\n1. GLOSSARY (15–25 terms)\n   - Terms must be domain-specific (e.g., for estate planning: 'Probate', 'Per Stirpes', 'Letters Testamentary'; for home purchase: 'Escrow', 'Title Insurance', 'Earnest Money')\n   - Definitions should be practical and action-oriented, not dictionary definitions\n   - Include terms a layperson would encounter but not immediately understand\n   - Sort terms alphabetically\n\n2. WHEN TO CALL A PROFESSIONAL (8–12 situations)\n   - Each situation must describe a specific, recognizable triggering scenario\n   - The professional_type must be precise (e.g., 'Estate Attorney', 'Certified Financial Planner', 'Licensed Appraiser') not vague ('Lawyer', 'Advisor')\n   - Include urgency level: 'immediate' (within 24–48 hours), 'soon' (within 1–2 weeks), or 'planned' (schedule in advance)\n   - Situations must be specific to this life event — not generic 'when things get complicated'\n\n3. KEY RESOURCES (leave rows blank — structure only)\n   - Provide 8–12 resource category rows that are relevant to the life event\n   - The 'organization' field should name the TYPE of organization (e.g., 'County Probate Court', 'State Insurance Commissioner', 'HUD-Approved Housing Counselor')\n   - The 'service' field describes what they provide\n   - Leave phone, website, hours blank — these are fill-in-the-blank fields for the reader\n\nOutput strict JSON matching the schema. No markdown, no prose outside the JSON object.",
+
+  "user_prompt_template": "PROJECT CONTEXT:\nLife Event: {life_event}\nAudience: {audience}\nTone: {tone}\nAdditional Context: {context}\n\nThe upstream SYSTEM_ARCHITECTURE and CHAPTER_EXPANSION outputs are included above for domain and chapter context.\n\nGenerate the appendix content for this {life_event} operational manual.\n\nREQUIREMENTS:\n- All glossary terms must be specific to {life_event} — not general legal/financial terms\n- Professional triggers must reflect real situations a person navigating {life_event} would encounter\n- Key resource organization types must be appropriate for {life_event} (court types, agency types, professional associations)\n- Tone should match the audience: {audience}\n\nReturn JSON with this exact structure:\n{{\n  \"life_event\": \"{life_event}\",\n  \"glossary_terms\": [\n    {{\"term\": \"...\", \"definition\": \"...\"}},\n    ...\n  ],\n  \"professional_triggers\": [\n    {{\"situation\": \"...\", \"professional_type\": \"...\", \"urgency\": \"immediate|soon|planned\"}},\n    ...\n  ],\n  \"key_resources\": [\n    {{\"organization\": \"...\", \"service\": \"...\", \"phone\": \"\", \"website\": \"\", \"hours\": \"\"}},\n    ...\n  ],\n  \"include_notes_pages\": true,\n  \"notes_page_count\": 3\n}}",
+
+  "output_schema": {
+    "life_event": "string — the life event this appendix covers",
+    "glossary_terms": "array of {term, definition} — 15–25 domain-specific terms sorted alphabetically",
+    "professional_triggers": "array of {situation, professional_type, urgency} — 8–12 specific triggering scenarios",
+    "key_resources": "array of {organization, service, phone, website, hours} — 8–12 resource types with blank contact fields",
+    "include_notes_pages": "boolean — always true",
+    "notes_page_count": "integer — always 3"
+  },
+  "required_output_fields": [
+    "glossary_terms",
+    "professional_triggers"
+  ]
+}

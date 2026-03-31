@@ -1,0 +1,48 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/section_header.html' import section_header %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# APPENDIX — GLOSSARY                                                          #}
+{# Two-column definition list of domain-specific terms                         #}
+{# data keys: life_event, glossary_terms (list of {term, definition})          #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{{ section_header(label="Appendix A", title="Glossary of Key Terms") }}
+
+{% if data.life_event %}
+<p class="body-text body-text--secondary" style="max-width:140mm;margin-bottom:var(--space-8)">
+  Domain-specific terminology for navigating {{ data.life_event }}. Definitions are written for practical use, not legal citation.
+</p>
+{% endif %}
+
+{% if data.glossary_terms %}
+<div style="
+  columns: 2;
+  column-gap: var(--space-10);
+  column-rule: 0.5px solid var(--color-rule);
+">
+  {% for term_entry in data.glossary_terms %}
+  <div style="
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-5);
+    border-bottom: var(--border-rule);
+  ">
+    <div style="
+      font-family: var(--font-label);
+      font-size: var(--text-sm);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wide);
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-1);
+    ">{{ term_entry.term }}</div>
+    <p class="body-text body-text--secondary" style="font-size: var(--text-sm); line-height: var(--leading-normal)">
+      {{ term_entry.definition }}
+    </p>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="body-text body-text--muted">No glossary terms defined.</p>
+{% endif %}
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

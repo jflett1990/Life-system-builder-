@@ -1,0 +1,78 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/section_header.html' import section_header %}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{# APPENDIX — WHEN TO CALL A PROFESSIONAL                                       #}
+{# Ruled table of triggering situations + professional type + urgency          #}
+{# data keys: life_event, professional_triggers                                #}
+{#   professional_triggers: list of {situation, professional_type, urgency}    #}
+{# ─────────────────────────────────────────────────────────────────────────── #}
+{{ section_header(label="Appendix B", title="When to Call a Professional") }}
+
+{% if data.life_event %}
+<p class="body-text body-text--secondary" style="max-width:140mm;margin-bottom:var(--space-8)">
+  Specific situations during {{ data.life_event }} that warrant professional guidance. Acting promptly on these triggers prevents compounding problems.
+</p>
+{% endif %}
+
+{% if data.professional_triggers %}
+<div>
+  <!-- Table header -->
+  <div style="
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-rule);
+    margin-bottom: 0;
+  ">
+    <span style="font-family:var(--font-label);font-size:var(--text-xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--color-text-primary)">Situation</span>
+    <span style="font-family:var(--font-label);font-size:var(--text-xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--color-text-primary)">Professional to Contact</span>
+    <span style="font-family:var(--font-label);font-size:var(--text-xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--color-text-primary)">Urgency</span>
+  </div>
+
+  {% for trigger in data.professional_triggers %}
+  <div style="
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-4);
+    border-bottom: var(--border-rule);
+    break-inside: avoid;
+    page-break-inside: avoid;
+    {% if loop.index is odd %}background: var(--color-page-bg);{% endif %}
+  ">
+    <p class="body-text" style="line-height:var(--leading-normal)">{{ trigger.situation }}</p>
+    <p class="body-text" style="font-weight:var(--weight-semibold);line-height:var(--leading-normal)">{{ trigger.professional_type }}</p>
+    <div style="display:flex;align-items:flex-start;padding-top:2px">
+      {% set urgency = trigger.urgency | default("planned") | lower %}
+      {% if urgency == "immediate" %}
+      <span style="
+        font-family:var(--font-label);font-size:var(--text-2xs);font-weight:var(--weight-semibold);
+        letter-spacing:var(--tracking-wide);text-transform:uppercase;
+        color:var(--color-fail);border:1px solid var(--color-fail);
+        padding:2px var(--space-2);white-space:nowrap;
+      ">Immediate</span>
+      {% elif urgency == "soon" %}
+      <span style="
+        font-family:var(--font-label);font-size:var(--text-2xs);font-weight:var(--weight-semibold);
+        letter-spacing:var(--tracking-wide);text-transform:uppercase;
+        color:var(--color-text-secondary);border:1px solid var(--color-text-secondary);
+        padding:2px var(--space-2);white-space:nowrap;
+      ">Soon</span>
+      {% else %}
+      <span style="
+        font-family:var(--font-label);font-size:var(--text-2xs);
+        letter-spacing:var(--tracking-wide);text-transform:uppercase;
+        color:var(--color-text-muted);border:1px solid var(--color-rule);
+        padding:2px var(--space-2);white-space:nowrap;
+      ">Planned</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="body-text body-text--muted">No professional triggers defined.</p>
+{% endif %}
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

@@ -365,7 +365,88 @@ class ManifestBuilder:
                     },
                 ))
 
-        # ── 8. Rapid Response Page ─────────────────────────────────────────────
+        # ── 8. Appendix Pages (when appendix_builder output is present) ────────
+        appendix = all_outputs.get("appendix_builder", {})
+        if appendix:
+            glossary_terms = appendix.get("glossary_terms", [])
+            professional_triggers = appendix.get("professional_triggers", [])
+            key_resources = appendix.get("key_resources", [])
+            include_notes = appendix.get("include_notes_pages", True)
+            notes_count = appendix.get("notes_page_count", 3)
+            life_event = appendix.get("life_event", arch.get("life_event", ""))
+
+            # Appendix section divider
+            pages.append(ManifestPage(
+                page_id="pg-div-appendix",
+                sequence=next_seq(),
+                archetype="section_divider",
+                data={
+                    "section_number": "A",
+                    "section_title": "Appendix",
+                    "section_subtitle": "Reference materials, glossary, and professional guidance",
+                    "domain_count": None,
+                },
+            ))
+
+            # Appendix A: Glossary
+            if glossary_terms:
+                pages.append(ManifestPage(
+                    page_id="pg-appendix-glossary",
+                    sequence=next_seq(),
+                    archetype="appendix_glossary",
+                    data={
+                        "life_event": life_event,
+                        "glossary_terms": glossary_terms,
+                    },
+                ))
+
+            # Appendix B: When to Call a Professional
+            if professional_triggers:
+                pages.append(ManifestPage(
+                    page_id="pg-appendix-professional-guide",
+                    sequence=next_seq(),
+                    archetype="appendix_professional_guide",
+                    data={
+                        "life_event": life_event,
+                        "professional_triggers": professional_triggers,
+                    },
+                ))
+
+            # Appendix C: Key Resources & Contacts (table worksheet)
+            if key_resources:
+                pages.append(ManifestPage(
+                    page_id="pg-appendix-key-resources",
+                    sequence=next_seq(),
+                    archetype="worksheet_page",
+                    data={
+                        "id": "appendix-key-resources",
+                        "title": "Key Resources & Contacts",
+                        "purpose": "Use this worksheet to record the organizations, agencies, and professionals relevant to your situation. Fill in contact details as you gather them.",
+                        "layout": "table",
+                        "table_columns": ["Organization", "Service", "Phone", "Website", "Hours"],
+                        "table_row_count": max(len(key_resources), 10),
+                        "system_name": system_name,
+                        "domain_name": "Reference",
+                        "chapter_number": None,
+                        "chapter_title": "Appendix C",
+                        "_key_resources_prefill": key_resources,
+                    },
+                ))
+
+            # Appendix D–F: Notes pages
+            if include_notes:
+                for note_page_idx in range(max(notes_count, 1)):
+                    pages.append(ManifestPage(
+                        page_id=f"pg-appendix-notes-{note_page_idx + 1}",
+                        sequence=next_seq(),
+                        archetype="appendix_notes",
+                        data={
+                            "page_number": note_page_idx + 1,
+                            "total_pages": notes_count,
+                        },
+                    ))
+
+        # ── 9. Rapid Response Page ─────────────────────────────────────────────
         failure_modes = arch.get("failure_modes", [])
         if failure_modes or arch.get("operating_constraints"):
             structured_modes = []
