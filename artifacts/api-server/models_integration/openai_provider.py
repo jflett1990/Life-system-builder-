@@ -276,12 +276,16 @@ class OpenAIProvider(BaseModelProvider):
                 response = self._client.chat.completions.create(
                     model=self._model,
                     messages=messages,  # type: ignore[arg-type]
-                    max_completion_tokens=8192,
                 )
-                content = response.choices[0].message.content or ""
-                logger.debug(
-                    "OpenAI response | stage=%s attempt=%d len=%d",
-                    stage, attempt, len(content),
+                choice = response.choices[0]
+                finish_reason = choice.finish_reason or "unknown"
+                # Reasoning models (o1/o3 family) may return content=None when the
+                # completion_token budget is exhausted by internal reasoning steps.
+                # Fall back to empty string; caller will handle the parse failure.
+                content = choice.message.content or ""
+                logger.info(
+                    "OpenAI response | stage=%s attempt=%d len=%d finish_reason=%s",
+                    stage, attempt, len(content), finish_reason,
                 )
                 return content
 
@@ -379,11 +383,25 @@ class OpenAIProvider(BaseModelProvider):
           [original system] + [original user] + [bad assistant response] + [correction user]
 
         The correction user message tells the model exactly which fields failed.
+        Uses the parsed/repaired dict (not the raw broken text) as the assistant content
+        so the model sees a clean JSON representation, not its malformed original output.
         """
+        import json as _json
+
+        # Prefer the extracted dict over the (possibly broken) raw text for the
+        # assistant turn — this is what the parser actually read, so it's coherent.
+        if parse_result.raw_data:
+            try:
+                assistant_content = _json.dumps(parse_result.raw_data, indent=2)[:4000]
+            except Exception:
+                assistant_content = parse_result.raw_text[:4000]
+        else:
+            assistant_content = parse_result.raw_text[:4000]
+
         correction_user = parse_result.for_retry_prompt()
         return [
             *original_messages,
-            {"role": "assistant", "content": parse_result.raw_text[:4000]},
+            {"role": "assistant", "content": assistant_content},
             {"role": "user", "content": correction_user},
         ]
 

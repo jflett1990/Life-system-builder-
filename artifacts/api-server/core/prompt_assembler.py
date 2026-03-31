@@ -49,6 +49,11 @@ _USER_MESSAGE_HEADER = (
 
 _UPSTREAM_CONTEXT_HEADER = "\n\n--- UPSTREAM STAGE CONTEXT ---\n"
 
+# Hard cap on how many characters of upstream JSON are included per dependency.
+# Keeps total prompt tokens well within the model's context window.
+# At ~4 chars/token this is ≈ 2 000 tokens per upstream stage.
+_MAX_UPSTREAM_CHARS = 8000
+
 _SCHEMA_BLOCK = (
     "\n\n--- REQUIRED OUTPUT SCHEMA ---\n"
     "{schema_json}\n"
@@ -199,10 +204,19 @@ class PromptAssembler:
         for dep in dependencies:
             if dep in upstream_outputs:
                 label = dep.upper().replace("_", " ")
-                parts.append(
-                    f"\n[{label}]\n"
-                    + json.dumps(upstream_outputs[dep], indent=2, ensure_ascii=False)
-                )
+                raw = json.dumps(upstream_outputs[dep], indent=2, ensure_ascii=False)
+                if len(raw) > _MAX_UPSTREAM_CHARS:
+                    truncated = raw[:_MAX_UPSTREAM_CHARS]
+                    # Find the last complete line to avoid cutting mid-value
+                    last_nl = truncated.rfind("\n")
+                    if last_nl > 0:
+                        truncated = truncated[:last_nl]
+                    raw = truncated + f"\n  ... [truncated — {len(raw) - len(truncated)} chars omitted]\n}}"
+                    logger.warning(
+                        "Upstream context for '%s' truncated to %d chars (was %d) to stay within token budget",
+                        dep, _MAX_UPSTREAM_CHARS, len(json.dumps(upstream_outputs[dep], ensure_ascii=False)),
+                    )
+                parts.append(f"\n[{label}]\n" + raw)
             else:
                 parts.append(f"\n[{dep.upper()}] — NOT YET AVAILABLE")
 
@@ -225,7 +239,10 @@ class PromptAssembler:
 
         for stage_name, output in upstream_outputs.items():
             key = f"upstream_{stage_name}"
-            context[key] = json.dumps(output, indent=2, ensure_ascii=False)
+            serialised = json.dumps(output, indent=2, ensure_ascii=False)
+            if len(serialised) > _MAX_UPSTREAM_CHARS:
+                serialised = serialised[:_MAX_UPSTREAM_CHARS] + "\n... [truncated]"
+            context[key] = serialised
 
         try:
             return template.format_map(_SafeDict(context))

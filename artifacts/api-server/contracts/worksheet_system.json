@@ -1,17 +1,17 @@
 {
   "stage": "worksheet_system",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Converts system architecture into a structured worksheet system with actionable prompts and decision frameworks.",
-  "system_prompt": "You are an operational systems designer specialising in decision-support worksheets. You receive a structured system architecture and convert it into a rigorous worksheet system. Each worksheet must be actionable, non-generic, and directly derived from the upstream architecture — not from the original life event.",
-  "user_prompt_template": "System Architecture:\n{upstream_json}\n\nDesign a worksheet system for this operational system. Return ONLY valid JSON — no markdown, no prose.\n\nRequired schema:\n{{\n  \"worksheet_system_name\": \"string\",\n  \"worksheets\": [\n    {{\n      \"id\": \"string — slug like 'ws-01'\",\n      \"title\": \"string\",\n      \"domain\": \"string — must match a control domain from the architecture\",\n      \"purpose\": \"string — one sentence\",\n      \"sections\": [\n        {{\n          \"section_title\": \"string\",\n          \"fields\": [\n            {{\n              \"field_id\": \"string\",\n              \"label\": \"string\",\n              \"type\": \"text|date|boolean|number|select|multi-select\",\n              \"options\": [\"string\"],\n              \"required\": true\n            }}\n          ]\n        }}\n      ],\n      \"decision_gates\": [\n        {{\n          \"gate_id\": \"string\",\n          \"condition\": \"string — decision condition\",\n          \"pass_action\": \"string\",\n          \"fail_action\": \"string\"\n        }}\n      ]\n    }}\n  ],\n  \"completion_sequence\": [\"string — ordered worksheet IDs\"]\n}}",
+  "system_prompt": "You are an operational systems designer specialising in decision-support worksheets. You receive a structured system architecture and convert it into a rigorous worksheet system. Each worksheet must be actionable, non-generic, and directly derived from the upstream architecture — not from the original life event.\n\nCRITICAL: You MUST output a single flat JSON object with exactly these three top-level keys: worksheet_system_name, completion_sequence, worksheets. Do NOT nest them inside another object. Do NOT use any other key names.",
+  "user_prompt_template": "System Architecture:\n{upstream_json}\n\nDesign a worksheet system for this operational system. Return ONLY valid JSON — no markdown, no prose, no code fences.\n\nIMPORTANT: Output the fields in EXACTLY this order — scalar fields first, then the array:\n\n{{\n  \"worksheet_system_name\": \"string — name of this worksheet system\",\n  \"completion_sequence\": [\"ws-01\", \"ws-02\", ...],\n  \"worksheets\": [\n    {{\n      \"id\": \"string — slug like 'ws-01'\",\n      \"title\": \"string\",\n      \"domain\": \"string — must match a control domain from the architecture\",\n      \"purpose\": \"string — one sentence\",\n      \"sections\": [\n        {{\n          \"section_title\": \"string\",\n          \"fields\": [\n            {{\n              \"field_id\": \"string\",\n              \"label\": \"string\",\n              \"type\": \"text|date|boolean|number|select|multi-select\",\n              \"options\": [\"string\"],\n              \"required\": true\n            }}\n          ]\n        }}\n      ],\n      \"decision_gates\": [\n        {{\n          \"gate_id\": \"string\",\n          \"condition\": \"string — decision condition\",\n          \"pass_action\": \"string\",\n          \"fail_action\": \"string\"\n        }}\n      ]\n    }}\n  ]\n}}\n\nRemember: worksheet_system_name and completion_sequence MUST appear BEFORE the worksheets array. The top-level keys must be exactly: worksheet_system_name, completion_sequence, worksheets.",
   "output_schema": {
     "worksheet_system_name": "string",
-    "worksheets": "array",
-    "completion_sequence": "array"
+    "completion_sequence": "array",
+    "worksheets": "array"
   },
   "required_fields": [
     "worksheet_system_name",
-    "worksheets",
-    "completion_sequence"
+    "completion_sequence",
+    "worksheets"
   ]
 }

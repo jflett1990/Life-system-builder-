@@ -77,6 +77,8 @@ class ParseResult:
 
     def for_retry_prompt(self) -> str:
         """Format for the schema repair user message sent to the model."""
+        import json as _json
+
         lines = [
             f"Your previous response for stage '{self.stage}' failed schema validation.",
             f"You must fix the following {len(self.validation_errors)} error(s):",
@@ -86,16 +88,32 @@ class ParseResult:
             lines.append(f"  {i}. {err}")
         if len(self.validation_errors) > 8:
             lines.append(f"  ... and {len(self.validation_errors) - 8} more errors.")
+
+        # Show the extracted (parsed) dict when available — it's cleaner than the
+        # potentially-malformed raw_text and helps the model understand what it produced.
+        if self.raw_data:
+            try:
+                shown = _json.dumps(self.raw_data, indent=2)
+                shown = shown[:1500] + ("..." if len(shown) > 1500 else "")
+                label = "Your previous response (as parsed):"
+            except Exception:
+                shown = self.raw_text[:1500] + ("..." if len(self.raw_text) > 1500 else "")
+                label = "Your previous (invalid) response was:"
+        else:
+            shown = self.raw_text[:1500] + ("..." if len(self.raw_text) > 1500 else "")
+            label = "Your previous (invalid) response was:"
+
         lines += [
             "",
-            "Your previous (invalid) response was:",
+            label,
             "---",
-            self.raw_text[:1500] + ("..." if len(self.raw_text) > 1500 else ""),
+            shown,
             "---",
             "",
             "Instructions:",
             "• Return the COMPLETE corrected JSON object — not just the fixed fields.",
-            "• All required fields must be present and non-empty.",
+            "• All required fields must be present at the TOP LEVEL (not nested).",
+            "• All required fields must be non-empty.",
             "• Return ONLY valid JSON. No markdown. No prose. No code fences.",
             "• The first character must be '{' and the last must be '}'.",
         ]

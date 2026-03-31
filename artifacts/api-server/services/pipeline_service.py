@@ -21,7 +21,8 @@ Execution flow per stage:
 
 Error handling:
   - ModelProviderError / ModelOutputError → stage status = "failed"
-  - OutputValidationError (schema + strict) → stage status = "schema_failed"
+  - Schema validation fails (strict) → stage status = "schema_failed"
+    raw_model_output is always saved BEFORE the schema failure is recorded
     error_message = structured list of Pydantic errors with field paths
 """
 from __future__ import annotations
@@ -40,7 +41,6 @@ from models_integration import (
     ModelService,
     ModelProviderError,
     ModelOutputError,
-    OutputValidationError,
 )
 from repositories.stage_repo import StageOutputRepository
 from schemas.stage import STAGE_NAMES
@@ -139,7 +139,8 @@ class PipelineService:
         try:
             structured, parse_result = self._model.generate_structured_output(prompt, contract)
 
-            # Always persist raw model output for debugging — regardless of schema result
+            # Always persist raw model output immediately — before any further processing
+            # that might raise so we never lose the LLM response on schema failure.
             stage_row.set_raw_output(structured.raw_text)
 
             if structured.was_repaired:
@@ -148,48 +149,47 @@ class PipelineService:
                     stage, project_id, structured.repair_attempts,
                 )
 
-            # Log structural field-presence validation (non-fatal)
-            field_validation = self._model.validate_output(
-                stage=stage,
-                output=structured.data,
-                required_fields=contract.required_output_fields,
-                schema=contract.output_schema,
-            )
-            if not field_validation.valid:
-                logger.warning(
-                    "Stage '%s' project %d field validation: %s",
-                    stage, project_id, field_validation.error_summary,
+            # If schema validation failed, mark as schema_failed now that raw text is saved
+            if not parse_result.success and parse_result.has_schema:
+                stage_row.status = "schema_failed"
+                stage_row.error_message = parse_result.for_error_message()
+                logger.error(
+                    "Stage '%s' SCHEMA FAILED | project=%d | %s",
+                    stage, project_id, parse_result.error_summary(5),
                 )
-                stage_row.set_validation(field_validation.to_dict())
+            else:
+                # Log structural field-presence validation (non-fatal)
+                field_validation = self._model.validate_output(
+                    stage=stage,
+                    output=structured.data,
+                    required_fields=contract.required_output_fields,
+                    schema=contract.output_schema,
+                )
+                if not field_validation.valid:
+                    logger.warning(
+                        "Stage '%s' project %d field validation: %s",
+                        stage, project_id, field_validation.error_summary,
+                    )
+                    stage_row.set_validation(field_validation.to_dict())
 
-            # Persist the validated (or best-available) output dict
-            stage_row.set_output(structured.data)
+                # Persist the validated (or best-available) output dict
+                stage_row.set_output(structured.data)
 
-            # Generate and store preview text
-            preview = self._model.generate_preview_text(stage, structured.data)
-            stage_row.preview_text = preview.text
+                # Generate and store preview text
+                preview = self._model.generate_preview_text(stage, structured.data)
+                stage_row.preview_text = preview.text
 
-            stage_row.status = "complete"
+                stage_row.status = "complete"
 
-            logger.info(
-                "Stage '%s' COMPLETE | project=%d | schema_pass=%s | repaired=%s "
-                "| attempt=%d | preview_from_llm=%s",
-                stage, project_id,
-                parse_result.success,
-                structured.was_repaired,
-                parse_result.attempt,
-                preview.from_llm,
-            )
-
-        except OutputValidationError as e:
-            # Schema validation exhausted all retries — structured failure
-            stage_row.status = "schema_failed"
-            stage_row.error_message = str(e)
-            # raw_model_output is already set above if we got past JSON extraction
-            logger.error(
-                "Stage '%s' SCHEMA FAILED | project=%d | %s",
-                stage, project_id, str(e)[:300],
-            )
+                logger.info(
+                    "Stage '%s' COMPLETE | project=%d | schema_pass=%s | repaired=%s "
+                    "| attempt=%d | preview_from_llm=%s",
+                    stage, project_id,
+                    parse_result.success,
+                    structured.was_repaired,
+                    parse_result.attempt,
+                    preview.from_llm,
+                )
 
         except (ModelProviderError, ModelOutputError) as e:
             stage_row.status = "failed"

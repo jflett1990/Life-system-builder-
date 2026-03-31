@@ -6,8 +6,8 @@ Required fields: worksheet_system_name, worksheets, completion_sequence
 """
 from __future__ import annotations
 
-from typing import Literal
-from pydantic import BaseModel, Field, field_validator
+from typing import Any, Literal
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic import ConfigDict
 
 
@@ -54,6 +54,39 @@ class WorksheetSystemOutput(BaseModel):
     worksheet_system_name: str = Field(..., min_length=1)
     worksheets: list[Worksheet] = Field(..., min_length=1)
     completion_sequence: list[str] = Field(..., min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _unwrap_nested(cls, values: Any) -> Any:
+        """
+        Handle cases where the LLM wraps the response inside a named object.
+
+        Common patterns produced by the model:
+          { "worksheet_system": { ... } }   → unwrap
+          { "system": { ... } }             → unwrap
+          { "data": { ... } }               → unwrap
+        """
+        if not isinstance(values, dict):
+            return values
+
+        # If the required fields are already at the top level, nothing to do
+        _required = {"worksheet_system_name", "worksheets", "completion_sequence"}
+        if _required & values.keys():
+            return values
+
+        # Try common wrapper keys
+        for wrapper_key in ("worksheet_system", "system", "data", "output"):
+            inner = values.get(wrapper_key)
+            if isinstance(inner, dict) and (_required & inner.keys()):
+                return inner
+
+        # If there's exactly one key and its value is a dict, try unwrapping it
+        if len(values) == 1:
+            only_val = next(iter(values.values()))
+            if isinstance(only_val, dict) and (_required & only_val.keys()):
+                return only_val
+
+        return values
 
     @field_validator("completion_sequence", mode="before")
     @classmethod

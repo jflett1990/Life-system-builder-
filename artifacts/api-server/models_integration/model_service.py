@@ -122,13 +122,18 @@ class ModelService:
             prompt, contract, schema_class=schema_class
         )
 
-        # Decide final data
+        # Decide final data — never raise here; let the caller save raw output first
         if parse_result.success and parse_result.parsed_data is not None:
             final_data = parse_result.parsed_data
         else:
             final_data = parse_result.raw_data
-            if parse_result.has_schema:
-                self._handle_schema_failure(stage, parse_result)
+            if parse_result.has_schema and self._strict:
+                # Log the failure now; caller is responsible for raising OutputValidationError
+                # after it has persisted the raw output to the database.
+                logger.error(
+                    "Stage '%s' schema validation FAILED after %d attempt(s): %s",
+                    stage, parse_result.attempt, parse_result.error_summary(5),
+                )
 
         # Replace output.data with the decided final data
         final_output = StructuredOutput(

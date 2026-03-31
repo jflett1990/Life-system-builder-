@@ -176,6 +176,30 @@ Every pipeline stage has a Pydantic model for strict output validation.
 
 All schemas use `ConfigDict(extra="allow")` — unknown fields are preserved but not required.
 
+`WorksheetSystemOutput` includes a `model_validator(mode="before")` that auto-unwraps common nesting patterns the model may produce (e.g. `{"worksheet_system": {...}}` → top-level fields).
+
+## Critical Architecture Notes
+
+### `gpt-5.2` is a Reasoning Model
+
+`gpt-5.2` (used via Replit AI Integrations) is a reasoning model (o1/o3 family). This has two important implications:
+
+1. **Never set `max_completion_tokens`**: Reasoning models use completion tokens for internal "thinking" steps. Setting `max_completion_tokens=8192` caused the model to exhaust its entire token budget on reasoning and return empty content (`len=0, finish_reason=length`). The fix is to omit `max_completion_tokens` entirely and let the model use its natural output budget.
+
+2. **Responses can take 2-3 minutes**: Complex stages like `worksheet_system` may take 100-120 seconds to respond. The 120s timeout in `model_timeout_s` is appropriate; do not lower it.
+
+### Upstream Context Truncation
+
+Large upstream stage outputs are capped at `_MAX_UPSTREAM_CHARS = 8000` characters per stage in `core/prompt_assembler.py`. This prevents prompt bloat from exceeding the model's input context budget. The `system_architecture` output for complex life events can be 12,000-15,000 characters; the cap truncates it to ~8,000 chars (~2,000 tokens).
+
+### Schema Failure Raw Output Preservation
+
+`ModelService.generate_structured_output()` does **not** raise `OutputValidationError`. Instead, it logs the error and returns the `(StructuredOutput, ParseResult)` tuple. `PipelineService.run_stage()` is responsible for:
+1. Calling `stage_row.set_raw_output(structured.raw_text)` immediately after the model call
+2. Checking `parse_result.success` to decide whether to mark the stage `complete` or `schema_failed`
+
+This guarantees raw model output is always saved to `raw_model_output` column, even when schema validation fails.
+
 ### ParseResult
 
 `models_integration/parser.py` — `StageOutputParser.parse()` returns a `ParseResult` dataclass:

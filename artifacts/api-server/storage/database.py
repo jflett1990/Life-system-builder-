@@ -35,3 +35,30 @@ def init_db():
 
     from storage.migrations import run_migrations
     run_migrations(engine)
+
+    _recover_orphaned_running_stages()
+
+
+def _recover_orphaned_running_stages() -> None:
+    """Reset any stages left in 'running' state from a previous server crash or restart.
+
+    Stages in 'running' state with no active request are permanently stuck — the background
+    thread was killed when the server died. Mark them 'failed' so users can re-run them.
+    """
+    from sqlalchemy import text
+    with SessionLocal() as db:
+        result = db.execute(
+            text(
+                "UPDATE stage_outputs SET status = 'failed', "
+                "error_message = 'Interrupted by server restart — please re-run this stage.' "
+                "WHERE status = 'running'"
+            )
+        )
+        db.commit()
+        count = result.rowcount
+        if count:
+            logger.warning(
+                "Startup recovery: reset %d orphaned 'running' stage(s) to 'failed'", count
+            )
+        else:
+            logger.info("Startup recovery: no orphaned running stages found")
