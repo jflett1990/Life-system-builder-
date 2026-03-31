@@ -34,6 +34,8 @@ from __future__ import annotations
 
 import io
 import json
+import tempfile
+import os
 import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -46,6 +48,100 @@ from services.render_service import RenderService, RenderServiceError
 from services.pipeline_service import PipelineService
 
 logger = get_logger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Playwright PDF renderer (async helper — called via asyncio.run)
+# ---------------------------------------------------------------------------
+
+async def _render_pdf_with_playwright(html: str, timeout_ms: int = 60_000) -> bytes:
+    """
+    Render *html* to PDF bytes using Playwright headless Chromium.
+
+    Writes the HTML to a temporary file, loads it via file:// URL, waits for
+    Pagedjs to finish pagination (signalled by window.__lsb_pdf_ready), then
+    calls page.pdf() with US Letter format and background graphics enabled.
+
+    Args:
+        html:       Complete HTML document string.
+        timeout_ms: Maximum time to wait for Pagedjs to finish (default 60 s).
+
+    Returns:
+        Raw PDF bytes.
+
+    Raises:
+        ExportError on Playwright launch/timeout failure.
+    """
+    from playwright.async_api import async_playwright, Error as PlaywrightError
+    # Import here to avoid circular; ExportError is defined later in this module
+    # We re-raise as a plain RuntimeError here; callers wrap to ExportError.
+
+    tmp_path = None
+    try:
+        # Write HTML to a temp file so Pagedjs can load external resources via file://
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".html", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(html)
+            tmp_path = f.name
+
+        file_url = f"file://{tmp_path}"
+
+        # Prefer the Nix-managed system Chromium (which has correct library linkage)
+        # over Playwright's bundled chromium-headless-shell (which lacks system libs).
+        import shutil
+        system_chromium = shutil.which("chromium") or shutil.which("chromium-browser")
+
+        async with async_playwright() as pw:
+            launch_kwargs: dict = {
+                "headless": True,
+                "args": ["--no-sandbox", "--disable-dev-shm-usage"],
+            }
+            if system_chromium:
+                launch_kwargs["executable_path"] = system_chromium
+
+            browser = await pw.chromium.launch(**launch_kwargs)
+            page = await browser.new_page()
+
+            # Navigate and wait for network to be idle (Pagedjs CDN load)
+            try:
+                await page.goto(file_url, wait_until="networkidle", timeout=timeout_ms)
+            except PlaywrightError:
+                # networkidle may not fire for file:// — fallback to domcontentloaded
+                await page.goto(file_url, wait_until="domcontentloaded", timeout=timeout_ms)
+
+            # Wait for Pagedjs to signal completion via window.__lsb_pdf_ready.
+            # The injected script uses a MutationObserver on #lsb-loading removal
+            # and a 8-second fallback — so the signal will fire within ~8 seconds
+            # regardless of whether Pagedjs actually completed.
+            try:
+                await page.wait_for_function(
+                    "window.__lsb_pdf_ready === true",
+                    timeout=15_000,  # 15s: longer than the 8s fallback in the injected script
+                )
+            except PlaywrightError:
+                # Signal never fired — generate PDF from current render state
+                logger.warning(
+                    "_render_pdf_with_playwright | Ready signal not received within 15s — "
+                    "generating PDF from current render state",
+                )
+
+            pdf_bytes = await page.pdf(
+                format="Letter",
+                print_background=True,
+                margin={"top": "0", "right": "0", "bottom": "0", "left": "0"},
+            )
+            await browser.close()
+            return pdf_bytes
+
+    except Exception as exc:
+        raise RuntimeError(f"Playwright PDF render failed: {exc}") from exc
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +257,7 @@ class ZipPackageBuilder:
         manifest: BundleManifest,
         html: str,
         stage_outputs: dict[str, Any],
+        pdf_bytes: bytes | None = None,
     ) -> bytes:
         """
         Build the zip archive and return it as raw bytes.
@@ -169,6 +266,8 @@ class ZipPackageBuilder:
             manifest:      BundleManifest to serialize as manifest.json.
             html:          Full rendered HTML string.
             stage_outputs: Dict of stage_name → output dict for each completed stage.
+            pdf_bytes:     Optional PDF bytes. If provided, included as pdf/document.pdf.
+                           If None, falls back to pdf/PENDING.txt.
 
         Returns:
             Raw zip bytes — ready for a HTTP response body.
@@ -191,14 +290,18 @@ class ZipPackageBuilder:
                     json.dumps(output_data, indent=2, ensure_ascii=False),
                 )
 
-            # pdf/PENDING.txt — honest PDF hook
-            zf.writestr("pdf/PENDING.txt", _PDF_PENDING_TEXT)
+            # pdf/document.pdf or pdf/PENDING.txt fallback
+            if pdf_bytes:
+                zf.writestr("pdf/document.pdf", pdf_bytes)
+            else:
+                zf.writestr("pdf/PENDING.txt", _PDF_PENDING_TEXT)
 
         buf.seek(0)
         raw = buf.read()
         logger.debug(
-            "ZipPackageBuilder | bundle_id=%s | stages=%d | size=%d bytes",
-            manifest.bundle_id, len(stage_outputs), len(raw),
+            "ZipPackageBuilder | bundle_id=%s | stages=%d | pdf=%s | size=%d bytes",
+            manifest.bundle_id, len(stage_outputs),
+            "yes" if pdf_bytes else "pending", len(raw),
         )
         return raw
 
@@ -257,6 +360,17 @@ class ExportService:
         bundle_id = f"{document_id}-{now_utc.strftime('%Y%m%dT%H%M%SZ')}"
         stages_exported = sorted(stage_outputs.keys())
 
+        # Attempt to generate PDF — fall back gracefully if it fails
+        pdf_bytes: bytes | None = None
+        try:
+            pdf_bytes = self.export_pdf(project_id)
+            pdf_path = "pdf/document.pdf"
+        except (ExportError, ExportNotReadyError) as e:
+            logger.warning(
+                "ExportService.export_zip | PDF generation failed (falling back to PENDING.txt): %s", e
+            )
+            pdf_path = "pdf/PENDING.txt"
+
         manifest = BundleManifest(
             bundle_id=bundle_id,
             project_id=project_id,
@@ -266,22 +380,33 @@ class ExportService:
             page_count=render_result.page_count,
             stages_exported=stages_exported,
             created_at=created_at,
+            pdf_status="ready" if pdf_bytes else "not_implemented",
+            pdf_note=(
+                "PDF is included as pdf/document.pdf in this bundle."
+                if pdf_bytes
+                else (
+                    "PDF rendering failed during zip build. "
+                    "The html/document.html file in this bundle is print-ready. "
+                    "Open it in any browser and use File → Print → Save as PDF."
+                )
+            ),
             contents={
                 "manifest": "manifest.json",
                 "html": "html/document.html",
                 "json_stages": {
                     stage: f"json/{stage}.json" for stage in stages_exported
                 },
-                "pdf": "pdf/PENDING.txt",
+                "pdf": pdf_path,
             },
         )
 
-        zip_bytes = self._builder.build(manifest, render_result.html, stage_outputs)
+        zip_bytes = self._builder.build(manifest, render_result.html, stage_outputs, pdf_bytes)
         filename = f"{document_id}-export.zip"
 
         logger.info(
-            "ExportService.export_zip | project=%d | bundle_id=%s | stages=%d | size=%d B",
-            project_id, bundle_id, len(stages_exported), len(zip_bytes),
+            "ExportService.export_zip | project=%d | bundle_id=%s | stages=%d | pdf=%s | size=%d B",
+            project_id, bundle_id, len(stages_exported),
+            "yes" if pdf_bytes else "pending", len(zip_bytes),
         )
         return zip_bytes, filename
 
@@ -405,22 +530,77 @@ class ExportService:
 
     def export_pdf(self, project_id: int) -> bytes:
         """
-        PDF export — NOT YET IMPLEMENTED.
+        Render the project to PDF using Playwright headless Chromium.
 
-        Future implementation hook. When a PDF renderer is integrated
-        (WeasyPrint, Playwright, or headless Chrome), this method should:
+        Steps:
+          1. Render the HTML via RenderService
+          2. Write HTML to a temporary file
+          3. Launch headless Chromium via Playwright
+          4. Wait for Pagedjs to finish (afterRendered callback sets window.__lsb_ready)
+          5. Call page.pdf() with US Letter, background graphics, no extra margins
+          6. Return raw PDF bytes
 
-          1. Call self._render_svc.render(project_id) to get the HTML string
-          2. Pass the HTML to the renderer and receive PDF bytes
-          3. Return raw PDF bytes
-
-        The html/document.html in the zip bundle is print-ready and
-        can be used as input to any headless browser PDF generator without
-        any HTML modifications.
+        Raises:
+          ExportNotReadyError — if no stages are complete
+          ExportError — if Playwright fails or times out
         """
-        raise NotImplementedError(
-            "PDF export is not yet implemented. "
-            "Use the HTML export — it is print-ready and can be saved as PDF "
-            "from any browser using File → Print → Save as PDF. "
-            "See pdf/PENDING.txt in the zip bundle for full instructions."
+        import asyncio
+
+        stage_outputs = self._pipeline.all_stage_outputs_as_dict(project_id)
+        if not stage_outputs:
+            raise ExportNotReadyError(
+                f"Project {project_id} has no completed stages. "
+                "Run at least the system_architecture stage before exporting."
+            )
+
+        try:
+            render_result = self._render_svc.render(project_id)
+        except RenderServiceError as e:
+            raise ExportError(f"Render failed for project {project_id}: {e}") from e
+
+        html = render_result.html
+
+        # Inject a signal: watch for removal of #lsb-loading (which Pagedjs removes via
+        # hideLoading() in afterRendered) OR set directly if Pagedjs fails to load.
+        # We also set a fallback polling timeout so the PDF generation proceeds even
+        # if Pagedjs CDN is unreachable from the headless context.
+        signal_patch = """
+<script>
+(function() {
+  // Signal that PDF rendering is ready — either after Pagedjs finishes or on fallback.
+  function signalReady() {
+    if (!window.__lsb_pdf_ready) {
+      window.__lsb_pdf_ready = true;
+    }
+  }
+
+  // Watch for #lsb-loading element removal (Pagedjs calls hideLoading on completion)
+  var observer = new MutationObserver(function() {
+    if (!document.getElementById('lsb-loading')) {
+      observer.disconnect();
+      signalReady();
+    }
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Fallback: if Pagedjs never starts or takes too long, signal after 8 seconds
+  setTimeout(signalReady, 8000);
+})();
+</script>"""
+
+        # Insert signal patch at the very start of <body> (before any Pagedjs scripts fire)
+        if "<body>" in html:
+            html = html.replace("<body>", "<body>\n" + signal_patch, 1)
+        elif "</head>" in html:
+            html = html.replace("</head>", signal_patch + "\n</head>", 1)
+
+        try:
+            pdf_bytes = asyncio.run(_render_pdf_with_playwright(html))
+        except RuntimeError as e:
+            raise ExportError(str(e)) from e
+
+        logger.info(
+            "ExportService.export_pdf | project=%d | size=%d B",
+            project_id, len(pdf_bytes),
         )
+        return pdf_bytes

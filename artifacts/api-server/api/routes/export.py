@@ -3,15 +3,17 @@ Export routes — file download and bundle packaging endpoints.
 
 Route inventory:
   GET /{project_id}              — JSON metadata bundle (backward compat; used by frontend)
-  GET /{project_id}/download     — full zip bundle download (html + json + manifest + pdf note)
+  GET /{project_id}/download     — full zip bundle download (html + json + manifest + pdf)
+  GET /{project_id}/pdf          — PDF document only, as a downloadable file
   GET /{project_id}/html         — HTML document only, as a downloadable file
   GET /{project_id}/json         — combined JSON of all stages as a downloadable file
   GET /{project_id}/json/{stage} — single stage JSON as a downloadable file
   GET /{project_id}/manifest     — export bundle manifest as JSON (no file content)
 
 PDF:
-  PDF export is not yet implemented. See ExportService.export_pdf() for the hook point.
-  The /download zip includes pdf/PENDING.txt with detailed instructions.
+  PDF export is implemented via Playwright headless Chromium.
+  GET /{project_id}/pdf returns application/pdf with Content-Disposition: attachment.
+  Falls back gracefully with a 503 if Playwright fails or times out.
 """
 from __future__ import annotations
 
@@ -88,6 +90,46 @@ def download_bundle(
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
             "Content-Length": str(len(zip_bytes)),
+        },
+    )
+
+
+@router.get("/{project_id}/pdf")
+def download_pdf(
+    project_id: int,
+    svc: ExportService = Depends(_export_svc),
+) -> Response:
+    """
+    Generate and download the project as a PDF file.
+
+    Uses Playwright headless Chromium to render the print-ready HTML document
+    (including Pagedjs pagination) and return a PDF with US Letter format and
+    background graphics enabled.
+
+    Generation takes 10–60 seconds for large documents.
+
+    Returns:
+      200 application/pdf with Content-Disposition: attachment on success.
+      400 if no pipeline stages have been completed.
+      503 if PDF generation fails (Playwright error or timeout).
+    """
+    try:
+        pdf_bytes = svc.export_pdf(project_id)
+    except ExportNotReadyError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ExportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"PDF generation failed: {e}. Try downloading the HTML and printing to PDF from your browser.",
+        )
+
+    filename = f"LSB-{project_id:05d}-document.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(pdf_bytes)),
         },
     )
 

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useParams } from "wouter";
 import {
   getGetProjectQueryOptions,
@@ -10,7 +11,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { ProjectHeader } from "@/components/layout/ProjectHeader";
 import { Button } from "@/components/ui/button";
-import { Archive, Download, FileCode, FileText, RefreshCw } from "lucide-react";
+import { Archive, Download, FileCode, FileText, Loader2, RefreshCw } from "lucide-react";
 import { getStageLabel } from "@/lib/stages";
 
 function downloadBlob(content: string, filename: string, mimeType: string) {
@@ -33,6 +34,8 @@ function downloadFromUrl(path: string) {
 export default function ExportPage() {
   const { id } = useParams<{ id: string }>();
   const projectId = Number(id);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const { data: project, isLoading: projectLoading } = useQuery(getGetProjectQueryOptions(projectId));
   const { data: stages } = useQuery(getListProjectStagesQueryOptions(projectId));
@@ -70,6 +73,30 @@ export default function ExportPage() {
 
   function handleDownloadStageJson(stage: string) {
     downloadFromUrl(`/api/export/${projectId}/json/${stage}`);
+  }
+
+  async function handleDownloadPdf() {
+    setPdfLoading(true);
+    setPdfError(null);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const response = await fetch(`${base}/api/export/${projectId}/pdf`);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail ?? `Server error ${response.status}`);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `LSB-${String(projectId).padStart(5, "0")}-document.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      setPdfError(err instanceof Error ? err.message : "PDF generation failed. Please try again.");
+    } finally {
+      setPdfLoading(false);
+    }
   }
 
   return (
@@ -132,18 +159,54 @@ export default function ExportPage() {
                 </div>
               </div>
 
-              {/* Primary download — zip bundle */}
+              {/* Primary download — PDF */}
               <div className="border border-accent/40 rounded-sm p-4 bg-accent/5 space-y-3">
                 <div className="flex items-start gap-2">
-                  <Archive className="w-4 h-4 mt-0.5 text-accent shrink-0" />
+                  <FileText className="w-4 h-4 mt-0.5 text-accent shrink-0" />
                   <div>
-                    <div className="text-xs font-semibold text-foreground">Complete Bundle (.zip)</div>
+                    <div className="text-xs font-semibold text-foreground">PDF Document</div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
-                      manifest.json · html/document.html · json/{"{stage}"}.json · pdf/PENDING.txt
+                      Server-rendered via headless Chromium · US Letter · background graphics
                     </div>
                   </div>
                 </div>
-                <Button size="sm" className="w-full gap-1.5 text-xs h-8" onClick={handleDownloadZip}>
+                {pdfError && (
+                  <div className="border border-red-200 bg-red-50 rounded-sm p-2">
+                    <p className="text-[10px] text-red-700 leading-relaxed">{pdfError}</p>
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  className="w-full gap-1.5 text-xs h-8"
+                  onClick={handleDownloadPdf}
+                  disabled={pdfLoading}
+                >
+                  {pdfLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Generating PDF… (this takes 10–30 s)
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Secondary download — zip bundle */}
+              <div className="border rounded-sm p-4 bg-card space-y-3">
+                <div className="flex items-start gap-2">
+                  <Archive className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                  <div>
+                    <div className="text-xs font-semibold text-foreground">Complete Bundle (.zip)</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      manifest.json · html/document.html · json/{"{stage}"}.json · pdf/document.pdf
+                    </div>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs h-8" onClick={handleDownloadZip}>
                   <Download className="w-3.5 h-3.5" />
                   Download Bundle
                 </Button>
@@ -207,17 +270,6 @@ export default function ExportPage() {
                   </div>
                 </div>
               )}
-
-              {/* PDF notice */}
-              <div className="border border-dashed rounded-sm p-3 space-y-1">
-                <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">Saving as PDF</div>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  The HTML document includes Pagedjs — a print layout engine that runs in the browser.
-                  Open it in Chrome or Edge, wait for the pagination to finish, then use{" "}
-                  <span className="font-mono">File → Print → Save as PDF</span>.
-                  This produces a WYSIWYG PDF with running page numbers and accurate page breaks.
-                </p>
-              </div>
 
               {/* Refresh */}
               <div className="flex justify-end">
