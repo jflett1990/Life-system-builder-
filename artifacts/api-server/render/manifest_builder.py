@@ -5,6 +5,11 @@ number, and the data payload the archetype template needs.
 
 The manifest is the contract between the pipeline and the renderer.  The renderer
 does no content decisions — it only iterates pages and includes the right template.
+
+Stage data sources (in priority order):
+  chapter_expansion   — rich per-chapter narratives + worksheets (current pipeline)
+  worksheet_system    — legacy flat worksheet list (pre-chapter_expansion projects)
+  system_architecture — architecture, domains, roles, constraints, failure modes
 """
 from __future__ import annotations
 
@@ -45,16 +50,17 @@ class ManifestBuilder:
     PipelineService.all_stage_outputs_as_dict() and produces a RenderManifest.
 
     Page sequence:
-      1  cover_page          — system identity
-      2  dashboard_page       — KPIs, milestones, success criteria
-      3  section_divider      — "System Architecture" divider
-      4  explanation_page     — operating premise, roles, domains, constraints
-      5  comparison_matrix    — role × domain responsibility grid
-      [for each worksheet]:
-        N  section_divider    — domain divider
-        N  chapter_opener     — domain chapter
-        N  worksheet_page     — the worksheet itself
-      -2  rapid_response      — failure modes + escalation paths
+      1  cover_page           — system identity
+      2  dashboard_page        — KPIs, chapter milestones, success criteria
+      3  section_divider       — "System Architecture" divider
+      4  explanation_page      — operating premise, domains, constraints
+      [comparison_matrix]      — role × domain grid (only when 2+ distinct roles)
+      [for each chapter in chapter_expansion]:
+        N  section_divider     — chapter divider
+        N  chapter_opener      — domain intro + quick-reference rules
+        N  worksheet_page(s)   — one page per worksheet
+      [legacy: worksheet_system path if chapter_expansion absent]
+      -2  rapid_response       — failure modes + escalation paths
     """
 
     def build(
@@ -64,11 +70,26 @@ class ManifestBuilder:
         theme_tokens: dict[str, str],
     ) -> RenderManifest:
         arch = all_outputs.get("system_architecture", {})
-        ws_system = all_outputs.get("worksheet_system", {})
+        chapter_exp = all_outputs.get("chapter_expansion", {})
+        ws_system   = all_outputs.get("worksheet_system", {})   # legacy fallback
+
         generated_date = date.today().strftime("%B %d, %Y")
         system_name = arch.get("system_name", "Operational Control System")
         doc_title = system_name
         document_id = f"LSB-{project_id:05d}"
+
+        domains = arch.get("control_domains", [])
+        domain_map: dict[str, dict] = {d.get("id", ""): d for d in domains}
+
+        # Prefer chapter_expansion chapters; fall back to worksheet_system worksheets
+        chapters: list[dict] = chapter_exp.get("chapters", [])
+        legacy_worksheets: list[dict] = ws_system.get("worksheets", [])
+
+        # Compute totals for KPIs
+        if chapters:
+            total_worksheets = sum(len(ch.get("worksheets", [])) for ch in chapters)
+        else:
+            total_worksheets = len(legacy_worksheets)
 
         pages: list[ManifestPage] = []
         seq = 0
@@ -96,13 +117,28 @@ class ManifestBuilder:
         ))
 
         # ── 2. Dashboard Page ──────────────────────────────────────────────────
-        domains = arch.get("control_domains", [])
-        worksheets = ws_system.get("worksheets", [])
+        # Milestones = chapter titles (differentiated, content-specific).
+        # Falls back to success_criteria only when no chapters exist.
         success_criteria = arch.get("success_criteria", [])
 
-        milestones = []
-        for i, criterion in enumerate(success_criteria[:6], 1):
-            milestones.append({"sequence": i, "milestone": criterion, "description": ""})
+        if chapters:
+            milestones = [
+                {
+                    "sequence": i,
+                    "milestone": ch.get("chapter_title", f"Chapter {i}"),
+                    "description": "",
+                }
+                for i, ch in enumerate(chapters[:8], 1)
+            ]
+        else:
+            milestones = [
+                {"sequence": i, "milestone": criterion, "description": ""}
+                for i, criterion in enumerate(success_criteria[:6], 1)
+            ]
+
+        kpis: list[dict] = []
+        if total_worksheets:
+            kpis.append({"value": str(total_worksheets), "label": "Worksheets"})
 
         pages.append(ManifestPage(
             page_id="pg-dashboard",
@@ -114,11 +150,11 @@ class ManifestBuilder:
                 "system_name": system_name,
                 "time_horizon": arch.get("time_horizon", ""),
                 "domain_count": len(domains) if domains else None,
-                "worksheet_count": len(worksheets) if worksheets else None,
+                "worksheet_count": None,        # shown via KPI block instead
                 "success_criteria": success_criteria,
                 "milestones": milestones,
                 "generated_date": generated_date,
-                "kpis": [],
+                "kpis": kpis,
             },
         ))
 
@@ -136,6 +172,8 @@ class ManifestBuilder:
         ))
 
         # ── 4. Explanation Page ────────────────────────────────────────────────
+        # Intentionally omits key_roles (shown in matrix below when meaningful)
+        # and success_criteria (shown on dashboard) to avoid repetition.
         if arch:
             pages.append(ManifestPage(
                 page_id="pg-arch-explain",
@@ -146,18 +184,21 @@ class ManifestBuilder:
                     "page_title": system_name,
                     "operating_premise": arch.get("operating_premise", ""),
                     "system_objective": arch.get("system_objective", ""),
-                    "key_roles": arch.get("key_roles", []),
+                    "key_roles": [],                       # suppressed — avoid generic role section
                     "control_domains": domains,
-                    "success_criteria": arch.get("success_criteria", []),
+                    "success_criteria": [],                # suppressed — on dashboard
                     "failure_modes": arch.get("failure_modes", []),
                     "operating_constraints": arch.get("operating_constraints", []),
                     "time_horizon": arch.get("time_horizon", ""),
                 },
             ))
 
-        # ── 5. Role × Domain Comparison Matrix ────────────────────────────────
+        # ── 5. Role × Domain Comparison Matrix (conditional) ──────────────────
+        # Only shown when there are 2+ distinct roles — a single-actor system
+        # (e.g. solo estate executor) produces a matrix with one row that adds
+        # no information and feels generic.
         roles = arch.get("key_roles", [])
-        if roles and domains:
+        if len(roles) >= 2 and domains:
             columns = [d.get("name", d.get("id", "Domain")) for d in domains]
             rows = []
             for role in roles:
@@ -185,8 +226,64 @@ class ManifestBuilder:
                 },
             ))
 
-        # ── 6. Worksheets Section ──────────────────────────────────────────────
-        if worksheets:
+        # ── 6a. Chapters from chapter_expansion (current pipeline) ─────────────
+        if chapters:
+            total_chapters = len(chapters)
+            pages.append(ManifestPage(
+                page_id="pg-div-chapters",
+                sequence=next_seq(),
+                archetype="section_divider",
+                data={
+                    "section_number": "02",
+                    "section_title": "Operational Content",
+                    "section_subtitle": f"{total_chapters} chapters · {total_worksheets} worksheets",
+                    "domain_count": total_chapters,
+                },
+            ))
+
+            for ch in chapters:
+                ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
+                ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
+                ch_narrative = ch.get("narrative", "")
+                ch_rules = ch.get("quick_reference_rules", [])
+                ch_worksheets = ch.get("worksheets", [])
+
+                # Resolve domain info from system_architecture
+                domain_id = ch.get("domain_id", "")
+                domain_info = domain_map.get(domain_id, {})
+                domain_name = domain_info.get("name", "") or domain_id
+
+                # chapter_opener: show chapter intro + quick-reference rules as scope items
+                # primary_outputs: worksheet titles in this chapter
+                pages.append(ManifestPage(
+                    page_id=f"pg-chapter-{domain_id or ch_num}",
+                    sequence=next_seq(),
+                    archetype="chapter_opener",
+                    data={
+                        "chapter_number": ch_num,
+                        "chapter_title": ch_title,
+                        "chapter_summary": ch_narrative[:900].rstrip() + ("…" if len(ch_narrative) > 900 else ""),
+                        "domain_name": domain_name,
+                        "domain_purpose": domain_info.get("purpose", ""),
+                        "scope_items": ch_rules,
+                        "primary_outputs": [ws.get("title", "") for ws in ch_worksheets],
+                    },
+                ))
+
+                # One worksheet page per worksheet in this chapter
+                for ws in ch_worksheets:
+                    ws_id = ws.get("id", f"ws-{ch_num}-{ch_worksheets.index(ws) + 1:02d}")
+                    ws_data = dict(ws)
+                    ws_data.setdefault("domain_name", domain_name)
+                    pages.append(ManifestPage(
+                        page_id=f"pg-ws-{ws_id}",
+                        sequence=next_seq(),
+                        archetype="worksheet_page",
+                        data=ws_data,
+                    ))
+
+        # ── 6b. Legacy path: worksheet_system (pre-chapter_expansion projects) ─
+        elif legacy_worksheets:
             pages.append(ManifestPage(
                 page_id="pg-div-ws",
                 sequence=next_seq(),
@@ -195,22 +292,16 @@ class ManifestBuilder:
                     "section_number": "02",
                     "section_title": "Operational Worksheets",
                     "section_subtitle": ws_system.get("worksheet_system_name", ""),
-                    "domain_count": len(worksheets),
+                    "domain_count": len(legacy_worksheets),
                 },
             ))
 
-            for i, ws in enumerate(worksheets):
+            for i, ws in enumerate(legacy_worksheets):
                 ws_id = ws.get("id", f"ws-{i+1:02d}")
                 domain_id = ws.get("domain_id", "")
                 domain_name = ws.get("domain_name", "")
+                matching_domain = domain_map.get(domain_id, {})
 
-                # Find matching domain for chapter context
-                matching_domain = next(
-                    (d for d in domains if d.get("id") == domain_id),
-                    {}
-                )
-
-                # Chapter opener for each worksheet
                 pages.append(ManifestPage(
                     page_id=f"pg-chapter-{ws_id}",
                     sequence=next_seq(),
@@ -225,8 +316,6 @@ class ManifestBuilder:
                         "primary_outputs": matching_domain.get("primary_outputs", []),
                     },
                 ))
-
-                # Worksheet page
                 pages.append(ManifestPage(
                     page_id=f"pg-ws-{ws_id}",
                     sequence=next_seq(),
@@ -237,7 +326,6 @@ class ManifestBuilder:
         # ── 7. Rapid Response Page ─────────────────────────────────────────────
         failure_modes = arch.get("failure_modes", [])
         if failure_modes or arch.get("operating_constraints"):
-            # Normalize failure modes into structured dicts
             structured_modes = []
             for mode in failure_modes:
                 if isinstance(mode, str):
