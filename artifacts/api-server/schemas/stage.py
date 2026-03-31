@@ -12,32 +12,45 @@ STAGE_NAMES = [
 
 STAGE_ORDER = {name: i for i, name in enumerate(STAGE_NAMES)}
 
+STAGE_HYPHEN_MAP = {name: name.replace("_", "-") for name in STAGE_NAMES}
+STAGE_UNDERSCORE_MAP = {v: k for k, v in STAGE_HYPHEN_MAP.items()}
+
+
+def normalize_stage_name(stage: str) -> str:
+    """Accept both hyphenated ('system-architecture') and underscore ('system_architecture') stage names.
+    Returns the canonical underscore format used internally."""
+    if stage in STAGE_NAMES:
+        return stage
+    if stage in STAGE_UNDERSCORE_MAP:
+        return STAGE_UNDERSCORE_MAP[stage]
+    return stage
+
 
 class StageOutputResponse(BaseModel):
     id: int
     project_id: int
-    stage_name: str
+    stage: str
     status: str
-    json_output: dict[str, Any] | None
+    output_json: dict[str, Any] | None
     validation_result: dict[str, Any] | None
     error_message: str | None
-    revision_number: int
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": False}
 
     @classmethod
     def from_orm_with_json(cls, obj: Any) -> "StageOutputResponse":
+        internal_name = obj.stage_name
+        hyphen_name = STAGE_HYPHEN_MAP.get(internal_name, internal_name)
         return cls(
             id=obj.id,
             project_id=obj.project_id,
-            stage_name=obj.stage_name,
+            stage=hyphen_name,
             status=obj.status,
-            json_output=obj.get_output() if obj.json_output else None,
+            output_json=obj.get_output() if obj.json_output else {},
             validation_result=obj.get_validation(),
             error_message=obj.error_message,
-            revision_number=obj.revision_number,
             created_at=obj.created_at,
             updated_at=obj.updated_at,
         )

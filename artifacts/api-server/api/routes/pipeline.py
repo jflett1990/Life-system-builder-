@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from core.pipeline_orchestrator import PipelineError
-from schemas.stage import STAGE_NAMES, StageOutputResponse
+from schemas.stage import STAGE_NAMES, StageOutputResponse, normalize_stage_name
 from schemas.validation import ValidationResultSchema
 from services.pipeline_service import PipelineService
 from services.project_service import ProjectNotFound, ProjectService
@@ -27,6 +27,7 @@ def run_stage(
     force: bool = False,
     pipeline: PipelineService = Depends(_pipeline_svc),
 ):
+    stage = normalize_stage_name(stage)
     if stage not in STAGE_NAMES:
         raise HTTPException(status_code=400, detail=f"Unknown stage '{stage}'. Valid: {STAGE_NAMES}")
     try:

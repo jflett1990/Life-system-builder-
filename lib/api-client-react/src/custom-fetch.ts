@@ -129,6 +129,23 @@ function stripBom(text: string): string {
   return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 }
 
+function toCamelKey(s: string): string {
+  return s.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
+function deepCamelKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(deepCamelKeys);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [
+        toCamelKey(k),
+        deepCamelKeys(v),
+      ]),
+    );
+  }
+  return value;
+}
+
 function looksLikeJson(text: string): boolean {
   const trimmed = text.trimStart();
   return trimmed.startsWith("{") || trimmed.startsWith("[");
@@ -245,7 +262,7 @@ async function parseJsonBody(
   }
 
   try {
-    return JSON.parse(normalized);
+    return deepCamelKeys(JSON.parse(normalized));
   } catch (cause) {
     throw new ResponseParseError(response, raw, cause, requestInfo);
   }

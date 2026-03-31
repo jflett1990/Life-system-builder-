@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from schemas.pipeline import ProjectSummary, PipelineStageSummary
 from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
-from schemas.stage import STAGE_NAMES, StageOutputResponse
+from schemas.stage import STAGE_NAMES, StageOutputResponse, normalize_stage_name
 from services.pipeline_service import PipelineService
 from services.project_service import ProjectNotFound, ProjectService
 from storage.database import get_db
@@ -61,6 +61,7 @@ def list_stages(project_id: int, pipeline: PipelineService = Depends(_pipeline_s
 
 @router.get("/{project_id}/stages/{stage}", response_model=StageOutputResponse)
 def get_stage(project_id: int, stage: str, pipeline: PipelineService = Depends(_pipeline_svc)):
+    stage = normalize_stage_name(stage)
     if stage not in STAGE_NAMES:
         raise HTTPException(status_code=400, detail=f"Unknown stage '{stage}'")
     row = pipeline.get_stage_output(project_id, stage)
