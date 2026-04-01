@@ -42,6 +42,12 @@ export type StageOutputOutputJson = { [key: string]: unknown };
 
 export type StageOutputValidationResult = { [key: string]: unknown } | null;
 
+export interface StageOutputSubProgress {
+  completed: number;
+  total: number;
+  lastDomain: string;
+}
+
 export interface StageOutput {
   id: number;
   projectId: number;
@@ -50,6 +56,7 @@ export interface StageOutput {
   outputJson: StageOutputOutputJson;
   validationResult?: StageOutputValidationResult;
   errorMessage?: string | null;
+  subProgress?: StageOutputSubProgress | null;
   createdAt: string;
   updatedAt: string;
 }

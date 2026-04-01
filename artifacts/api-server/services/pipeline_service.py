@@ -28,6 +28,8 @@ Error handling:
 from __future__ import annotations
 
 import json
+import concurrent.futures
+import threading
 from datetime import datetime, timezone
 from typing import Any
 
@@ -234,12 +236,16 @@ class PipelineService:
     ) -> None:
         """
         Execute the chapter_expansion stage by running one LLM call per chapter
-        in the document_outline, then accumulating all results into a single output.
+        concurrently (up to 4 at once), then accumulating results in chapter_number
+        order.
 
         Each per-chapter call is validated against ExpandedChapter.
         The accumulated output is wrapped in ChapterExpansionOutput.
         Partial failure (some chapters fail) saves what succeeded; total failure
         marks the stage as failed.
+
+        Progress is written to stage_row.sub_progress after each chapter completes
+        so the frontend can show live chapter-by-chapter status while polling.
         """
         from schemas.stage_outputs.chapter_expansion import ExpandedChapter, ChapterExpansionOutput
 
@@ -266,23 +272,21 @@ class PipelineService:
             "document_title": outline_data.get("document_title", project.life_event),
         }
 
-        expanded_chapters: list[dict] = []
-        failed_chapter_numbers: list[int] = []
-        raw_texts: list[str] = []
+        total = len(chapters_plan)
 
         logger.info(
-            "chapter_expansion | project=%d | starting loop over %d chapters",
-            project_id, len(chapters_plan),
+            "chapter_expansion | project=%d | starting parallel loop over %d chapters (max_workers=4)",
+            project_id, total,
         )
 
-        for i, chapter_plan in enumerate(chapters_plan):
-            chapter_number = chapter_plan.get("chapter_number", i + 1)
+        # ── Per-chapter worker (pure, no DB access, thread-safe) ────────────
+        def _expand_one(chapter_plan: dict, idx: int) -> tuple[int, str, dict | None, str]:
+            """
+            Return (chapter_number, domain_name, chapter_data_or_None, raw_text).
+            chapter_data is None on total failure.
+            """
+            chapter_number = chapter_plan.get("chapter_number", idx + 1)
             domain_name = chapter_plan.get("domain_name", f"Chapter {chapter_number}")
-
-            logger.info(
-                "chapter_expansion | project=%d | chapter %d/%d | domain='%s'",
-                project_id, chapter_number, len(chapters_plan), domain_name,
-            )
 
             chapter_payload = {
                 **base_payload,
@@ -297,29 +301,81 @@ class PipelineService:
                     prompt, contract,
                     schema_class_override=ExpandedChapter,
                 )
-                raw_texts.append(structured.raw_text)
+                raw = structured.raw_text
 
                 if parse_result.success and parse_result.parsed_data:
-                    expanded_chapters.append(parse_result.parsed_data)
                     logger.info(
                         "chapter_expansion | chapter %d OK | worksheets=%d",
                         chapter_number,
                         len(parse_result.parsed_data.get("worksheets", [])),
                     )
+                    return chapter_number, domain_name, parse_result.parsed_data, raw
                 else:
-                    # Use raw data (schema failed but we have something)
-                    expanded_chapters.append(structured.data)
                     logger.warning(
                         "chapter_expansion | chapter %d schema soft-fail — using raw data",
                         chapter_number,
                     )
+                    return chapter_number, domain_name, structured.data, raw
 
             except (ModelProviderError, ModelOutputError) as e:
-                failed_chapter_numbers.append(chapter_number)
                 logger.error(
                     "chapter_expansion | chapter %d FAILED | %s",
                     chapter_number, str(e)[:200],
                 )
+                return chapter_number, domain_name, None, ""
+
+        # ── Collect results keyed by chapter_number ──────────────────────────
+        # We keep (chapter_number, data) tuples so we can re-sort to document order.
+        results_by_number: dict[int, dict] = {}
+        failed_chapter_numbers: list[int] = []
+        raw_texts_by_number: dict[int, str] = {}
+        completed_count = 0
+        last_domain = ""
+
+        # Initialise sub_progress so the frontend sees it immediately
+        stage_row.set_sub_progress({"completed": 0, "total": total, "last_domain": ""})
+        stage_row.updated_at = datetime.now(timezone.utc)
+        self._repo.save(stage_row)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="chapter-worker") as pool:
+            future_to_idx = {
+                pool.submit(_expand_one, chap, i): i
+                for i, chap in enumerate(chapters_plan)
+            }
+
+            for future in concurrent.futures.as_completed(future_to_idx):
+                chapter_number, domain_name, chapter_data, raw_text = future.result()
+                completed_count += 1
+                last_domain = domain_name
+
+                if chapter_data is not None:
+                    results_by_number[chapter_number] = chapter_data
+                    raw_texts_by_number[chapter_number] = raw_text
+                else:
+                    failed_chapter_numbers.append(chapter_number)
+
+                # Write incremental progress to DB on the main thread
+                stage_row.set_sub_progress({
+                    "completed": completed_count,
+                    "total": total,
+                    "last_domain": last_domain,
+                })
+                stage_row.updated_at = datetime.now(timezone.utc)
+                self._repo.save(stage_row)
+
+                logger.info(
+                    "chapter_expansion | project=%d | %d/%d complete | last='%s'",
+                    project_id, completed_count, total, last_domain,
+                )
+
+        # ── Rebuild chapter list in original document order ──────────────────
+        expanded_chapters: list[dict] = []
+        raw_texts: list[str] = []
+        for chap in chapters_plan:
+            cn = chap.get("chapter_number", 0)
+            if cn in results_by_number:
+                expanded_chapters.append(results_by_number[cn])
+                raw_texts.append(raw_texts_by_number.get(cn, ""))
 
         # Save all raw model output combined (for debugging)
         stage_row.set_raw_output("\n\n---CHAPTER SEPARATOR---\n\n".join(raw_texts))
@@ -327,6 +383,7 @@ class PipelineService:
         if not expanded_chapters:
             stage_row.status = "failed"
             stage_row.error_message = f"All {len(chapters_plan)} chapters failed to expand"
+            stage_row.sub_progress = None
             stage_row.updated_at = datetime.now(timezone.utc)
             self._repo.save(stage_row)
             logger.error("chapter_expansion | ALL chapters failed | project=%d", project_id)
@@ -348,10 +405,11 @@ class PipelineService:
             + (f" | {len(failed_chapter_numbers)} chapter(s) failed" if failed_chapter_numbers else "")
         )
         stage_row.status = "complete"
+        stage_row.sub_progress = None  # clear progress indicator on completion
 
         if failed_chapter_numbers:
             stage_row.error_message = (
-                f"Partial expansion: chapters {failed_chapter_numbers} failed — "
+                f"Partial expansion: chapters {sorted(failed_chapter_numbers)} failed — "
                 f"{len(expanded_chapters)}/{len(chapters_plan)} succeeded"
             )
 

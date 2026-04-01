@@ -198,6 +198,17 @@ def _m006_add_raw_model_output(conn, dialect: str) -> None:
     _add_column_if_missing(conn, "stage_outputs", "raw_model_output", "TEXT", dialect)
 
 
+def _m007_add_sub_progress_to_stage_outputs(conn, dialect: str) -> None:
+    """
+    Add sub_progress column to stage_outputs.
+
+    Stores live chapter-level progress during chapter_expansion as a JSON string:
+    { "completed": N, "total": N, "last_domain": "Chapter name" }
+    Allows the frontend to show per-chapter progress without WebSockets.
+    """
+    _add_column_if_missing(conn, "stage_outputs", "sub_progress", "TEXT", dialect)
+
+
 def _m005_create_branding_profiles(conn, dialect: str) -> None:
     """Create branding_profiles table."""
     if _table_exists(conn, "branding_profiles", dialect):
@@ -237,6 +248,7 @@ MIGRATIONS: list[tuple[int, str, MigrationFn]] = [
     (4, "create_render_artifacts", _m004_create_render_artifacts),
     (5, "create_branding_profiles", _m005_create_branding_profiles),
     (6, "add_raw_model_output_to_stage_outputs", _m006_add_raw_model_output),
+    (7, "add_sub_progress_to_stage_outputs", _m007_add_sub_progress_to_stage_outputs),
 ]
 
 

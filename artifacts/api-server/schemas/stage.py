@@ -38,6 +38,7 @@ class StageOutputResponse(BaseModel):
     validation_result: dict[str, Any] | None
     error_message: str | None
     revision_number: int
+    sub_progress: dict[str, Any] | None
     created_at: datetime
     updated_at: datetime
 
@@ -57,6 +58,7 @@ class StageOutputResponse(BaseModel):
             validation_result=obj.get_validation(),
             error_message=obj.error_message,
             revision_number=obj.revision_number,
+            sub_progress=obj.get_sub_progress() if hasattr(obj, "get_sub_progress") else None,
             created_at=obj.created_at,
             updated_at=obj.updated_at,
         )

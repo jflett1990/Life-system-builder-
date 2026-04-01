@@ -24,6 +24,7 @@ class StageOutput(Base):
     preview_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     validation_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sub_progress: Mapped[str | None] = mapped_column(Text, nullable=True)
     revision_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -65,3 +66,13 @@ class StageOutput(Base):
 
     def set_validation(self, data: dict) -> None:
         self.validation_result = json.dumps(data)
+
+    # ── Sub-progress helpers ──────────────────────────────────────────────────
+
+    def get_sub_progress(self) -> dict | None:
+        if self.sub_progress:
+            return json.loads(self.sub_progress)
+        return None
+
+    def set_sub_progress(self, data: dict) -> None:
+        self.sub_progress = json.dumps(data)

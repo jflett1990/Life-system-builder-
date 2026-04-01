@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Play, ChevronRight, Clock, AlertCircle, CheckCircle2, RotateCcw } from "lucide-react";
+import { Play, ChevronRight, Clock, AlertCircle, CheckCircle2, RotateCcw, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useRunStage, getListProjectStagesQueryKey, StageName, StageStatus, type StageOutput } from "@workspace/api-client-react";
@@ -39,6 +39,11 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
   const isFailed = stage.status === StageStatus.failed || stage.status === "schema_failed";
 
   const revisionNumber = (stage as any).revisionNumber ?? (stage as any).revision_number;
+
+  // Chapter-level progress (chapter_expansion stage only)
+  const subProgress = isRunning && stage.stage === "chapter-expansion"
+    ? (stage as any).subProgress as { completed: number; total: number; lastDomain: string } | null | undefined
+    : null;
 
   function handleRun(force = false) {
     setRunError(null);
@@ -79,6 +84,30 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
             {meta.description}
           </p>
+
+          {/* Chapter-level progress (chapter_expansion only) */}
+          {subProgress && subProgress.total > 0 && (
+            <div className="mt-2.5 space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-mono text-blue-700">
+                <span className="flex items-center gap-1">
+                  <Layers className="w-3 h-3" />
+                  {subProgress.completed} / {subProgress.total} chapters
+                </span>
+                <span>{Math.round((subProgress.completed / subProgress.total) * 100)}%</span>
+              </div>
+              <div className="h-1 rounded-full bg-blue-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                  style={{ width: `${(subProgress.completed / subProgress.total) * 100}%` }}
+                />
+              </div>
+              {subProgress.lastDomain && (
+                <p className="text-[10px] text-muted-foreground truncate">
+                  Last: {subProgress.lastDomain}
+                </p>
+              )}
+            </div>
+          )}
 
           {(isFailed || runError) && (
             <div className="mt-2 flex items-start gap-1.5">
