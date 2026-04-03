@@ -38,11 +38,11 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
   const isComplete = stage.status === StageStatus.complete;
   const isFailed = stage.status === StageStatus.failed || stage.status === "schema_failed";
 
-  const revisionNumber = (stage as any).revisionNumber ?? (stage as any).revision_number;
+  const revisionNumber = stage.revisionNumber ?? 1;
 
   // Chapter-level progress (chapter_expansion stage only)
   const subProgress = isRunning && stage.stage === "chapter-expansion"
-    ? (stage as any).subProgress as { completed: number; total: number; currentDomains: string[] } | null | undefined
+    ? stage.subProgress
     : null;
 
   function handleRun(force = false) {

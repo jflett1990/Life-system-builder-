@@ -67,6 +67,27 @@ export const GetProjectResponse = zod.object({
       outputJson: zod.record(zod.string(), zod.unknown()),
       validationResult: zod.record(zod.string(), zod.unknown()).nullish(),
       errorMessage: zod.string().nullish(),
+      revisionNumber: zod
+        .number()
+        .describe("Increments each time the stage is re-run."),
+      previewText: zod
+        .string()
+        .nullish()
+        .describe("Short human-readable summary of the stage output."),
+      subProgress: zod
+        .object({
+          completed: zod
+            .number()
+            .describe("Number of chapters fully processed so far."),
+          total: zod.number().describe("Total number of chapters to expand."),
+          currentDomains: zod
+            .array(zod.string())
+            .describe(
+              "Domain names of chapters currently being processed (up to max_workers).",
+            ),
+        })
+        .nullish()
+        .describe("Live progress for chapter_expansion stage. Null otherwise."),
       createdAt: zod.coerce.date(),
       updatedAt: zod.coerce.date(),
     }),
@@ -124,6 +145,27 @@ export const ListProjectStagesResponseItem = zod.object({
   outputJson: zod.record(zod.string(), zod.unknown()),
   validationResult: zod.record(zod.string(), zod.unknown()).nullish(),
   errorMessage: zod.string().nullish(),
+  revisionNumber: zod
+    .number()
+    .describe("Increments each time the stage is re-run."),
+  previewText: zod
+    .string()
+    .nullish()
+    .describe("Short human-readable summary of the stage output."),
+  subProgress: zod
+    .object({
+      completed: zod
+        .number()
+        .describe("Number of chapters fully processed so far."),
+      total: zod.number().describe("Total number of chapters to expand."),
+      currentDomains: zod
+        .array(zod.string())
+        .describe(
+          "Domain names of chapters currently being processed (up to max_workers).",
+        ),
+    })
+    .nullish()
+    .describe("Live progress for chapter_expansion stage. Null otherwise."),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -159,6 +201,27 @@ export const GetStageOutputResponse = zod.object({
   outputJson: zod.record(zod.string(), zod.unknown()),
   validationResult: zod.record(zod.string(), zod.unknown()).nullish(),
   errorMessage: zod.string().nullish(),
+  revisionNumber: zod
+    .number()
+    .describe("Increments each time the stage is re-run."),
+  previewText: zod
+    .string()
+    .nullish()
+    .describe("Short human-readable summary of the stage output."),
+  subProgress: zod
+    .object({
+      completed: zod
+        .number()
+        .describe("Number of chapters fully processed so far."),
+      total: zod.number().describe("Total number of chapters to expand."),
+      currentDomains: zod
+        .array(zod.string())
+        .describe(
+          "Domain names of chapters currently being processed (up to max_workers).",
+        ),
+    })
+    .nullish()
+    .describe("Live progress for chapter_expansion stage. Null otherwise."),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -219,6 +282,27 @@ export const RunStageResponse = zod.object({
   outputJson: zod.record(zod.string(), zod.unknown()),
   validationResult: zod.record(zod.string(), zod.unknown()).nullish(),
   errorMessage: zod.string().nullish(),
+  revisionNumber: zod
+    .number()
+    .describe("Increments each time the stage is re-run."),
+  previewText: zod
+    .string()
+    .nullish()
+    .describe("Short human-readable summary of the stage output."),
+  subProgress: zod
+    .object({
+      completed: zod
+        .number()
+        .describe("Number of chapters fully processed so far."),
+      total: zod.number().describe("Total number of chapters to expand."),
+      currentDomains: zod
+        .array(zod.string())
+        .describe(
+          "Domain names of chapters currently being processed (up to max_workers).",
+        ),
+    })
+    .nullish()
+    .describe("Live progress for chapter_expansion stage. Null otherwise."),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });

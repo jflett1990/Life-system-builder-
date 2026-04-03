@@ -18,6 +18,7 @@ export * from "./renderResult";
 export * from "./stageName";
 export * from "./stageOutput";
 export * from "./stageOutputOutputJson";
+export * from "./stageOutputSubProgress";
 export * from "./stageOutputValidationResult";
 export * from "./stageStatus";
 export * from "./stageStatusEntry";

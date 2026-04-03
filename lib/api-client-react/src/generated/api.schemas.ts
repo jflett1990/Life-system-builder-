@@ -38,15 +38,21 @@ export interface Project {
   updatedAt: string;
 }
 
+/**
+ * Live chapter-level progress written during chapter_expansion. Null when the stage is not running or not chapter_expansion.
+ */
+export interface StageOutputSubProgress {
+  /** Number of chapters fully processed so far. */
+  completed: number;
+  /** Total number of chapters to expand. */
+  total: number;
+  /** Domain names of chapters currently being processed (up to max_workers). */
+  currentDomains: string[];
+}
+
 export type StageOutputOutputJson = { [key: string]: unknown };
 
 export type StageOutputValidationResult = { [key: string]: unknown } | null;
-
-export interface StageOutputSubProgress {
-  completed: number;
-  total: number;
-  currentDomains: string[];
-}
 
 export interface StageOutput {
   id: number;
@@ -56,6 +62,11 @@ export interface StageOutput {
   outputJson: StageOutputOutputJson;
   validationResult?: StageOutputValidationResult;
   errorMessage?: string | null;
+  /** Increments each time the stage is re-run. */
+  revisionNumber: number;
+  /** Short human-readable summary of the stage output. */
+  previewText?: string | null;
+  /** Live progress for chapter_expansion stage. Null otherwise. */
   subProgress?: StageOutputSubProgress | null;
   createdAt: string;
   updatedAt: string;

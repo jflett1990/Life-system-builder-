@@ -200,11 +200,17 @@ def _m006_add_raw_model_output(conn, dialect: str) -> None:
 
 def _m007_add_sub_progress_to_stage_outputs(conn, dialect: str) -> None:
     """
-    Add sub_progress column to stage_outputs as TEXT (initial add).
+    Add sub_progress column to stage_outputs.
 
-    Subsequent migration 008 converts this to JSONB on PostgreSQL.
+    Column type: JSONB on PostgreSQL, TEXT on SQLite (TEXT is the native JSON storage type in SQLite).
+    Shape when set: { "completed": int, "total": int, "current_domains": list[str] }
+    Null when no expansion is running or the stage is not chapter_expansion.
+
+    Migration 008 is a guard for existing installs where this column was initially added as TEXT
+    and converts it to JSONB on PostgreSQL.
     """
-    _add_column_if_missing(conn, "stage_outputs", "sub_progress", "TEXT", dialect)
+    col_type = "JSONB" if dialect == "postgresql" else "TEXT"
+    _add_column_if_missing(conn, "stage_outputs", "sub_progress", col_type, dialect)
 
 
 def _m008_convert_sub_progress_to_jsonb(conn, dialect: str) -> None:

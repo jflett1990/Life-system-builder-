@@ -368,6 +368,26 @@ components:
         - updatedAt
         - stages
 
+    StageOutputSubProgress:
+      type: object
+      description: Live chapter-level progress written during chapter_expansion. Null when the stage is not running or not chapter_expansion.
+      properties:
+        completed:
+          type: integer
+          description: Number of chapters fully processed so far.
+        total:
+          type: integer
+          description: Total number of chapters to expand.
+        currentDomains:
+          type: array
+          items:
+            type: string
+          description: Domain names of chapters currently being processed (up to max_workers).
+      required:
+        - completed
+        - total
+        - currentDomains
+
     StageOutput:
       type: object
       properties:
@@ -389,6 +409,17 @@ components:
         errorMessage:
           type: string
           nullable: true
+        revisionNumber:
+          type: integer
+          description: Increments each time the stage is re-run.
+        previewText:
+          type: string
+          nullable: true
+          description: Short human-readable summary of the stage output.
+        subProgress:
+          $ref: "#/components/schemas/StageOutputSubProgress"
+          nullable: true
+          description: Live progress for chapter_expansion stage. Null otherwise.
         createdAt:
           type: string
           format: date-time
@@ -401,6 +432,7 @@ components:
         - stage
         - status
         - outputJson
+        - revisionNumber
         - createdAt
         - updatedAt
 

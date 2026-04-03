@@ -7,6 +7,7 @@
  */
 import type { StageName } from "./stageName";
 import type { StageOutputOutputJson } from "./stageOutputOutputJson";
+import type { StageOutputSubProgress } from "./stageOutputSubProgress";
 import type { StageOutputValidationResult } from "./stageOutputValidationResult";
 import type { StageStatus } from "./stageStatus";
 
@@ -18,6 +19,12 @@ export interface StageOutput {
   outputJson: StageOutputOutputJson;
   validationResult?: StageOutputValidationResult;
   errorMessage?: string | null;
+  /** Increments each time the stage is re-run. */
+  revisionNumber: number;
+  /** Short human-readable summary of the stage output. */
+  previewText?: string | null;
+  /** Live progress for chapter_expansion stage. Null otherwise. */
+  subProgress?: StageOutputSubProgress | null;
   createdAt: Date;
   updatedAt: Date;
 }
