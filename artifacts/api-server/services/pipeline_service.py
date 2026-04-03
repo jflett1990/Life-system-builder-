@@ -345,14 +345,30 @@ class PipelineService:
             pending_futures: set[concurrent.futures.Future] = set(future_to_chapter.keys())
 
             def _current_domains() -> list[str]:
-                """Names of chapters still in flight (submitted but not yet done)."""
-                return [
+                """Names of chapters whose worker thread is actively executing.
+
+                Uses Future.running() to distinguish threads that have started from
+                those still queued in the executor. Falls back to all pending when
+                nothing is marked running yet (e.g. first tick before workers start).
+                """
+                running = [
                     future_to_chapter[f].get(
                         "domain_name",
                         f"Chapter {future_to_chapter[f].get('chapter_number', '?')}"
                     )
                     for f in pending_futures
-                ][:_WORKERS]
+                    if f.running()
+                ]
+                if running:
+                    return running[:_WORKERS]
+                # Fallback: nothing marked running yet — show first N pending
+                return [
+                    future_to_chapter[f].get(
+                        "domain_name",
+                        f"Chapter {future_to_chapter[f].get('chapter_number', '?')}"
+                    )
+                    for f in list(pending_futures)[:_WORKERS]
+                ]
 
             # Initialise sub_progress so the frontend sees it immediately
             stage_row.set_sub_progress({
