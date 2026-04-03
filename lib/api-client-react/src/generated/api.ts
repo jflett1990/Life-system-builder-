@@ -1329,7 +1329,7 @@ export function useExportProject<
 }
 
 /**
- * Generates a Word document using proper heading styles (H1/H2/H3) so Word's built-in TOC generation works. Worksheets render as label + blank fill-in lines. Fast (< 1 s) — no HTML render pass required.
+ * Generates a Word document with proper heading styles (H1 chapter, H2 worksheet, H3 field) so Word's built-in TOC generation works. Worksheets are rendered according to their declared layout type: "form" uses section headers + labelled fill-in underlines, "table" produces a real Word grid with navy column headers and alternating row shading, "checklist" renders ☐-prefixed items, "two-column" generates a side-by-side current/target state table. Decision gates are appended to every worksheet. Reads stage outputs directly — no HTML render pass required (< 1 s).
 
  * @summary Download the project as an editable Word document (.docx)
  */

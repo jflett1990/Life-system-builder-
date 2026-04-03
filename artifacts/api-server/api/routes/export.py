@@ -234,15 +234,24 @@ def download_docx(
     """
     Generate and download the project as an editable Word document (.docx).
 
-    The document uses proper Word heading styles (Heading 1/2/3) so Word's
-    built-in Table of Contents generation works. Worksheets render as label +
-    blank fill-in lines — suitable for personal editing and customisation.
+    Document structure:
+      - Cover block (system name, life event, objective, audience, date)
+      - TOC field (right-click → "Update Field" in Word to populate)
+      - For each chapter: H1 heading, narrative, quick-reference rules,
+        then each worksheet as an H2 section rendered by its layout type:
+          "form"       — section headers + field-type-aware fill-in blocks
+          "table"      — real Word table with navy column headers + data rows
+          "checklist"  — blue ☐ checkbox items (print-ready)
+          "two-column" — side-by-side current/target Word table
+        Decision gates appended to every worksheet regardless of layout.
+      - Heading palette: H1 navy, H2 blue, H3 slate (Calibri throughout)
 
-    Generation is fast (< 1 second) since no HTML render pass is required.
+    Generation is fast (< 1 second) — reads stage outputs directly, no HTML
+    render or pipeline re-run required.
 
     Returns:
       200 application/vnd.openxmlformats-officedocument.wordprocessingml.document
-      400 if no pipeline stages have been completed.
+      400 if no pipeline stages have been completed yet.
       500 if the DOCX build fails.
     """
     try:

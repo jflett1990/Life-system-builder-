@@ -1,25 +1,40 @@
 """
 DocxBuilder — Generates a Word (.docx) document from Life System Builder pipeline data.
 
-Structure:
+Document structure:
   Cover metadata block       — system identity, life event, time horizon, audience
-  Table of Contents          — Word TOC field (auto-updated when user opens file in Word)
+  Table of Contents          — Word TOC field (right-click → Update Field in Word)
   For each chapter (H1):
     Chapter narrative        — plain paragraph
+    Quick reference rules    — H2 + bullet list
     For each worksheet (H2):
-      Worksheet descriptor   — plain paragraph (purpose text)
-      For each field (H3 + blank lines) — fill-in space for user
+      Purpose / descriptor   — plain paragraph
+      Estimated time         — italic metadata line
+      Layout-specific body   — see layout dispatch below
+      Decision gates         — H3 + pass/fail actions (all layouts)
+
+Worksheet layout dispatch (DocxBuilder._add_worksheet):
+  "form"       → _render_form()
+                 Blue ALLCAPS section headers, field-type-aware blocks:
+                   • select / radio  → radio-circle option list
+                   • checkbox        → ☐ item
+                   • text / default  → placeholder hint + grey fill-in underlines
+  "table"      → _render_table()
+                 Real Word table (Table Grid style): navy header row, alternating
+                 row shading, one column per table_columns entry, row_count data rows.
+  "checklist"  → _render_checklist()
+                 Blue ☐ glyph + item text from checklist_items; formatted for print.
+  "two-column" → _render_two_column()
+                 3-column Word table: Field label / left_column_label / right_column_label,
+                 navy header, alternating shading, one row per field across all sections.
 
 Design choices:
-  - Reads stage outputs directly from the dict returned by
-    PipelineService.all_stage_outputs_as_dict(). No re-running the pipeline.
-  - Uses built-in Word heading styles (Heading 1 / 2 / 3) so Word's TOC works.
-  - Preserves document order from chapter_expansion; falls back to worksheet_system
-    if chapter_expansion is absent (pre-chapter_expansion projects).
-  - All worksheets render as simple label+blank-line sections regardless of
-    layout type (table, checklist, two-column, form) — DOCX is for editing, not
-    reproducing the exact print layout.
-  - Writes to an io.BytesIO buffer — no filesystem writes.
+  - Reads stage outputs from PipelineService.all_stage_outputs_as_dict() directly.
+    No pipeline re-run or HTML render pass required.
+  - chapter_expansion.chapters is preferred; falls back to worksheet_system.worksheets
+    for pre-chapter-expansion projects.
+  - Heading palette: H1 #1F569A (navy), H2 #2B6CB0 (blue), H3 #374151 (slate).
+  - Writes to io.BytesIO — no filesystem writes.
 """
 from __future__ import annotations
 
