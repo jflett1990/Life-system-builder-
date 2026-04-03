@@ -45,7 +45,7 @@ export type StageOutputValidationResult = { [key: string]: unknown } | null;
 export interface StageOutputSubProgress {
   completed: number;
   total: number;
-  lastDomain: string;
+  currentDomains: string[];
 }
 
 export interface StageOutput {

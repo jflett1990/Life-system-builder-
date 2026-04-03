@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from sqlalchemy import String, Text, Integer, ForeignKey, DateTime
+from sqlalchemy import String, Text, Integer, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from models.base import Base
 
@@ -24,7 +24,7 @@ class StageOutput(Base):
     preview_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     validation_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    sub_progress: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sub_progress: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     revision_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -70,9 +70,9 @@ class StageOutput(Base):
     # ── Sub-progress helpers ──────────────────────────────────────────────────
 
     def get_sub_progress(self) -> dict | None:
-        if self.sub_progress:
-            return json.loads(self.sub_progress)
-        return None
+        """Return sub_progress dict directly (JSON column handles deserialization)."""
+        return self.sub_progress
 
     def set_sub_progress(self, data: dict) -> None:
-        self.sub_progress = json.dumps(data)
+        """Assign sub_progress dict directly (JSON column handles serialization)."""
+        self.sub_progress = data

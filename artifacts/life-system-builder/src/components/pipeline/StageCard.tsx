@@ -42,7 +42,7 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
 
   // Chapter-level progress (chapter_expansion stage only)
   const subProgress = isRunning && stage.stage === "chapter-expansion"
-    ? (stage as any).subProgress as { completed: number; total: number; lastDomain: string } | null | undefined
+    ? (stage as any).subProgress as { completed: number; total: number; currentDomains: string[] } | null | undefined
     : null;
 
   function handleRun(force = false) {
@@ -101,10 +101,15 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
                   style={{ width: `${(subProgress.completed / subProgress.total) * 100}%` }}
                 />
               </div>
-              {subProgress.lastDomain && (
-                <p className="text-[10px] text-muted-foreground truncate">
-                  Last: {subProgress.lastDomain}
-                </p>
+              {subProgress.currentDomains && subProgress.currentDomains.length > 0 && (
+                <div className="space-y-0.5">
+                  {subProgress.currentDomains.slice(0, 4).map((d, i) => (
+                    <p key={i} className="text-[10px] text-blue-600/70 truncate flex items-center gap-1">
+                      <span className="inline-block w-1 h-1 rounded-full bg-blue-400 flex-shrink-0 animate-pulse" />
+                      {d}
+                    </p>
+                  ))}
+                </div>
               )}
             </div>
           )}

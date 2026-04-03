@@ -329,23 +329,44 @@ class PipelineService:
         failed_chapter_numbers: list[int] = []
         raw_texts_by_number: dict[int, str] = {}
         completed_count = 0
-        last_domain = ""
 
-        # Initialise sub_progress so the frontend sees it immediately
-        stage_row.set_sub_progress({"completed": 0, "total": total, "last_domain": ""})
-        stage_row.updated_at = datetime.now(timezone.utc)
-        self._repo.save(stage_row)
+        _WORKERS = 4
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="chapter-worker") as pool:
-            future_to_idx = {
-                pool.submit(_expand_one, chap, i): i
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=_WORKERS, thread_name_prefix="chapter-worker"
+        ) as pool:
+            # Build future → chapter info mapping so we can derive current_domains
+            future_to_chapter: dict[concurrent.futures.Future, dict] = {
+                pool.submit(_expand_one, chap, i): chap
                 for i, chap in enumerate(chapters_plan)
             }
 
-            for future in concurrent.futures.as_completed(future_to_idx):
+            # All pending futures = all submitted (pool drains them as workers free up)
+            pending_futures: set[concurrent.futures.Future] = set(future_to_chapter.keys())
+
+            def _current_domains() -> list[str]:
+                """Names of chapters still in flight (submitted but not yet done)."""
+                return [
+                    future_to_chapter[f].get(
+                        "domain_name",
+                        f"Chapter {future_to_chapter[f].get('chapter_number', '?')}"
+                    )
+                    for f in pending_futures
+                ][:_WORKERS]
+
+            # Initialise sub_progress so the frontend sees it immediately
+            stage_row.set_sub_progress({
+                "completed": 0,
+                "total": total,
+                "current_domains": _current_domains(),
+            })
+            stage_row.updated_at = datetime.now(timezone.utc)
+            self._repo.save(stage_row)
+
+            for future in concurrent.futures.as_completed(future_to_chapter):
                 chapter_number, domain_name, chapter_data, raw_text = future.result()
                 completed_count += 1
-                last_domain = domain_name
+                pending_futures.discard(future)
 
                 if chapter_data is not None:
                     results_by_number[chapter_number] = chapter_data
@@ -357,14 +378,14 @@ class PipelineService:
                 stage_row.set_sub_progress({
                     "completed": completed_count,
                     "total": total,
-                    "last_domain": last_domain,
+                    "current_domains": _current_domains(),
                 })
                 stage_row.updated_at = datetime.now(timezone.utc)
                 self._repo.save(stage_row)
 
                 logger.info(
-                    "chapter_expansion | project=%d | %d/%d complete | last='%s'",
-                    project_id, completed_count, total, last_domain,
+                    "chapter_expansion | project=%d | %d/%d complete | domain='%s' | in_flight=%d",
+                    project_id, completed_count, total, domain_name, len(pending_futures),
                 )
 
         # ── Rebuild chapter list in original document order ──────────────────
