@@ -413,3 +413,12 @@ export const ExportProjectResponse = zod.object({
   stagesJson: zod.record(zod.string(), zod.unknown()),
   exportedAt: zod.coerce.date(),
 });
+
+/**
+ * Generates a Word document using proper heading styles (H1/H2/H3) so Word's built-in TOC generation works. Worksheets render as label + blank fill-in lines. Fast (< 1 s) — no HTML render pass required.
+
+ * @summary Download the project as an editable Word document (.docx)
+ */
+export const ExportProjectDocxParams = zod.object({
+  id: zod.coerce.number(),
+});

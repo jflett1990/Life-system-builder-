@@ -438,6 +438,49 @@ class ExportService:
         )
         return render_result.html, filename
 
+    def export_docx(self, project_id: int) -> tuple[bytes, str]:
+        """
+        Build and return a Word (.docx) document for the project.
+
+        Reads stage outputs directly — no render pass required.
+        Uses DocxBuilder which maps chapter_expansion (or worksheet_system fallback)
+        into headed Word sections with fill-in worksheets.
+
+        Returns:
+            (docx_bytes, filename) — filename is e.g. "Elder-Care-Operations-System.docx"
+
+        Raises:
+            ExportNotReadyError if no stages are complete.
+            ExportError for any docx build failure.
+        """
+        from render.docx_builder import DocxBuilder
+
+        stage_outputs = self._pipeline.all_stage_outputs_as_dict(project_id)
+        if not stage_outputs:
+            raise ExportNotReadyError(
+                f"Project {project_id} has no completed stages. "
+                "Run at least the system_architecture stage before exporting."
+            )
+
+        try:
+            builder = DocxBuilder()
+            docx_bytes = builder.build(project_id, stage_outputs)
+        except Exception as e:
+            raise ExportError(f"DOCX build failed for project {project_id}: {e}") from e
+
+        arch = stage_outputs.get("system_architecture", {})
+        system_name = arch.get("system_name", f"LSB-{project_id:05d}")
+        slug = system_name.lower()
+        import re
+        slug = re.sub(r"[^a-z0-9]+", "-", slug).strip("-")[:60] or f"lsb-{project_id:05d}"
+        filename = f"{slug}.docx"
+
+        logger.info(
+            "ExportService.export_docx | project=%d | size=%d B | filename=%s",
+            project_id, len(docx_bytes), filename,
+        )
+        return docx_bytes, filename
+
     def export_stage_json(self, project_id: int, stage: str) -> tuple[str, str]:
         """
         Return the JSON output for a single stage as a formatted string.

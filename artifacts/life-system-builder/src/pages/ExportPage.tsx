@@ -11,7 +11,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { ProjectHeader } from "@/components/layout/ProjectHeader";
 import { Button } from "@/components/ui/button";
-import { Archive, Download, FileCode, FileText, Loader2, RefreshCw } from "lucide-react";
+import { Archive, Download, FileCode, FileText, FileType, Loader2, RefreshCw } from "lucide-react";
 import { getStageLabel } from "@/lib/stages";
 
 function downloadBlob(content: string, filename: string, mimeType: string) {
@@ -36,6 +36,8 @@ export default function ExportPage() {
   const projectId = Number(id);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [docxLoading, setDocxLoading] = useState(false);
+  const [docxError, setDocxError] = useState<string | null>(null);
 
   const { data: project, isLoading: projectLoading } = useQuery(getGetProjectQueryOptions(projectId));
   const { data: stages } = useQuery(getListProjectStagesQueryOptions(projectId));
@@ -96,6 +98,33 @@ export default function ExportPage() {
       setPdfError(err instanceof Error ? err.message : "PDF generation failed. Please try again.");
     } finally {
       setPdfLoading(false);
+    }
+  }
+
+  async function handleDownloadDocx() {
+    setDocxLoading(true);
+    setDocxError(null);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+      const response = await fetch(`${base}/api/export/${projectId}/docx`);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail ?? `Server error ${response.status}`);
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition") ?? "";
+      const filenameMatch = disposition.match(/filename="([^"]+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `${slug}-operational-system.docx`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      setDocxError(err instanceof Error ? err.message : "Word document generation failed. Please try again.");
+    } finally {
+      setDocxLoading(false);
     }
   }
 
@@ -190,6 +219,43 @@ export default function ExportPage() {
                     <>
                       <Download className="w-3.5 h-3.5" />
                       Download PDF
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Word Document download */}
+              <div className="border border-blue-200/60 rounded-sm p-4 bg-blue-50/20 space-y-3">
+                <div className="flex items-start gap-2">
+                  <FileType className="w-4 h-4 mt-0.5 text-blue-600 shrink-0" />
+                  <div>
+                    <div className="text-xs font-semibold text-foreground">Word Document (.docx)</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      Editable · Heading styles for Word TOC · Fill-in worksheets
+                    </div>
+                  </div>
+                </div>
+                {docxError && (
+                  <div className="border border-red-200 bg-red-50 rounded-sm p-2">
+                    <p className="text-[10px] text-red-700 leading-relaxed">{docxError}</p>
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full gap-1.5 text-xs h-8 border-blue-200 hover:bg-blue-50"
+                  onClick={handleDownloadDocx}
+                  disabled={docxLoading}
+                >
+                  {docxLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Building Word document…
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5" />
+                      Download Word Document
                     </>
                   )}
                 </Button>

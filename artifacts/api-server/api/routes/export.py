@@ -226,6 +226,42 @@ def download_stage_json(
     )
 
 
+@router.get("/{project_id}/docx")
+def download_docx(
+    project_id: int,
+    svc: ExportService = Depends(_export_svc),
+) -> Response:
+    """
+    Generate and download the project as an editable Word document (.docx).
+
+    The document uses proper Word heading styles (Heading 1/2/3) so Word's
+    built-in Table of Contents generation works. Worksheets render as label +
+    blank fill-in lines — suitable for personal editing and customisation.
+
+    Generation is fast (< 1 second) since no HTML render pass is required.
+
+    Returns:
+      200 application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      400 if no pipeline stages have been completed.
+      500 if the DOCX build fails.
+    """
+    try:
+        docx_bytes, filename = svc.export_docx(project_id)
+    except ExportNotReadyError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ExportError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return Response(
+        content=docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(docx_bytes)),
+        },
+    )
+
+
 @router.get("/{project_id}/manifest")
 def get_export_manifest(
     project_id: int,

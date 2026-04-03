@@ -1327,3 +1327,92 @@ export function useExportProject<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Generates a Word document using proper heading styles (H1/H2/H3) so Word's built-in TOC generation works. Worksheets render as label + blank fill-in lines. Fast (< 1 s) — no HTML render pass required.
+
+ * @summary Download the project as an editable Word document (.docx)
+ */
+export const getExportProjectDocxUrl = (id: number) => {
+  return `/api/export/${id}/docx`;
+};
+
+export const exportProjectDocx = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getExportProjectDocxUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportProjectDocxQueryKey = (id: number) => {
+  return [`/api/export/${id}/docx`] as const;
+};
+
+export const getExportProjectDocxQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportProjectDocx>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportProjectDocx>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExportProjectDocxQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportProjectDocx>>
+  > = ({ signal }) => exportProjectDocx(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportProjectDocx>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportProjectDocxQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportProjectDocx>>
+>;
+export type ExportProjectDocxQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Download the project as an editable Word document (.docx)
+ */
+
+export function useExportProjectDocx<
+  TData = Awaited<ReturnType<typeof exportProjectDocx>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportProjectDocx>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportProjectDocxQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
