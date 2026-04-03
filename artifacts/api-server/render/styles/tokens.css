@@ -93,9 +93,15 @@
   --color-accent-dark:    var(--gold-700);
 
   /* Full-bleed page backgrounds — edition override targets */
-  --color-cover-bg:       var(--ink-900);
-  --color-divider-bg:     var(--ink-800);
-  --color-chapter-bar:    var(--ink-900);
+  /* --color-primary is the canonical theme background injected from              */
+  /* render_blueprint.theme.color_palette.primary. Cover + section divider pages  */
+  /* both reference it so the visual language is consistent throughout.           */
+  /* --color-cover-bg is kept as an alias for backwards compatibility with older  */
+  /* renders that were produced before --color-primary existed.                   */
+  --color-primary:        var(--ink-900);
+  --color-cover-bg:       var(--color-primary);
+  --color-divider-bg:     var(--color-primary);
+  --color-chapter-bar:    var(--color-primary);
 
   /* Functional status — grayscale-safe because text always accompanies color */
   --color-pass:           var(--pass-500);
@@ -231,32 +237,34 @@
 /* ==========================================================================
    EDITION OVERRIDE CONTRACT
    ─────────────────────────────────────────────────────────────────────────
-   To produce a branded edition, the renderer injects a :root block AFTER
-   this file that overrides the four edition targets. Example:
+   The renderer injects a :root block AFTER this file with edition-specific
+   overrides sourced from render_blueprint.theme.color_palette.
 
-     Estate Edition:
-       --color-cover-bg:    #1A1814;   (near-black warm)
-       --color-divider-bg:  #231F1A;
-       --color-chapter-bar: #1A1814;
-       --color-accent:      #B08A3E;   (gold)
+   --color-primary is the single canonical override target.  Setting it
+   causes --color-cover-bg, --color-divider-bg, and --color-chapter-bar to
+   all cascade to the new value automatically (they alias --color-primary).
 
-     Legal / Divorce Edition:
-       --color-cover-bg:    #1A1520;   (deep slate)
-       --color-divider-bg:  #1E1A28;
-       --color-chapter-bar: #1A1520;
-       --color-accent:      #7A5E28;   (darker gold)
+   Reference palette by life-event category (injected by render_service):
 
-     Caregiving Edition:
-       --color-cover-bg:    #14201A;   (forest)
-       --color-divider-bg:  #182418;
-       --color-chapter-bar: #14201A;
-       --color-accent:      #8A9E6A;   (sage)
+     Legal / estate:
+       --color-primary:     #1e2d40;   (deep slate)
+       --color-accent:      #c9a84c;   (gold)
 
-     Healthcare Edition:
-       --color-cover-bg:    #111C2A;   (navy)
-       --color-divider-bg:  #14202E;
-       --color-chapter-bar: #111C2A;
-       --color-accent:      #9CB8C8;   (steel blue)
+     Caregiving / eldercare:
+       --color-primary:     #1a3a2a;   (forest green)
+       --color-accent:      #7aab8a;   (sage)
+
+     Medical / health:
+       --color-primary:     #242424;   (warm charcoal)
+       --color-accent:      #4a9e8e;   (teal)
+
+     Financial / money:
+       --color-primary:     #1a2340;   (deep navy)
+       --color-accent:      #d4a017;   (amber)
+
+     Default / other:
+       --color-primary:     #1a1a1a;   (near-black)
+       --color-accent:      #b8a97a;   (warm gold)
 
    Font edition override — inject into :root:
        --font-heading: "Garamond", Georgia, serif;  (luxury editorial)

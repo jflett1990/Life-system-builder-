@@ -163,7 +163,12 @@ class RenderService:
         tokens: dict[str, str] = {}
 
         if palette.get("primary"):
-            tokens["--color-cover-bg"] = palette["primary"]
+            # --color-primary is the canonical variable used by cover + section
+            # divider templates.  --color-cover-bg and --color-divider-bg are
+            # kept as aliases so older saved renders remain visually correct.
+            tokens["--color-primary"]     = palette["primary"]
+            tokens["--color-cover-bg"]    = palette["primary"]
+            tokens["--color-divider-bg"]  = palette["primary"]
             tokens["--color-chapter-bar"] = palette["primary"]
         if palette.get("accent"):
             tokens["--color-accent"] = palette["accent"]
