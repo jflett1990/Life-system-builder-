@@ -213,11 +213,19 @@ class DocxBuilder:
     def _add_worksheet(self, doc: Document, ws: dict) -> None:
         """
         Add a single worksheet section: H2 heading, purpose paragraph,
-        each field as H3 + blank fill-in lines.
+        then field prompts as H3 headings + blank fill-in lines.
+
+        Layout routing:
+          "form" / "two-column"  → sections[].section_title (bold) +
+                                   sections[].fields[].label as H3 prompts
+          "table"                → table_columns as H3 column-header prompts
+          "checklist"            → checklist_items as H3 prompts
+          legacy top-level fields (no sections)  → fields[].label as H3 prompts
+          final fallback         → generic "Notes" H3
         """
-        title = _safe_text(ws.get("title"), "Worksheet")
+        title   = _safe_text(ws.get("title"), "Worksheet")
         purpose = _safe_text(ws.get("purpose"), "")
-        fields: list[dict] = ws.get("fields", [])
+        layout  = ws.get("layout", "form")
 
         doc.add_heading(title, level=2)
 
@@ -227,25 +235,107 @@ class DocxBuilder:
                 run.font.size = Pt(10)
                 run.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
 
-        if fields:
-            for field_item in fields:
-                label = (
-                    _safe_text(
-                        field_item.get("label") or
-                        field_item.get("name") or
-                        field_item.get("title"),
-                        ""
-                    )
+        # ── Two-column header ─────────────────────────────────────────────────
+        if layout == "two-column":
+            left  = _safe_text(ws.get("left_column_label"),  "Current State")
+            right = _safe_text(ws.get("right_column_label"), "Target State")
+            doc.add_heading(f"{left}  /  {right}", level=3)
+
+        # ── Table layout: column headers as fill-in rows ──────────────────────
+        if layout == "table":
+            columns: list[str] = ws.get("table_columns", [])
+            row_count: int = ws.get("table_row_count", 12)
+            if columns:
+                for col in columns:
+                    col_label = _safe_text(col, "")
+                    if col_label:
+                        doc.add_heading(col_label, level=3)
+                        for _ in range(min(row_count, 6)):
+                            doc.add_paragraph("_" * 60)
+            else:
+                doc.add_heading("Notes", level=3)
+                for _ in range(_BLANK_LINE_COUNT):
+                    doc.add_paragraph("_" * 60)
+            return
+
+        # ── Checklist layout: each item as a fill-in prompt ───────────────────
+        if layout == "checklist":
+            items: list = ws.get("checklist_items", [])
+            if items:
+                for item in items:
+                    item_text = _safe_text(item if isinstance(item, str) else item.get("label", str(item)), "")
+                    if item_text:
+                        p = doc.add_paragraph(style="List Bullet")
+                        p.add_run(item_text)
+            else:
+                doc.add_heading("Notes", level=3)
+                for _ in range(_BLANK_LINE_COUNT):
+                    doc.add_paragraph("_" * 60)
+            return
+
+        # ── Form / two-column: sections → fields ──────────────────────────────
+        sections: list[dict] = ws.get("sections", [])
+        if sections:
+            for section in sections:
+                section_title = _safe_text(section.get("section_title"), "")
+                if section_title:
+                    # Section title as a bold paragraph (not a heading level to
+                    # avoid polluting the Word TOC with every section name).
+                    sec_para = doc.add_paragraph()
+                    run = sec_para.add_run(section_title)
+                    run.bold = True
+                    run.font.size = Pt(10)
+
+                instructions = _safe_text(section.get("instructions"), "")
+                if instructions:
+                    ins_para = doc.add_paragraph(instructions)
+                    for r in ins_para.runs:
+                        r.font.size = Pt(9)
+                        r.font.italic = True
+                        r.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+
+                fields: list[dict] = section.get("fields", [])
+                if fields:
+                    for field_item in fields:
+                        label = _safe_text(
+                            field_item.get("label") or
+                            field_item.get("name") or
+                            field_item.get("title"),
+                            "",
+                        )
+                        if not label:
+                            continue
+                        doc.add_heading(label, level=3)
+                        for _ in range(_BLANK_LINE_COUNT):
+                            doc.add_paragraph("_" * 60)
+                else:
+                    # Section without fields — leave a generic write-in block
+                    doc.add_heading(section_title or "Notes", level=3)
+                    for _ in range(_BLANK_LINE_COUNT):
+                        doc.add_paragraph("_" * 60)
+            return
+
+        # ── Legacy: top-level fields list (older stage outputs) ───────────────
+        top_level_fields: list[dict] = ws.get("fields", [])
+        if top_level_fields:
+            for field_item in top_level_fields:
+                label = _safe_text(
+                    field_item.get("label") or
+                    field_item.get("name") or
+                    field_item.get("title"),
+                    "",
                 )
                 if not label:
                     continue
                 doc.add_heading(label, level=3)
                 for _ in range(_BLANK_LINE_COUNT):
                     doc.add_paragraph("_" * 60)
-        else:
-            doc.add_heading("Notes", level=3)
-            for _ in range(_BLANK_LINE_COUNT):
-                doc.add_paragraph("_" * 60)
+            return
+
+        # ── Final fallback ────────────────────────────────────────────────────
+        doc.add_heading("Notes", level=3)
+        for _ in range(_BLANK_LINE_COUNT):
+            doc.add_paragraph("_" * 60)
 
     def _set_default_styles(self, doc: Document) -> None:
         """Adjust base font so the document looks clean out of the box."""
