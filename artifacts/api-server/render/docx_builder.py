@@ -210,28 +210,23 @@ class DocxBuilder:
         )
         return raw
 
+    # ── Layout-specific worksheet renderers ───────────────────────────────────
+
     def _add_worksheet(self, doc: Document, ws: dict) -> None:
         """
-        Add a single worksheet section: H2 heading, purpose paragraph,
-        then ALL field prompts as H3 headings + blank fill-in lines.
+        Render a worksheet using its declared layout type.
 
-        All layout types are normalised to the same output model:
-          H2  worksheet title
-          paragraph  purpose / descriptor text
-          H3  field label
-          blank lines  (×_BLANK_LINE_COUNT)
-          … repeated for every field prompt
-
-        Field sources by layout:
-          form / two-column  → flatten sections[].fields[].label
-          table              → table_columns items as field labels
-          checklist          → checklist_items items as field labels
-          (any layout)       → legacy top-level fields[] as fallback
-          final fallback     → single "Notes" prompt
+        Dispatch table:
+          "form"       → _render_form()        section headers + labelled fill-in fields
+          "table"      → _render_table()       Word grid with column headers + data rows
+          "checklist"  → _render_checklist()   ☐ checkbox items + decision gates
+          "two-column" → _render_two_column()  side-by-side Word table (current / target)
+          (unknown)    → _render_form() fallback
         """
         title   = _safe_text(ws.get("title"), "Worksheet")
         purpose = _safe_text(ws.get("purpose"), "")
         layout  = ws.get("layout", "form")
+        est_time = _safe_text(ws.get("estimated_completion_time"), "")
 
         doc.add_heading(title, level=2)
 
@@ -241,71 +236,292 @@ class DocxBuilder:
                 run.font.size = Pt(10)
                 run.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
 
-        # Build a flat list of (section_title_or_None, field_label) tuples so
-        # every layout funnels into exactly the same rendering loop below.
-        prompts: list[tuple[str | None, str]] = []
+        if est_time:
+            meta = doc.add_paragraph()
+            r = meta.add_run(f"Estimated completion time: {est_time}")
+            r.italic = True
+            r.font.size = Pt(9)
+            r.font.color.rgb = RGBColor(0x80, 0x80, 0x80)
 
         if layout == "table":
-            for col in ws.get("table_columns", []):
-                label = _safe_text(col if isinstance(col, str) else str(col), "")
-                if label:
-                    prompts.append((None, label))
-
+            self._render_table(doc, ws)
         elif layout == "checklist":
-            for item in ws.get("checklist_items", []):
-                label = _safe_text(
-                    item if isinstance(item, str) else item.get("label", str(item)), ""
-                )
-                if label:
-                    prompts.append((None, label))
-
+            self._render_checklist(doc, ws)
+        elif layout == "two-column":
+            self._render_two_column(doc, ws)
         else:
-            # form / two-column: sections → fields
-            sections: list[dict] = ws.get("sections", [])
-            for section in sections:
-                sec_title = _safe_text(section.get("section_title"), None)
-                for field_item in section.get("fields", []):
-                    label = _safe_text(
-                        field_item.get("label") or
-                        field_item.get("name") or
-                        field_item.get("title"),
-                        "",
-                    )
-                    if label:
-                        prompts.append((sec_title, label))
+            self._render_form(doc, ws)
 
-        # Legacy: top-level fields (older stage outputs with no sections)
-        if not prompts:
+        # Decision gates (shared across layouts)
+        gates: list[dict] = ws.get("decision_gates", [])
+        if gates:
+            doc.add_heading("Decision Gates", level=3)
+            for gate in gates:
+                cond = _safe_text(gate.get("condition") or gate.get("gate_title"), "")
+                pass_a = _safe_text(gate.get("pass_action"), "")
+                fail_a = _safe_text(gate.get("fail_action"), "")
+                if cond:
+                    p = doc.add_paragraph(style="List Bullet")
+                    p.add_run(f"Gate: {cond}").bold = True
+                    if pass_a:
+                        doc.add_paragraph(f"  ✓ Pass → {pass_a}")
+                    if fail_a:
+                        doc.add_paragraph(f"  ✗ Fail → {fail_a}")
+
+    def _render_form(self, doc: Document, ws: dict) -> None:
+        """
+        Form layout — sections with bold section headers, each field as a
+        labelled block with a fill-in underline beneath it.
+        """
+        sections: list[dict] = ws.get("sections", [])
+
+        # Legacy fallback: worksheets without sections but with top-level fields
+        if not sections:
             for field_item in ws.get("fields", []):
                 label = _safe_text(
-                    field_item.get("label") or
-                    field_item.get("name") or
-                    field_item.get("title"),
-                    "",
+                    field_item.get("label") or field_item.get("name") or field_item.get("title"), ""
                 )
                 if label:
-                    prompts.append((None, label))
+                    doc.add_heading(label, level=3)
+                    _add_fill_line(doc)
+            if not ws.get("fields"):
+                doc.add_heading("Notes", level=3)
+                for _ in range(3):
+                    _add_fill_line(doc)
+            return
 
-        # Final fallback
-        if not prompts:
-            prompts = [(None, "Notes")]
+        for section in sections:
+            sec_title = _safe_text(section.get("section_title"), "")
+            instructions = _safe_text(section.get("instructions"), "")
 
-        # ── Render: H3 label + blank lines (uniform for all layouts) ─────────
-        current_section: str | None = None
-        for sec_title, label in prompts:
-            if sec_title and sec_title != current_section:
-                current_section = sec_title
-                sec_para = doc.add_paragraph()
-                run = sec_para.add_run(sec_title)
+            if sec_title:
+                sec_p = doc.add_paragraph()
+                r = sec_p.add_run(sec_title.upper())
+                r.bold = True
+                r.font.size = Pt(9)
+                r.font.color.rgb = RGBColor(0x1F, 0x56, 0x9A)
+
+            if instructions:
+                ins_p = doc.add_paragraph(instructions)
+                for run in ins_p.runs:
+                    run.font.size = Pt(9)
+                    run.italic = True
+                    run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+
+            fields: list[dict] = section.get("fields", [])
+            if fields:
+                for field_item in fields:
+                    label = _safe_text(
+                        field_item.get("label") or field_item.get("name") or field_item.get("title"), ""
+                    )
+                    ftype = _safe_text(field_item.get("type"), "text")
+                    placeholder = _safe_text(field_item.get("placeholder"), "")
+                    if not label:
+                        continue
+
+                    doc.add_heading(label, level=3)
+
+                    if ftype in ("select", "radio") and field_item.get("options"):
+                        # Multiple choice — render each option as a selectable item
+                        for opt in field_item["options"]:
+                            opt_text = _safe_text(opt, "")
+                            if opt_text:
+                                p = doc.add_paragraph()
+                                p.add_run("○  ").font.size = Pt(11)
+                                p.add_run(opt_text).font.size = Pt(10)
+                    elif ftype == "checkbox":
+                        p = doc.add_paragraph()
+                        p.add_run("☐  ").font.size = Pt(11)
+                        p.add_run(placeholder or label).font.size = Pt(10)
+                    else:
+                        if placeholder:
+                            ph_p = doc.add_paragraph(f"({placeholder})")
+                            for run in ph_p.runs:
+                                run.font.size = Pt(9)
+                                run.italic = True
+                                run.font.color.rgb = RGBColor(0x88, 0x88, 0x88)
+                        _add_fill_line(doc)
+                        _add_fill_line(doc)
+            else:
+                doc.add_heading("Notes", level=3)
+                for _ in range(3):
+                    _add_fill_line(doc)
+
+    def _render_table(self, doc: Document, ws: dict) -> None:
+        """
+        Table layout — a Word table with bold column headers and blank data rows.
+        """
+        columns: list[str] = ws.get("table_columns", [])
+        row_count: int = min(ws.get("table_row_count", 12), 20)
+
+        if not columns:
+            doc.add_heading("Notes", level=3)
+            _add_fill_line(doc)
+            return
+
+        col_count = len(columns)
+        table = doc.add_table(rows=row_count + 1, cols=col_count)
+        table.style = "Table Grid"
+
+        # Header row
+        hdr_row = table.rows[0]
+        for i, col_name in enumerate(columns):
+            cell = hdr_row.cells[i]
+            cell.text = col_name
+            for run in cell.paragraphs[0].runs:
                 run.bold = True
-                run.font.size = Pt(10)
-            doc.add_heading(label, level=3)
-            for _ in range(_BLANK_LINE_COUNT):
-                doc.add_paragraph("_" * 60)
+                run.font.size = Pt(9)
+                run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            # Navy header shading
+            _shade_cell(cell, "1F569A")
+            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Data rows — blank, with alternating light shading
+        for row_idx in range(1, row_count + 1):
+            for cell in table.rows[row_idx].cells:
+                cell.text = ""
+                for para in cell.paragraphs:
+                    for run in para.runs:
+                        run.font.size = Pt(10)
+                if row_idx % 2 == 0:
+                    _shade_cell(cell, "EEF3FA")
+
+        doc.add_paragraph()  # spacing after table
+
+    def _render_checklist(self, doc: Document, ws: dict) -> None:
+        """
+        Checklist layout — ☐ checkbox symbol + item text, styled for print use.
+        Decision gates follow (handled by caller).
+        """
+        items: list = ws.get("checklist_items", [])
+
+        if not items:
+            doc.add_heading("Checklist Items", level=3)
+            for _ in range(5):
+                p = doc.add_paragraph()
+                p.add_run("☐  _______________________________________________")
+                p.runs[0].font.size = Pt(11)
+            return
+
+        for item in items:
+            item_text = _safe_text(
+                item if isinstance(item, str) else (item.get("label") or item.get("text") or str(item)), ""
+            )
+            if not item_text:
+                continue
+            p = doc.add_paragraph()
+            chk = p.add_run("☐  ")
+            chk.font.size = Pt(12)
+            chk.font.color.rgb = RGBColor(0x1F, 0x56, 0x9A)
+            body = p.add_run(item_text)
+            body.font.size = Pt(10)
+
+    def _render_two_column(self, doc: Document, ws: dict) -> None:
+        """
+        Two-column layout — a 2-column Word table.
+        Left header = left_column_label, right header = right_column_label.
+        Each field generates one row: label in first column, fill space in second.
+        """
+        left_label  = _safe_text(ws.get("left_column_label"),  "Current State")
+        right_label = _safe_text(ws.get("right_column_label"), "Target State")
+        sections: list[dict] = ws.get("sections", [])
+
+        # Collect all fields across sections preserving order
+        rows_data: list[tuple[str, str]] = []  # (section_header | "", field_label)
+        for section in sections:
+            sec_title = _safe_text(section.get("section_title"), "")
+            for i, field_item in enumerate(section.get("fields", [])):
+                label = _safe_text(
+                    field_item.get("label") or field_item.get("name") or field_item.get("title"), ""
+                )
+                if not label:
+                    continue
+                rows_data.append((sec_title if i == 0 else "", label))
+
+        if not rows_data:
+            rows_data = [("", "Notes")]
+
+        # Build table: 1 header row + 1 row per field
+        table = doc.add_table(rows=len(rows_data) + 1, cols=3)
+        table.style = "Table Grid"
+
+        # Column widths via XML (approx): label ~30%, left ~35%, right ~35%
+        col_widths = ["2200", "2500", "2500"]  # twips
+        for i, cell in enumerate(table.rows[0].cells):
+            tc = cell._tc
+            tcPr = tc.get_or_add_tcPr()
+            tcW = OxmlElement("w:tcW")
+            tcW.set(qn("w:w"), col_widths[i])
+            tcW.set(qn("w:type"), "dxa")
+            tcPr.append(tcW)
+
+        # Header row
+        headers = ["Field", left_label, right_label]
+        for i, hdr_text in enumerate(headers):
+            cell = table.rows[0].cells[i]
+            cell.text = hdr_text
+            for run in cell.paragraphs[0].runs:
+                run.bold = True
+                run.font.size = Pt(9)
+                run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            _shade_cell(cell, "1F569A")
+            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Data rows
+        for row_idx, (sec_title, field_label) in enumerate(rows_data):
+            row = table.rows[row_idx + 1]
+            label_text = f"{sec_title} — {field_label}" if sec_title else field_label
+            row.cells[0].text = label_text
+            for run in row.cells[0].paragraphs[0].runs:
+                run.font.size = Pt(9)
+                run.bold = bool(sec_title)
+            row.cells[1].text = ""
+            row.cells[2].text = ""
+            if row_idx % 2 == 0:
+                _shade_cell(row.cells[1], "EEF3FA")
+                _shade_cell(row.cells[2], "EEF3FA")
+
+        doc.add_paragraph()  # spacing after table
 
     def _set_default_styles(self, doc: Document) -> None:
-        """Adjust base font so the document looks clean out of the box."""
+        """Adjust base font and heading colours for a clean, professional look."""
         style = doc.styles["Normal"]
-        font = style.font
-        font.name = "Calibri"
-        font.size = Pt(11)
+        style.font.name  = "Calibri"
+        style.font.size  = Pt(11)
+
+        # Heading colour palette: navy blue for H1/H2, slate for H3
+        _heading_colors = {
+            "Heading 1": ("1F569A", 16),
+            "Heading 2": ("2B6CB0", 13),
+            "Heading 3": ("374151", 11),
+        }
+        for style_name, (hex_color, pt_size) in _heading_colors.items():
+            try:
+                h = doc.styles[style_name]
+                h.font.name  = "Calibri"
+                h.font.size  = Pt(pt_size)
+                r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+                h.font.color.rgb = RGBColor(r, g, b)
+            except KeyError:
+                pass
+
+
+# ── Module-level helpers ──────────────────────────────────────────────────────
+
+def _add_fill_line(doc: Document) -> None:
+    """One printable underline fill-in line."""
+    p = doc.add_paragraph()
+    r = p.add_run("_" * 72)
+    r.font.color.rgb = RGBColor(0xAA, 0xAA, 0xAA)
+    r.font.size = Pt(10)
+
+
+def _shade_cell(cell: Any, hex_color: str) -> None:
+    """Apply a solid background colour to a table cell via OOXML."""
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), hex_color)
+    tcPr.append(shd)
