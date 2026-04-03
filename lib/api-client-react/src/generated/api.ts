@@ -25,6 +25,7 @@ import type {
   ProjectSummary,
   ProjectWithStages,
   RenderResult,
+  RunStageParams,
   StageName,
   StageOutput,
   UpdateProjectBody,
@@ -535,6 +536,90 @@ export const useDeleteProject = <
 };
 
 /**
+ * @summary Duplicate a project (copies metadata and all stage outputs)
+ */
+export const getDuplicateProjectUrl = (id: number) => {
+  return `/api/projects/${id}/duplicate`;
+};
+
+export const duplicateProject = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Project> => {
+  return customFetch<Project>(getDuplicateProjectUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getDuplicateProjectMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof duplicateProject>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof duplicateProject>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["duplicateProject"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof duplicateProject>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return duplicateProject(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DuplicateProjectMutationResult = NonNullable<
+  Awaited<ReturnType<typeof duplicateProject>>
+>;
+
+export type DuplicateProjectMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Duplicate a project (copies metadata and all stage outputs)
+ */
+export const useDuplicateProject = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof duplicateProject>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof duplicateProject>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDuplicateProjectMutationOptions(options));
+};
+
+/**
  * @summary List all stage outputs for a project
  */
 export const getListProjectStagesUrl = (id: number) => {
@@ -802,16 +887,33 @@ export function useGetProjectSummary<
 /**
  * @summary Run a specific pipeline stage
  */
-export const getRunStageUrl = (id: number, stage: StageName) => {
-  return `/api/pipeline/${id}/run/${stage}`;
+export const getRunStageUrl = (
+  id: number,
+  stage: StageName,
+  params?: RunStageParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/pipeline/${id}/run/${stage}?${stringifiedParams}`
+    : `/api/pipeline/${id}/run/${stage}`;
 };
 
 export const runStage = async (
   id: number,
   stage: StageName,
+  params?: RunStageParams,
   options?: RequestInit,
 ): Promise<StageOutput> => {
-  return customFetch<StageOutput>(getRunStageUrl(id, stage), {
+  return customFetch<StageOutput>(getRunStageUrl(id, stage, params), {
     ...options,
     method: "POST",
   });
@@ -824,14 +926,14 @@ export const getRunStageMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof runStage>>,
     TError,
-    { id: number; stage: StageName },
+    { id: number; stage: StageName; params?: RunStageParams },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof runStage>>,
   TError,
-  { id: number; stage: StageName },
+  { id: number; stage: StageName; params?: RunStageParams },
   TContext
 > => {
   const mutationKey = ["runStage"];
@@ -845,11 +947,11 @@ export const getRunStageMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runStage>>,
-    { id: number; stage: StageName }
+    { id: number; stage: StageName; params?: RunStageParams }
   > = (props) => {
-    const { id, stage } = props ?? {};
+    const { id, stage, params } = props ?? {};
 
-    return runStage(id, stage, requestOptions);
+    return runStage(id, stage, params, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -871,18 +973,105 @@ export const useRunStage = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof runStage>>,
     TError,
-    { id: number; stage: StageName },
+    { id: number; stage: StageName; params?: RunStageParams },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof runStage>>,
   TError,
-  { id: number; stage: StageName },
+  { id: number; stage: StageName; params?: RunStageParams },
   TContext
 > => {
   return useMutation(getRunStageMutationOptions(options));
 };
+
+/**
+ * @summary Retrieve the last saved validation audit for a project
+ */
+export const getGetValidationResultUrl = (id: number) => {
+  return `/api/pipeline/${id}/validate`;
+};
+
+export const getValidationResult = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ValidationReport> => {
+  return customFetch<ValidationReport>(getGetValidationResultUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetValidationResultQueryKey = (id: number) => {
+  return [`/api/pipeline/${id}/validate`] as const;
+};
+
+export const getGetValidationResultQueryOptions = <
+  TData = Awaited<ReturnType<typeof getValidationResult>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getValidationResult>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetValidationResultQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getValidationResult>>
+  > = ({ signal }) => getValidationResult(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getValidationResult>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetValidationResultQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getValidationResult>>
+>;
+export type GetValidationResultQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Retrieve the last saved validation audit for a project
+ */
+
+export function useGetValidationResult<
+  TData = Awaited<ReturnType<typeof getValidationResult>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getValidationResult>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetValidationResultQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Run validation audit across all completed stages

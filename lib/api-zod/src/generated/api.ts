@@ -125,6 +125,23 @@ export const DeleteProjectParams = zod.object({
 });
 
 /**
+ * @summary Duplicate a project (copies metadata and all stage outputs)
+ */
+export const DuplicateProjectParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DuplicateProjectResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  lifeEvent: zod.string(),
+  context: zod.string().optional(),
+  status: zod.string(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
  * @summary List all stage outputs for a project
  */
 export const ListProjectStagesParams = zod.object({
@@ -268,6 +285,13 @@ export const RunStageParams = zod.object({
   ]),
 });
 
+export const RunStageQueryParams = zod.object({
+  force: zod.coerce
+    .boolean()
+    .optional()
+    .describe("Force re-run even if stage is already complete."),
+});
+
 export const RunStageResponse = zod.object({
   id: zod.number(),
   projectId: zod.number(),
@@ -305,6 +329,34 @@ export const RunStageResponse = zod.object({
     .describe("Live progress for chapter_expansion stage. Null otherwise."),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Retrieve the last saved validation audit for a project
+ */
+export const GetValidationResultParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetValidationResultResponse = zod.object({
+  projectId: zod.number(),
+  passed: zod.boolean(),
+  issueCount: zod.number(),
+  issues: zod.array(
+    zod.object({
+      stage: zod.enum([
+        "system-architecture",
+        "worksheet-system",
+        "layout-mapping",
+        "render-blueprint",
+        "validation-audit",
+      ]),
+      field: zod.string(),
+      severity: zod.enum(["error", "warning", "info"]),
+      message: zod.string(),
+    }),
+  ),
+  summary: zod.string(),
 });
 
 /**

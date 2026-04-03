@@ -15,6 +15,7 @@ export * from "./project";
 export * from "./projectSummary";
 export * from "./projectWithStages";
 export * from "./renderResult";
+export * from "./runStageParams";
 export * from "./stageName";
 export * from "./stageOutput";
 export * from "./stageOutputOutputJson";

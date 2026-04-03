@@ -153,3 +153,10 @@ export interface ErrorResponse {
   error: string;
   message: string;
 }
+
+export type RunStageParams = {
+  /**
+   * Force re-run even if stage is already complete.
+   */
+  force?: boolean;
+};

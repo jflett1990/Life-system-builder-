@@ -125,6 +125,31 @@ paths:
         "204":
           description: Deleted
 
+  /projects/{id}/duplicate:
+    post:
+      operationId: duplicateProject
+      tags: [projects]
+      summary: Duplicate a project (copies metadata and all stage outputs)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Newly created duplicate project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /projects/{id}/stages:
     get:
       operationId: listProjectStages
@@ -211,6 +236,12 @@ paths:
           required: true
           schema:
             $ref: "#/components/schemas/StageName"
+        - name: force
+          in: query
+          required: false
+          description: Force re-run even if stage is already complete.
+          schema:
+            type: boolean
       responses:
         "200":
           description: Stage output
@@ -226,6 +257,29 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /pipeline/{id}/validate:
+    get:
+      operationId: getValidationResult
+      tags: [pipeline]
+      summary: Retrieve the last saved validation audit for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cached validation audit report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationReport"
+        "404":
+          description: No validation result found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       operationId: validateProject
       tags: [pipeline]

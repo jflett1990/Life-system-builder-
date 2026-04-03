@@ -50,7 +50,7 @@ export default function PipelinePage() {
       for (const stageName of PIPELINE_STAGES) {
         const existing = stages.find((s) => s.stage === stageName);
         if (!force && existing?.status === StageStatus.complete) continue;
-        await runStageAsync({ id: projectId, stage: stageName, ...(force ? { force: true } : {}) });
+        await runStageAsync({ id: projectId, stage: stageName, params: force ? { force: true } : undefined });
         await queryClient.invalidateQueries({ queryKey: getListProjectStagesQueryKey(projectId) });
       }
     } finally {

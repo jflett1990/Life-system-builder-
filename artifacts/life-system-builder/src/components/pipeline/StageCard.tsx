@@ -47,7 +47,7 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
 
   function handleRun(force = false) {
     setRunError(null);
-    runStage({ id: projectId, stage: stage.stage as StageName, ...(force ? { force: true } : {}) });
+    runStage({ id: projectId, stage: stage.stage as StageName, params: force ? { force: true } : undefined });
   }
 
   return (
