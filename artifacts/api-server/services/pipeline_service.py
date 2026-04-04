@@ -34,6 +34,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from core.config import settings
 from core.contract_registry import get_registry
 from core.pipeline_orchestrator import PipelineOrchestrator, PipelineError
 from core.prompt_assembler import PromptAssembler
@@ -330,7 +331,7 @@ class PipelineService:
         raw_texts_by_number: dict[int, str] = {}
         completed_count = 0
 
-        _WORKERS = 4
+        _WORKERS = settings.chapter_expansion_workers
 
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=_WORKERS, thread_name_prefix="chapter-worker"

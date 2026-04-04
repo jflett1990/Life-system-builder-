@@ -33,7 +33,7 @@ STAGE_UPSTREAM_MAP: dict[str, list[str]] = {
     "appendix_builder":    ["system_architecture", "document_outline", "chapter_expansion"],
     "layout_mapping":      ["system_architecture", "document_outline", "chapter_expansion"],
     "render_blueprint":    ["system_architecture", "document_outline", "chapter_expansion", "layout_mapping"],
-    "validation_audit":    ["system_architecture", "document_outline", "chapter_expansion", "layout_mapping", "render_blueprint"],
+    "validation_audit":    ["system_architecture", "document_outline", "chapter_expansion", "appendix_builder", "layout_mapping", "render_blueprint"],
 }
 
 

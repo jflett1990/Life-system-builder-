@@ -16,9 +16,12 @@ sys.path.insert(0, os.path.dirname(__file__))
 import threading
 import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from core.config import settings
 from core.logging import get_logger
 from core.contract_registry import validate_and_load
 
@@ -103,43 +106,64 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow the Vite frontend to call the API
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ── CORS ─────────────────────────────────────────────────────────────
+# When ALLOWED_ORIGINS is set (production), restrict to those origins and
+# allow credentials (cookies).  In development (no env var), allow all
+# origins but disable credentials — the two cannot be combined per the
+# browser CORS spec.
+_allowed_origins = settings.get_allowed_origins()
+if _allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+# ── API Key middleware ────────────────────────────────────────────────
+# Set API_KEY env var to enable.  Skips auth in development (key unset).
+# Read-only paths (GET /api/health, docs, openapi schema) are always open.
+_OPEN_PREFIXES = ("/api/health", "/api/docs", "/api/redoc", "/api/openapi.json")
+_MUTATION_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+class ApiKeyMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        key = settings.get_api_key()
+        if not key:
+            return await call_next(request)
+        if request.method in _MUTATION_METHODS and not any(
+            request.url.path.startswith(p) for p in _OPEN_PREFIXES
+        ):
+            provided = request.headers.get("X-API-Key", "")
+            if provided != key:
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Invalid or missing API key. Provide X-API-Key header."},
+                )
+        return await call_next(request)
+
+
+app.add_middleware(ApiKeyMiddleware)
 
 # ── Routers ──────────────────────────────────────────────────────────
-from api.routes import health, projects, pipeline, render, export
+from api.routes import health, projects, pipeline, render, export, contracts
 
-app.include_router(health.router,    prefix="/api")
-app.include_router(projects.router,  prefix="/api")
-app.include_router(pipeline.router,  prefix="/api")
-app.include_router(render.router,    prefix="/api")
-app.include_router(export.router,    prefix="/api")
-
-
-# ── Contracts admin endpoint ─────────────────────────────────────────
-@app.get("/api/contracts", tags=["contracts"])
-def list_contracts():
-    """List all registered prompt contracts (name, version, stage, output_mode)."""
-    from core.contract_registry import get_registry
-    return {"contracts": get_registry().summary()}
-
-
-@app.get("/api/contracts/{name}", tags=["contracts"])
-def get_contract(name: str, version: str | None = None):
-    """Get full contract definition by name (and optional version)."""
-    from core.contract_registry import get_registry, ContractRegistryError
-    from fastapi import HTTPException
-    try:
-        contract = get_registry().resolve(name, version)
-        return contract.raw
-    except ContractRegistryError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+app.include_router(health.router,     prefix="/api")
+app.include_router(projects.router,   prefix="/api")
+app.include_router(pipeline.router,   prefix="/api")
+app.include_router(render.router,     prefix="/api")
+app.include_router(export.router,     prefix="/api")
+app.include_router(contracts.router,  prefix="/api")
 
 
 if __name__ == "__main__":

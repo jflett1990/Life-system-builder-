@@ -23,6 +23,8 @@ from typing import Any
 from validators.defect import Defect, Severity, Verdict, compute_verdict, sort_defects, SEVERITY_ORDER
 from validators.rules.system_architecture import SYSTEM_ARCHITECTURE_RULES
 from validators.rules.worksheet_system    import WORKSHEET_SYSTEM_RULES
+from validators.rules.chapter_expansion   import CHAPTER_EXPANSION_RULES
+from validators.rules.appendix_builder    import APPENDIX_BUILDER_RULES
 from validators.rules.layout_mapping      import LAYOUT_MAPPING_RULES
 from validators.rules.render_blueprint    import RENDER_BLUEPRINT_RULES
 from validators.rules.cross_stage         import CROSS_STAGE_RULES
@@ -34,6 +36,8 @@ logger = get_logger(__name__)
 STAGE_RULE_MAP: dict[str, list[BaseRule]] = {
     "system_architecture": SYSTEM_ARCHITECTURE_RULES,
     "worksheet_system":    WORKSHEET_SYSTEM_RULES,
+    "chapter_expansion":   CHAPTER_EXPANSION_RULES,
+    "appendix_builder":    APPENDIX_BUILDER_RULES,
     "layout_mapping":      LAYOUT_MAPPING_RULES,
     "render_blueprint":    RENDER_BLUEPRINT_RULES,
 }

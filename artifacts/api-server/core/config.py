@@ -26,9 +26,24 @@ class Settings(BaseSettings):
     # ── Database ──────────────────────────────────────────────────────────────
     database_url: str = "sqlite:///./life_system.db"
 
-    # ── Server ────────────────────────────────────────────────────────────────
+    # ── Chapter expansion concurrency ─────────────────────────────────────────
+    # Number of parallel workers for the chapter_expansion stage.
+    # Reduce if hitting rate limits; increase on high-concurrency OpenAI tiers.
+    chapter_expansion_workers: int = 4
+
+    # ── Server / CORS ─────────────────────────────────────────────────────────
     log_level: str = "INFO"
     port: int = 8080
+
+    # Comma-separated allowed frontend origins, e.g.:
+    #   ALLOWED_ORIGINS=https://myapp.replit.app,https://myapp.com
+    # Leave empty in development to allow all origins (credentials disabled).
+    allowed_origins: str = ""
+
+    # ── Auth ──────────────────────────────────────────────────────────────────
+    # Set API_KEY to enable simple API-key auth on all mutation endpoints.
+    # If unset the server runs in open (development) mode.
+    api_key: str = ""
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
@@ -44,6 +59,15 @@ class Settings(BaseSettings):
             os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
             or (self.openai_base_url if self.openai_base_url else None)
         )
+
+    def get_allowed_origins(self) -> list[str]:
+        raw = os.environ.get("ALLOWED_ORIGINS", self.allowed_origins).strip()
+        if not raw:
+            return []
+        return [o.strip() for o in raw.split(",") if o.strip()]
+
+    def get_api_key(self) -> str:
+        return os.environ.get("API_KEY", self.api_key).strip()
 
 
 settings = Settings()

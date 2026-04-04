@@ -1,18 +1,18 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
 
 
 class ProjectCreate(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    title: str
-    life_event: str
-    audience: str | None = None
-    tone: str | None = None
-    context: str | None = None
-    formatting_profile: str | None = None
-    artifact_density: str | None = None
+    title: str = Field(..., max_length=200)
+    life_event: str = Field(..., max_length=2000)
+    audience: str | None = Field(default=None, max_length=500)
+    tone: str | None = Field(default=None, max_length=200)
+    context: str | None = Field(default=None, max_length=5000)
+    formatting_profile: str | None = Field(default=None, max_length=100)
+    artifact_density: str | None = Field(default=None, max_length=100)
 
     @field_validator("title", "life_event")
     @classmethod
