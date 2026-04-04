@@ -51,13 +51,17 @@
       if (el) el.remove();
     }
 
-    // Fallback: remove overlay even if Pagedjs fails or takes too long
-    var fallback = setTimeout(hideLoading, TIMEOUT_MS);
+    // Fallback: remove overlay and unblock PDF renderer if Pagedjs fails or takes too long
+    var fallback = setTimeout(function() {
+      hideLoading();
+      window.__lsb_pdf_ready = true;
+    }, TIMEOUT_MS);
 
     if (window.__pagedjs_failed || typeof Paged === 'undefined') {
       // Script failed to load — show document without Pagedjs
       clearTimeout(fallback);
       hideLoading();
+      window.__lsb_pdf_ready = true;
       return;
     }
 
@@ -68,6 +72,8 @@
       LSBHandler.prototype.afterRendered = function(pages) {
         clearTimeout(fallback);
         hideLoading();
+        // Signal to the headless PDF renderer that pagination is complete
+        window.__lsb_pdf_ready = true;
       };
       return LSBHandler;
     }(Paged.Handler));
@@ -76,6 +82,15 @@
     window.PagedPolyfill.preview();
   }());
   </script>
+  <style>
+    /* Prevent the loading overlay from being captured as a Pagedjs running element.
+       position:fixed elements in paged media become running-element candidates, which
+       would bake "Paginating document…" into every printed/PDF page.
+       Setting display:none here removes it from the print layout entirely. */
+    @media print {
+      #lsb-loading { display: none !important; }
+    }
+  </style>
 </head>
 <body>
 
