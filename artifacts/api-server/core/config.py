@@ -11,9 +11,9 @@ class Settings(BaseSettings):
     #   planner_model  — reasoning model for high-level planning stages (system_architecture)
     #   executor_model — fast model for all content-generation stages (worksheets, layout, etc.)
     # The contract's model_role field ("planner" | "executor") selects which model to use.
-    openai_model: str = "gpt-5.3"          # legacy fallback / planner default
+    openai_model: str = "gpt-5.4"          # legacy fallback
     planner_model: str = "gpt-5.4"         # reasoning model — slow, deep
-    executor_model: str = "gpt-5.3"        # execution model — standard generation
+    executor_model: str = "gpt-5.4"        # execution model — standard generation
 
     # ── Model provider ────────────────────────────────────────────────────────
     model_provider: str = "openai"
