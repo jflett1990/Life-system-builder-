@@ -1,0 +1,1041 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/render-blueprint.schema.json",
+  "title": "Life System Builder Render Blueprint",
+  "description": "Schema for a premium print-ready operational manual and workbook render blueprint used to generate HTML and PDF outputs with strict layout, typography, spacing, and component rules.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "blueprintId",
+    "documentClass",
+    "designIntent",
+    "page",
+    "colorSystem",
+    "typography",
+    "spacing",
+    "layout",
+    "components",
+    "printRules",
+    "consistencyRules",
+    "validationRules",
+    "outputTargets"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.0\\.0$"
+    },
+    "blueprintId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "documentClass": {
+      "type": "string",
+      "enum": [
+        "operational_manual_workbook"
+      ]
+    },
+    "designIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objective",
+        "tone",
+        "designPrinciples",
+        "experienceGoals",
+        "antiGoals"
+      ],
+      "properties": {
+        "objective": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tone": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "minimal",
+              "controlled",
+              "editorial",
+              "technical",
+              "premium",
+              "authoritative",
+              "usable",
+              "calm",
+              "structured"
+            ]
+          }
+        },
+        "designPrinciples": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "system_first",
+              "cognitive_load_reduction",
+              "scan_understand_act",
+              "consistency_as_law",
+              "whitespace_over_density",
+              "functional_hierarchy_only"
+            ]
+          }
+        },
+        "experienceGoals": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "string",
+            "enum": [
+              "instant_page_scannability",
+              "clear_task_start",
+              "premium_perceived_value",
+              "long_document_cohesion",
+              "print_legibility",
+              "form_usability"
+            ]
+          }
+        },
+        "antiGoals": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "template_look",
+              "decorative_noise",
+              "layout_improvisation",
+              "inconsistent_spacing",
+              "palette_chaos",
+              "heavy_border_dependence",
+              "dense_pages",
+              "style_mixing"
+            ]
+          }
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "size",
+        "orientation",
+        "margins",
+        "backgroundGraphics"
+      ],
+      "properties": {
+        "size": {
+          "type": "string",
+          "enum": [
+            "US_LETTER"
+          ]
+        },
+        "orientation": {
+          "type": "string",
+          "enum": [
+            "portrait"
+          ]
+        },
+        "margins": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "top",
+            "right",
+            "bottom",
+            "left",
+            "unit"
+          ],
+          "properties": {
+            "top": {
+              "type": "number",
+              "minimum": 0.25
+            },
+            "right": {
+              "type": "number",
+              "minimum": 0.25
+            },
+            "bottom": {
+              "type": "number",
+              "minimum": 0.25
+            },
+            "left": {
+              "type": "number",
+              "minimum": 0.25
+            },
+            "unit": {
+              "type": "string",
+              "enum": [
+                "in"
+              ]
+            }
+          }
+        },
+        "backgroundGraphics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "style"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "style": {
+              "type": "string",
+              "enum": [
+                "none",
+                "subtle_only"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "colorSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paletteMode",
+        "tokens",
+        "rules"
+      ],
+      "properties": {
+        "paletteMode": {
+          "type": "string",
+          "enum": [
+            "restricted"
+          ]
+        },
+        "tokens": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "primary",
+            "textPrimary",
+            "textSecondary",
+            "textMuted",
+            "surfaceBase",
+            "surfaceElevated",
+            "surfaceTinted",
+            "borderSubtle",
+            "borderStrong",
+            "accentPrimary",
+            "accentSuccess"
+          ],
+          "properties": {
+            "primary": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "textPrimary": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "textSecondary": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "textMuted": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "surfaceBase": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "surfaceElevated": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "surfaceTinted": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "borderSubtle": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "borderStrong": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "accentPrimary": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" },
+            "accentSuccess": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6})$" }
+          }
+        },
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maxAccentUsagePercent",
+            "allowGradients",
+            "allowBrightColors"
+          ],
+          "properties": {
+            "maxAccentUsagePercent": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 15
+            },
+            "allowGradients": {
+              "type": "boolean",
+              "const": false
+            },
+            "allowBrightColors": {
+              "type": "boolean",
+              "const": false
+            }
+          }
+        }
+      }
+    },
+    "typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fontSystem",
+        "families",
+        "scale",
+        "rules"
+      ],
+      "properties": {
+        "fontSystem": {
+          "type": "string",
+          "enum": [
+            "two_font_only"
+          ]
+        },
+        "families": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "serifPrimary",
+            "sansUi"
+          ],
+          "properties": {
+            "serifPrimary": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sansUi": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "scale": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "h1",
+            "h2",
+            "h3",
+            "body",
+            "bodySmall",
+            "label",
+            "meta"
+          ],
+          "properties": {
+            "h1": { "$ref": "#/$defs/typeStyle" },
+            "h2": { "$ref": "#/$defs/typeStyle" },
+            "h3": { "$ref": "#/$defs/typeStyle" },
+            "body": { "$ref": "#/$defs/typeStyle" },
+            "bodySmall": { "$ref": "#/$defs/typeStyle" },
+            "label": { "$ref": "#/$defs/typeStyle" },
+            "meta": { "$ref": "#/$defs/typeStyle" }
+          }
+        },
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "bodyUsesSerif",
+            "uiUsesSans",
+            "labelStyle",
+            "maxFamilies"
+          ],
+          "properties": {
+            "bodyUsesSerif": {
+              "type": "boolean",
+              "const": true
+            },
+            "uiUsesSans": {
+              "type": "boolean",
+              "const": true
+            },
+            "labelStyle": {
+              "type": "string",
+              "enum": [
+                "uppercase",
+                "small_caps"
+              ]
+            },
+            "maxFamilies": {
+              "type": "integer",
+              "const": 2
+            }
+          }
+        }
+      }
+    },
+    "spacing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit",
+        "scale",
+        "rules"
+      ],
+      "properties": {
+        "unit": {
+          "type": "string",
+          "enum": [
+            "pt"
+          ]
+        },
+        "scale": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "xs",
+            "sm",
+            "md",
+            "lg",
+            "xl",
+            "xxl"
+          ],
+          "properties": {
+            "xs": { "type": "number", "exclusiveMinimum": 0 },
+            "sm": { "type": "number", "exclusiveMinimum": 0 },
+            "md": { "type": "number", "exclusiveMinimum": 0 },
+            "lg": { "type": "number", "exclusiveMinimum": 0 },
+            "xl": { "type": "number", "exclusiveMinimum": 0 },
+            "xxl": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "betweenSections",
+            "betweenBlocks",
+            "withinBlocks",
+            "whitespaceBias"
+          ],
+          "properties": {
+            "betweenSections": {
+              "type": "string",
+              "enum": [
+                "large"
+              ]
+            },
+            "betweenBlocks": {
+              "type": "string",
+              "enum": [
+                "medium"
+              ]
+            },
+            "withinBlocks": {
+              "type": "string",
+              "enum": [
+                "tight"
+              ]
+            },
+            "whitespaceBias": {
+              "type": "string",
+              "enum": [
+                "prefer_more"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pageTemplate",
+        "headerBand",
+        "titleBlock",
+        "contentBody",
+        "footer"
+      ],
+      "properties": {
+        "pageTemplate": {
+          "type": "string",
+          "enum": [
+            "predictable_modular"
+          ]
+        },
+        "headerBand": {
+          "$ref": "#/$defs/zoneDefinition"
+        },
+        "titleBlock": {
+          "$ref": "#/$defs/zoneDefinition"
+        },
+        "contentBody": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "allowedBlockTypes"
+          ],
+          "properties": {
+            "allowedBlockTypes": {
+              "type": "array",
+              "minItems": 4,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "paragraph",
+                  "bullet",
+                  "two_column",
+                  "table",
+                  "worksheet",
+                  "checklist",
+                  "system_block",
+                  "callout"
+                ]
+              }
+            }
+          }
+        },
+        "footer": {
+          "$ref": "#/$defs/zoneDefinition"
+        }
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "systemBlock",
+        "worksheetBlock",
+        "tableSystem",
+        "twoColumnDecisionBlock",
+        "checklistBlock",
+        "chapterIntro",
+        "operationalDashboard"
+      ],
+      "properties": {
+        "systemBlock": {
+          "$ref": "#/$defs/componentSystemBlock"
+        },
+        "worksheetBlock": {
+          "$ref": "#/$defs/componentWorksheetBlock"
+        },
+        "tableSystem": {
+          "$ref": "#/$defs/componentTableSystem"
+        },
+        "twoColumnDecisionBlock": {
+          "$ref": "#/$defs/componentTwoColumn"
+        },
+        "checklistBlock": {
+          "$ref": "#/$defs/componentChecklist"
+        },
+        "chapterIntro": {
+          "$ref": "#/$defs/componentChapterIntro"
+        },
+        "operationalDashboard": {
+          "$ref": "#/$defs/componentOperationalDashboard"
+        }
+      }
+    },
+    "printRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "avoidBreakInside",
+        "keepWithNext",
+        "widowOrphanControl",
+        "preserveBackgroundGraphics"
+      ],
+      "properties": {
+        "avoidBreakInside": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "table",
+              "worksheet_block",
+              "checklist_block",
+              "system_block",
+              "title_block"
+            ]
+          }
+        },
+        "keepWithNext": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "section_heading",
+              "worksheet_heading",
+              "chapter_heading",
+              "table_heading"
+            ]
+          }
+        },
+        "widowOrphanControl": {
+          "type": "boolean"
+        },
+        "preserveBackgroundGraphics": {
+          "type": "boolean"
+        }
+      }
+    },
+    "consistencyRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identicalComponentRendering",
+        "chapterIntroConsistency",
+        "worksheetPageConsistency",
+        "tableTypeConsistency",
+        "allowLayoutImprovisation"
+      ],
+      "properties": {
+        "identicalComponentRendering": {
+          "type": "boolean",
+          "const": true
+        },
+        "chapterIntroConsistency": {
+          "type": "boolean",
+          "const": true
+        },
+        "worksheetPageConsistency": {
+          "type": "boolean",
+          "const": true
+        },
+        "tableTypeConsistency": {
+          "type": "boolean",
+          "const": true
+        },
+        "allowLayoutImprovisation": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "validationRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiredChecks",
+        "acceptanceQuestions",
+        "rejectIf"
+      ],
+      "properties": {
+        "requiredChecks": {
+          "type": "array",
+          "minItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "page_scannable_in_3_seconds",
+              "task_clear_in_10_seconds",
+              "same_system_feel_across_pages",
+              "print_safe_pagination",
+              "worksheet_input_space_sufficient",
+              "hierarchy_obvious_without_color",
+              "accent_usage_within_limit"
+            ]
+          }
+        },
+        "acceptanceQuestions": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "string"
+          }
+        },
+        "rejectIf": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "feels_like_template",
+              "page_density_too_high",
+              "inconsistent_component_rendering",
+              "decorative_elements_without_function",
+              "worksheet_boundary_unclear",
+              "title_hierarchy_weak",
+              "page_break_inside_component"
+            ]
+          }
+        }
+      }
+    },
+    "outputTargets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "html",
+        "pdf"
+      ],
+      "properties": {
+        "html": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "selfContained",
+            "printReady"
+          ],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "selfContained": { "type": "boolean" },
+            "printReady": { "type": "boolean" }
+          }
+        },
+        "pdf": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "renderer",
+            "backgrounds",
+            "consistentPagination"
+          ],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "renderer": {
+              "type": "string",
+              "enum": [
+                "headless_chromium"
+              ]
+            },
+            "backgrounds": { "type": "boolean" },
+            "consistentPagination": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "typeStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fontFamilyRole",
+        "fontSize",
+        "lineHeight",
+        "fontWeight",
+        "letterSpacing"
+      ],
+      "properties": {
+        "fontFamilyRole": {
+          "type": "string",
+          "enum": [
+            "serifPrimary",
+            "sansUi"
+          ]
+        },
+        "fontSize": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "lineHeight": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "fontWeight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 900
+        },
+        "letterSpacing": {
+          "type": "number"
+        }
+      }
+    },
+    "zoneDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "contents"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "contents": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "system_name",
+              "chapter_name",
+              "page_context",
+              "title",
+              "subtitle",
+              "page_number",
+              "document_id",
+              "divider"
+            ]
+          }
+        }
+      }
+    },
+    "componentSystemBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "purpose",
+        "backgroundStyle",
+        "borderStyle",
+        "padding",
+        "allowedContent"
+      ],
+      "properties": {
+        "purpose": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "string",
+            "enum": [
+              "rules",
+              "constraints",
+              "failure_modes",
+              "success_criteria",
+              "notes"
+            ]
+          }
+        },
+        "backgroundStyle": {
+          "type": "string",
+          "enum": [
+            "tinted_subtle"
+          ]
+        },
+        "borderStyle": {
+          "type": "string",
+          "enum": [
+            "left_accent",
+            "subtle_outline"
+          ]
+        },
+        "padding": {
+          "type": "string",
+          "enum": [
+            "tight",
+            "medium"
+          ]
+        },
+        "allowedContent": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "string",
+            "enum": [
+              "paragraph",
+              "bullet",
+              "checklist",
+              "micro_table"
+            ]
+          }
+        }
+      }
+    },
+    "componentWorksheetBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "purpose",
+        "boundaryStyle",
+        "spacingProfile",
+        "subElements",
+        "exampleTextStyle",
+        "writingRoomPolicy"
+      ],
+      "properties": {
+        "purpose": {
+          "type": "string",
+          "const": "user_interaction"
+        },
+        "boundaryStyle": {
+          "type": "string",
+          "enum": [
+            "strong_clear_boundary"
+          ]
+        },
+        "spacingProfile": {
+          "type": "string",
+          "enum": [
+            "generous"
+          ]
+        },
+        "subElements": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "field_label",
+              "input_area",
+              "helper_text",
+              "example_text",
+              "table_input",
+              "checkbox_input"
+            ]
+          }
+        },
+        "exampleTextStyle": {
+          "type": "string",
+          "enum": [
+            "light_secondary"
+          ]
+        },
+        "writingRoomPolicy": {
+          "type": "string",
+          "enum": [
+            "prioritize_space_over_density"
+          ]
+        }
+      }
+    },
+    "componentTableSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "readabilityPriority",
+        "borderPolicy",
+        "headerRowStyle",
+        "cellPaddingPolicy"
+      ],
+      "properties": {
+        "readabilityPriority": {
+          "type": "boolean",
+          "const": true
+        },
+        "borderPolicy": {
+          "type": "string",
+          "enum": [
+            "minimal_lines"
+          ]
+        },
+        "headerRowStyle": {
+          "type": "string",
+          "enum": [
+            "subtly_emphasized"
+          ]
+        },
+        "cellPaddingPolicy": {
+          "type": "string",
+          "enum": [
+            "use_spacing_not_grid_heaviness"
+          ]
+        }
+      }
+    },
+    "componentTwoColumn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "balancedColumns",
+        "labelClarity",
+        "separatorStyle"
+      ],
+      "properties": {
+        "balancedColumns": {
+          "type": "boolean",
+          "const": true
+        },
+        "labelClarity": {
+          "type": "boolean",
+          "const": true
+        },
+        "separatorStyle": {
+          "type": "string",
+          "enum": [
+            "clear_but_subtle"
+          ]
+        }
+      }
+    },
+    "componentChecklist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "indicatorStyle",
+        "layoutDirection",
+        "density"
+      ],
+      "properties": {
+        "indicatorStyle": {
+          "type": "string",
+          "enum": [
+            "checkbox"
+          ]
+        },
+        "layoutDirection": {
+          "type": "string",
+          "enum": [
+            "vertical"
+          ]
+        },
+        "density": {
+          "type": "string",
+          "enum": [
+            "tight_but_readable"
+          ]
+        }
+      }
+    },
+    "componentChapterIntro": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiredSections",
+        "layoutStyle"
+      ],
+      "properties": {
+        "requiredSections": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "chapter_label",
+              "chapter_title",
+              "chapter_summary",
+              "operational_context",
+              "quick_reference_rules"
+            ]
+          }
+        },
+        "layoutStyle": {
+          "type": "string",
+          "enum": [
+            "editorial_with_clear_hierarchy"
+          ]
+        }
+      }
+    },
+    "componentOperationalDashboard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiredSections",
+        "visualPriority"
+      ],
+      "properties": {
+        "requiredSections": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "system_objective",
+              "time_horizon",
+              "milestones",
+              "success_criteria",
+              "worksheet_count",
+              "control_domain_count"
+            ]
+          }
+        },
+        "visualPriority": {
+          "type": "string",
+          "enum": [
+            "high"
+          ]
+        }
+      }
+    }
+  }
+}
