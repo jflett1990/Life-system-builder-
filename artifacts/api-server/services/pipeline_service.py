@@ -290,7 +290,7 @@ class PipelineService:
             chapter_payload = {
                 **base_payload,
                 "current_chapter_json": json.dumps(chapter_plan, indent=2, ensure_ascii=False),
-                "chapter_number": str(chapter_number),
+                "chapter_number": int(chapter_number),
                 "domain_name": domain_name,
             }
 
