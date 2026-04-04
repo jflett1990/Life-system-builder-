@@ -316,7 +316,7 @@ class PipelineService:
                     )
                     return chapter_number, domain_name, structured.data, raw
 
-            except (ModelProviderError, ModelOutputError) as e:
+            except Exception as e:
                 logger.error(
                     "chapter_expansion | chapter %d FAILED | %s",
                     chapter_number, str(e)[:200],

@@ -38,12 +38,27 @@ def _validation_svc(db: Session = Depends(get_db)) -> ValidationService:
 
 def _run_stage_in_background(project_id: int, stage: str, force: bool) -> None:
     """Execute a pipeline stage in a thread-pool worker with its own DB session."""
+    from datetime import datetime, timezone
+    from repositories.stage_repo import StageOutputRepository
+
     db = SessionLocal()
     try:
         svc = PipelineService(db)
         svc.run_stage(project_id, stage, force=force)
     except Exception as e:
         logger.error("Background stage '%s' project=%d crashed: %s", stage, project_id, e)
+        # Ensure the stage is marked failed — otherwise the UI stays stuck at "running/0%"
+        try:
+            repo = StageOutputRepository(db)
+            row = repo.find_by_project_and_stage(project_id, stage)
+            if row and row.status == "running":
+                row.status = "failed"
+                row.error_message = f"Unexpected error: {str(e)[:500]}"
+                row.sub_progress = None
+                row.updated_at = datetime.now(timezone.utc)
+                repo.save(row)
+        except Exception as inner:
+            logger.error("Failed to mark stage '%s' as failed: %s", stage, inner)
     finally:
         db.close()
 

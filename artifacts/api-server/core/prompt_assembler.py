@@ -233,8 +233,9 @@ class PromptAssembler:
         - Top-level payload fields (life_event, audience, tone, context, ...)
         - Upstream stage outputs via key 'upstream_{stage_name}' (serialised as JSON)
         """
-        context: dict[str, str] = {
-            k: str(v) if v is not None else "" for k, v in payload.items()
+        context: dict[str, Any] = {
+            k: v if isinstance(v, (int, float, bool)) else (str(v) if v is not None else "")
+            for k, v in payload.items()
         }
 
         for stage_name, output in upstream_outputs.items():
