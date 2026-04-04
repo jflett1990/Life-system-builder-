@@ -21,14 +21,19 @@ from typing import Any
 
 # ── Narrative Formatter ─────────────────────────────────────────────────────────
 
-def _format_narrative(text: str, max_chars: int = 2000) -> str:
+def _format_narrative(text: str, max_chars: int = 6000) -> str:
     """Convert an AI-generated narrative string to readable HTML.
+
+    Uses CSS classes from base.css (.narrative-*) — no inline styles.
 
     Handles:
       - Markdown bold (**text** → <strong>text</strong>)
-      - Inline numbered list items ("1. **Title**: desc") split to visual rows
-      - Long single-paragraph text broken into readable ~60-word chunks
-      - Truncation with a visual ellipsis
+      - Markdown italic (*text* → <em>text</em>)
+      - Numbered list items ("1. **Title**: desc") → .narrative-list__item
+      - Standalone bold headers ("**Header**:") → .narrative-subheading
+      - Markdown H3 ("### Header") → .narrative-subheading
+      - Long single-paragraph text broken at ~60-word sentence boundaries
+      - Truncation with a styled ellipsis
 
     Returns an HTML string safe for Jinja2 ``| safe`` rendering.
     """
@@ -42,12 +47,14 @@ def _format_narrative(text: str, max_chars: int = 2000) -> str:
     # ── Step 1: Normalise line endings ──────────────────────────────────────
     text = text.replace("\r\n", "\n").replace("\r", "\n")
 
-    # ── Step 2: Inject paragraph breaks before numbered list items ──────────
-    # Pattern: "... sentence/colon end.  2. **Next**: ..." → "...\n\n2. **Next**: ..."
-    # Also handles: "**Header**: 1. **Item**" → "**Header**:\n\n1. **Item**"
+    # ── Step 2: Promote markdown headings to paragraph breaks ───────────────
+    # "### Header" or "## Header" at start of line → standalone subheading para
+    text = _re.sub(r'^#{2,3}\s+(.+)$', r'**\1**:', text, flags=_re.MULTILINE)
+
+    # ── Step 3: Inject paragraph breaks before numbered list items ──────────
     text = _re.sub(r'(?<=[.!?:])\s+(\d+\.\s+\*\*)', r'\n\n\1', text)
 
-    # ── Step 3: Split into paragraphs ───────────────────────────────────────
+    # ── Step 4: Split into paragraphs ───────────────────────────────────────
     raw_paragraphs = [p.strip() for p in _re.split(r'\n{2,}', text) if p.strip()]
 
     # If no double-newlines exist, split the single block at ~60-word boundaries
@@ -64,53 +71,71 @@ def _format_narrative(text: str, max_chars: int = 2000) -> str:
             chunks.append(" ".join(chunk))
         raw_paragraphs = chunks
 
-    # ── Step 4: Render paragraphs ────────────────────────────────────────────
+    # ── Step 5: Inline markdown helper ──────────────────────────────────────
+    def _inline(s: str) -> str:
+        s = _re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', s)
+        s = _re.sub(r'(?<!\*)\*([^*\n]+?)\*(?!\*)', r'<em>\1</em>', s)
+        return s
+
+    # ── Step 6: Render paragraphs ────────────────────────────────────────────
+    # Collect numbered list items to wrap in a <ul> together
     html_parts: list[str] = []
+    list_buffer: list[str] = []
+
+    def _flush_list() -> None:
+        if list_buffer:
+            html_parts.append(
+                '<ul class="narrative-list">'
+                + "".join(list_buffer)
+                + '</ul>'
+            )
+            list_buffer.clear()
+
     for para in raw_paragraphs:
         para = para.strip()
         if not para:
             continue
 
-        # Check for numbered list item: "1. **Title**: description"
+        # Numbered list item: "1. **Title**: description"
         m = _re.match(r'^(\d+)\.\s+\*\*(.+?)\*\*[:.]\s*(.*)', para, _re.DOTALL)
         if m:
             num = m.group(1)
             title = m.group(2)
-            desc = _re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', m.group(3).strip())
+            desc = _inline(m.group(3).strip())
             desc_html = (
-                '<br><span style="font-size:0.9em;opacity:0.8">' + desc + '</span>'
-                if desc else ""
+                f'<span class="narrative-list__desc">{desc}</span>' if desc else ""
             )
-            html_parts.append(
-                '<div style="display:flex;gap:0.6em;padding:0.35em 0;'
-                'border-bottom:1px solid var(--color-rule);margin-bottom:0.25em;'
-                'align-items:flex-start">'
-                '<span style="color:var(--color-accent);flex-shrink:0;font-size:0.7em;'
-                f'font-weight:700;margin-top:0.25em;min-width:1.2em">{num}</span>'
-                '<div><strong style="font-size:0.72em;letter-spacing:0.06em;'
-                f'text-transform:uppercase">{title}</strong>'
+            list_buffer.append(
+                f'<li class="narrative-list__item">'
+                f'<span class="narrative-list__num">{num}</span>'
+                f'<span class="narrative-list__body">'
+                f'<span class="narrative-list__title">{title}</span>'
                 f'{desc_html}'
-                '</div></div>'
+                f'</span></li>'
             )
-        else:
-            # Check for a standalone section header: "**Header**:" at start of para
-            m2 = _re.match(r'^\*\*(.+?)\*\*:\s*(.*)', para, _re.DOTALL)
-            if m2 and not m2.group(2).strip():
-                # Pure header with no body text — render as subheading
-                html_parts.append(
-                    f'<p style="font-size:0.72em;font-weight:700;letter-spacing:0.06em;'
-                    f'text-transform:uppercase;opacity:0.6;margin:1em 0 0.4em">'
-                    f'{m2.group(1)}</p>'
-                )
-            else:
-                para = _re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', para)
-                html_parts.append(
-                    f'<p style="margin-bottom:0.75em;line-height:1.65">{para}</p>'
-                )
+            continue
+
+        # Not a list item — flush any buffered list first
+        _flush_list()
+
+        # Standalone section header: "**Header**:" with nothing after the colon
+        m2 = _re.match(r'^\*\*(.+?)\*\*:\s*$', para)
+        if m2:
+            html_parts.append(
+                f'<p class="narrative-subheading">{m2.group(1)}</p>'
+            )
+            continue
+
+        # Plain paragraph — apply inline markdown
+        html_parts.append(
+            f'<p class="narrative-para">{_inline(para)}</p>'
+        )
+
+    _flush_list()
 
     result = "".join(html_parts)
     if truncated:
-        result += '<p style="opacity:0.5;font-size:0.85em;margin-top:0.5em">…</p>'
+        result += '<p class="narrative-truncated">…</p>'
     return result
 
 
@@ -164,6 +189,26 @@ class ManifestBuilder:
         all_outputs: dict[str, Any],
         theme_tokens: dict[str, str],
     ) -> RenderManifest:
+        # ── Phase 3 & 5: Content sanitation + quality gates ────────────────────
+        # Runs first — removes LLM artifacts (duplicate headings, raw booleans,
+        # placeholder text, JSON tokens) before any page data is assembled.
+        from render.document_sanitizer import DocumentSanitizer, run_quality_gates
+        from core.logging import get_logger as _get_logger
+        _log = _get_logger(__name__)
+        _sanitizer = DocumentSanitizer()
+        _warnings = _sanitizer.sanitize(all_outputs)
+        if _warnings:
+            _log.info(
+                "Document sanitizer: %d fixes applied (project %d)",
+                len(_warnings), project_id,
+            )
+            for w in _warnings:
+                if w.flagged:
+                    _log.warning("Sanitizer flagged [%s] at %s: %r", w.issue, w.path, w.original)
+        _gates = run_quality_gates(_warnings, all_outputs)
+        if not _gates.passed:
+            _log.warning("Quality gate failures (project %d): %s", project_id, _gates.failures)
+
         arch = all_outputs.get("system_architecture", {})
         chapter_exp = all_outputs.get("chapter_expansion", {})
         ws_system   = all_outputs.get("worksheet_system", {})   # legacy fallback
