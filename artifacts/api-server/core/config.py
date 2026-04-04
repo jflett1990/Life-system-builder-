@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     #   executor_model — fast model for all content-generation stages (worksheets, layout, etc.)
     # The contract's model_role field ("planner" | "executor") selects which model to use.
     openai_model: str = "gpt-5.4"          # legacy fallback
-    planner_model: str = "gpt-5.4"         # reasoning model — slow, deep
-    executor_model: str = "gpt-5.4"        # execution model — standard generation
+    planner_model: str = "gpt-5.4"         # reasoning model — complex planning stages
+    executor_model: str = "gpt-5.4-mini"   # execution model — chapter content, appendix, etc.
 
     # ── Model provider ────────────────────────────────────────────────────────
     model_provider: str = "openai"
