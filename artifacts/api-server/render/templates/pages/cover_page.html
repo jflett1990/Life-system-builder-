@@ -58,7 +58,7 @@
     border-top: 0.5px solid rgba(255,255,255,0.2);
     padding-top: var(--space-6);
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-6);
   ">
     {% if data.time_horizon %}
@@ -71,12 +71,6 @@
     <div>
       <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Prepared For</div>
       <div style="font-size:var(--text-sm);color:rgba(255,255,255,.85)">{{ data.audience }}</div>
-    </div>
-    {% endif %}
-    {% if data.generated_date %}
-    <div>
-      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Generated</div>
-      <div style="font-size:var(--text-sm);color:rgba(255,255,255,.85)">{{ data.generated_date }}</div>
     </div>
     {% endif %}
     {% if data.document_id %}

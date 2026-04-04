@@ -13,9 +13,105 @@ Stage data sources (in priority order):
 """
 from __future__ import annotations
 
+import re as _re
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
+
+
+# ── Narrative Formatter ─────────────────────────────────────────────────────────
+
+def _format_narrative(text: str, max_chars: int = 2000) -> str:
+    """Convert an AI-generated narrative string to readable HTML.
+
+    Handles:
+      - Markdown bold (**text** → <strong>text</strong>)
+      - Inline numbered list items ("1. **Title**: desc") split to visual rows
+      - Long single-paragraph text broken into readable ~60-word chunks
+      - Truncation with a visual ellipsis
+
+    Returns an HTML string safe for Jinja2 ``| safe`` rendering.
+    """
+    if not text:
+        return ""
+
+    truncated = len(text) > max_chars
+    if truncated:
+        text = text[:max_chars].rstrip()
+
+    # ── Step 1: Normalise line endings ──────────────────────────────────────
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+    # ── Step 2: Inject paragraph breaks before numbered list items ──────────
+    # Pattern: "... sentence/colon end.  2. **Next**: ..." → "...\n\n2. **Next**: ..."
+    # Also handles: "**Header**: 1. **Item**" → "**Header**:\n\n1. **Item**"
+    text = _re.sub(r'(?<=[.!?:])\s+(\d+\.\s+\*\*)', r'\n\n\1', text)
+
+    # ── Step 3: Split into paragraphs ───────────────────────────────────────
+    raw_paragraphs = [p.strip() for p in _re.split(r'\n{2,}', text) if p.strip()]
+
+    # If no double-newlines exist, split the single block at ~60-word boundaries
+    if len(raw_paragraphs) == 1 and not _re.search(r'\d+\.\s+\*\*', text):
+        sentences = _re.split(r'(?<=[.!?])\s+', raw_paragraphs[0])
+        chunks, chunk, wc = [], [], 0
+        for sent in sentences:
+            chunk.append(sent)
+            wc += len(sent.split())
+            if wc >= 60:
+                chunks.append(" ".join(chunk))
+                chunk, wc = [], 0
+        if chunk:
+            chunks.append(" ".join(chunk))
+        raw_paragraphs = chunks
+
+    # ── Step 4: Render paragraphs ────────────────────────────────────────────
+    html_parts: list[str] = []
+    for para in raw_paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+
+        # Check for numbered list item: "1. **Title**: description"
+        m = _re.match(r'^(\d+)\.\s+\*\*(.+?)\*\*[:.]\s*(.*)', para, _re.DOTALL)
+        if m:
+            num = m.group(1)
+            title = m.group(2)
+            desc = _re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', m.group(3).strip())
+            desc_html = (
+                '<br><span style="font-size:0.9em;opacity:0.8">' + desc + '</span>'
+                if desc else ""
+            )
+            html_parts.append(
+                '<div style="display:flex;gap:0.6em;padding:0.35em 0;'
+                'border-bottom:1px solid var(--color-rule);margin-bottom:0.25em;'
+                'align-items:flex-start">'
+                '<span style="color:var(--color-accent);flex-shrink:0;font-size:0.7em;'
+                f'font-weight:700;margin-top:0.25em;min-width:1.2em">{num}</span>'
+                '<div><strong style="font-size:0.72em;letter-spacing:0.06em;'
+                f'text-transform:uppercase">{title}</strong>'
+                f'{desc_html}'
+                '</div></div>'
+            )
+        else:
+            # Check for a standalone section header: "**Header**:" at start of para
+            m2 = _re.match(r'^\*\*(.+?)\*\*:\s*(.*)', para, _re.DOTALL)
+            if m2 and not m2.group(2).strip():
+                # Pure header with no body text — render as subheading
+                html_parts.append(
+                    f'<p style="font-size:0.72em;font-weight:700;letter-spacing:0.06em;'
+                    f'text-transform:uppercase;opacity:0.6;margin:1em 0 0.4em">'
+                    f'{m2.group(1)}</p>'
+                )
+            else:
+                para = _re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', para)
+                html_parts.append(
+                    f'<p style="margin-bottom:0.75em;line-height:1.65">{para}</p>'
+                )
+
+    result = "".join(html_parts)
+    if truncated:
+        result += '<p style="opacity:0.5;font-size:0.85em;margin-top:0.5em">…</p>'
+    return result
 
 
 # ── Data Models ────────────────────────────────────────────────────────────────
@@ -220,19 +316,6 @@ class ManifestBuilder:
 
         # ── 6a. Chapters from chapter_expansion (current pipeline) ─────────────
         if chapters:
-            total_chapters = len(chapters)
-            pages.append(ManifestPage(
-                page_id="pg-div-chapters",
-                sequence=next_seq(),
-                archetype="section_divider",
-                data={
-                    "section_number": "02",
-                    "section_title": "Operational Content",
-                    "section_subtitle": f"{total_chapters} chapters · {total_worksheets} worksheets",
-                    "domain_count": total_chapters,
-                },
-            ))
-
             for ch in chapters:
                 ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
                 ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
@@ -245,6 +328,21 @@ class ManifestBuilder:
                 domain_info = domain_map.get(domain_id, {})
                 domain_name = domain_info.get("name", "") or domain_id
 
+                # Per-chapter section divider — gives every chapter its own dark intro page
+                ch_num_str = f"{int(ch_num):02d}" if str(ch_num).isdigit() else str(ch_num)
+                pages.append(ManifestPage(
+                    page_id=f"pg-div-ch-{domain_id or ch_num}",
+                    sequence=next_seq(),
+                    archetype="section_divider",
+                    data={
+                        "label_prefix": "Chapter",
+                        "section_number": ch_num_str,
+                        "section_title": domain_name or ch_title,
+                        "section_subtitle": ch_title if (domain_name and domain_name != ch_title) else "",
+                        "domain_count": len(ch_worksheets),
+                    },
+                ))
+
                 # chapter_opener: show chapter intro + quick-reference rules as scope items
                 # primary_outputs: worksheet titles in this chapter
                 # cascade_triggers: downstream dependencies that activate if this chapter fails
@@ -256,7 +354,7 @@ class ManifestBuilder:
                     data={
                         "chapter_number": ch_num,
                         "chapter_title": ch_title,
-                        "chapter_summary": ch_narrative[:2000].rstrip() + ("…" if len(ch_narrative) > 2000 else ""),
+                        "chapter_summary": _format_narrative(ch_narrative, max_chars=2000),
                         "domain_name": domain_name,
                         "domain_purpose": domain_info.get("purpose", ""),
                         "scope_items": ch_rules,
@@ -323,7 +421,7 @@ class ManifestBuilder:
                     data={
                         "chapter_number": i + 1,
                         "chapter_title": ws.get("title", f"Worksheet {i+1}"),
-                        "chapter_summary": ws.get("purpose", ""),
+                        "chapter_summary": _format_narrative(ws.get("purpose", "")),
                         "domain_name": domain_name,
                         "domain_purpose": matching_domain.get("purpose", ""),
                         "scope_items": matching_domain.get("scope_in", []),

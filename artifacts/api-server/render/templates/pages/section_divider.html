@@ -38,7 +38,7 @@
         letter-spacing: var(--tracking-widest);
         text-transform: uppercase;
         color: var(--color-accent);
-      ">Section {{ data.section_number }}</span>
+      ">{{ data.label_prefix | default("Section") }} {{ data.section_number }}</span>
     </div>
     {% endif %}
 
