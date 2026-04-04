@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # ── Model provider ────────────────────────────────────────────────────────
     model_provider: str = "openai"
     model_max_retries: int = 3
-    model_timeout_s: int = 120
+    model_timeout_s: int = 300
     model_repair_attempts: int = 1
     # Schema validation retry: how many additional attempts after a Pydantic failure
     schema_retry_attempts: int = 2
