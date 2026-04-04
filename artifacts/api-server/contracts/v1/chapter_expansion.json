@@ -2,7 +2,7 @@
   "name": "chapter_expansion",
   "version": "2.1",
   "stage": "chapter_expansion",
-  "model_role": "planner",
+  "model_role": "executor",
   "execution_mode": "loop_per_chapter",
   "description": "Expands a single chapter into complete, purpose-built operational content. Every worksheet must be designed for its specific content type \u2014 choosing the right layout format (table, checklist, two-column, or form) based on what the worksheet is actually collecting or verifying.",
   "output_mode": "json",
