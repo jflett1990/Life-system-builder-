@@ -1238,6 +1238,9 @@ body {
   background: var(--color-chapter-bar);
   margin: calc(-1 * var(--page-margin-v)) calc(-1 * var(--page-margin-h)) var(--space-8);
   padding: var(--space-4) var(--page-margin-h);
+  /* Prevent Pagedjs from breaking immediately after the header bar */
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .ref-card__header-left {

@@ -402,15 +402,23 @@
 }
 
 
-/* ══ Pagedjs Page Break Rules (Screen-Mode) ══════════════════════════════ */
+/* ══ Pagedjs Screen-Mode Rules ═══════════════════════════════════════════ */
 /*
-  Pagedjs runs in SCREEN mode (not @media print). Page break rules inside
-  @media print are invisible to its layout engine. These rules must live
-  OUTSIDE any media query so Pagedjs applies them during pagination.
+  Pagedjs runs in SCREEN mode (not @media print). Rules inside @media print
+  are invisible to its layout engine. These rules must live OUTSIDE any media
+  query so Pagedjs applies them during pagination.
 
-  In normal screen rendering (no Pagedjs) these properties are no-ops —
-  browsers do not paginate continuous scroll views. Safe to apply globally.
+  In normal screen rendering (no Pagedjs) break/display-group properties are
+  no-ops — browsers do not paginate continuous scroll views. Safe globally.
 */
+
+/* Table header repetition: thead repeats across page breaks in Pagedjs      */
+thead {
+  display: table-header-group;
+}
+tfoot {
+  display: table-footer-group;
+}
 
 /* Every content page forces a fresh Pagedjs page after it */
 .page {
