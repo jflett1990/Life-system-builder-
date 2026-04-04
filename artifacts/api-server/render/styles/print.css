@@ -440,6 +440,22 @@ tfoot {
   page-break-before: always;
 }
 
+/*
+  Dark full-bleed pages (section_divider, chapter_opener) use negative
+  left/right margins to extend their background to the page edge. Their
+  dark bars previously also used a negative TOP margin to escape the page's
+  top padding — but that causes the dark background to bleed above the
+  break-before cut point, creating a phantom black bar at the bottom of the
+  preceding page.
+
+  Fix: zero out the top padding so the dark bar sits flush at y=0 without
+  needing a negative top margin. The templates already use margin: 0 on top.
+*/
+.page--section_divider,
+.page--chapter_opener {
+  padding-top: 0;
+}
+
 
 /* ══ Pagedjs Screen Compatibility ════════════════════════════════════════ */
 /*

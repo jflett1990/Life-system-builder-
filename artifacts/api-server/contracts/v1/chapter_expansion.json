@@ -2,7 +2,7 @@
   "name": "chapter_expansion",
   "version": "2.1",
   "stage": "chapter_expansion",
-  "model_role": "executor",
+  "model_role": "planner",
   "execution_mode": "loop_per_chapter",
   "description": "Expands a single chapter into complete, purpose-built operational content. Every worksheet must be designed for its specific content type \u2014 choosing the right layout format (table, checklist, two-column, or form) based on what the worksheet is actually collecting or verifying.",
   "output_mode": "json",
@@ -16,7 +16,7 @@
     "chapter_number": "integer",
     "domain_id": "string",
     "chapter_title": "string",
-    "narrative": "string \u2014 1500+ words specific to the life event and domain",
+    "narrative": "string \u2014 MINIMUM 2000 words. Write as a true operational guide: WHY this domain matters for this specific life event, concrete failure scenarios with dollar/timeline impacts, step-by-step decision logic, regulatory/institutional context specific to the situation, common practitioner mistakes and how to avoid them, and exactly how success is measured. Paragraphs must be substantive (5-8 sentences each). No headers inside this field \u2014 continuous analytical prose only.",
     "quick_reference_rules": "array of strings \u2014 specific operating rules",
     "worksheets": "array \u2014 each worksheet has layout (table|checklist|two-column|form), layout-appropriate fields, repeat_use (bool), and cross_references (array of worksheet title strings)",
     "cascade_triggers": "array of strings"
