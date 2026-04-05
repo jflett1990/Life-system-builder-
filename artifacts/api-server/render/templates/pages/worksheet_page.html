@@ -14,14 +14,15 @@
 
 {% set ws_layout = data.layout | default("form") %}
 
-<!-- Running chapter header -->
+<!-- Running chapter header — colour-coded by domain -->
 <div style="
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding-bottom: var(--space-3);
-  border-bottom: var(--border-weight) solid var(--color-rule);
+  padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-6);
+  background: var(--domain-color-light);
+  border-left: 3px solid var(--domain-color);
 ">
   <span style="
     font-family: var(--font-label);
@@ -45,7 +46,7 @@
 <!-- Worksheet identity block -->
 <div style="margin-bottom: var(--space-8)">
   <div style="margin-bottom:var(--space-3);display:flex;align-items:center;gap:var(--space-4)">
-    <span class="eyebrow">Worksheet</span>
+    <span class="eyebrow" style="background:var(--domain-color);color:#fff;border-color:var(--domain-color)">Worksheet</span>
     {% if ws_layout != "form" %}
     <span class="ws-format-badge ws-format-badge--{{ ws_layout }}">{{ ws_layout | replace("-", " ") | upper }}</span>
     {% endif %}

@@ -123,7 +123,24 @@
 <span class="lsb-doc-title-string" aria-hidden="true">{{ manifest.document_title | default("Life System Document") }}</span>
 
 {% for page in manifest.pages %}
-<div class="page page--{{ page.archetype }}" id="{{ page.page_id }}">
+{#
+  page_break controls the CSS container class:
+    "always" → .page  (break-after: page; each page forces a fresh printed page)
+    "auto"   → .page--flow  (break-after: auto; content flows into available space)
+    "avoid"  → .page--flow .page--flow--avoid  (prefer keeping with previous content)
+#}
+{% if page.page_break == "auto" %}
+<div class="page--flow page--{{ page.archetype }}"
+{% elif page.page_break == "avoid" %}
+<div class="page--flow page--flow--avoid page--{{ page.archetype }}"
+{% else %}
+<div class="page page--{{ page.archetype }}"
+{% endif %}
+  id="{{ page.page_id }}"
+  {%- if page.archetype == "worksheet_page" and page.data.domain_color %}
+  style="--domain-color: {{ page.data.domain_color }}; --domain-color-light: {{ page.data.domain_color_light }};"
+  {%- endif %}
+>
   {% set data = page.data %}
   {% set doc_title = manifest.document_title %}
   {% set seq = page.sequence %}

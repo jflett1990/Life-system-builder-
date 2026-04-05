@@ -92,6 +92,11 @@
   --color-accent-subtle:  var(--gold-050);
   --color-accent-dark:    var(--gold-700);
 
+  /* Per-chapter domain colour — overridden via inline style on each .page--worksheet_page */
+  /* Fallback values are used for appendix worksheets that have no chapter assignment.     */
+  --domain-color:         var(--color-accent-dark);
+  --domain-color-light:   var(--color-accent-subtle);
+
   /* Full-bleed page backgrounds — edition override targets */
   /* --color-primary is the canonical theme background injected from              */
   /* render_blueprint.theme.color_palette.primary. Cover + section divider pages  */

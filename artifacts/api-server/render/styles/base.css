@@ -89,6 +89,37 @@ body {
 /* Page-type modifier — used for print page-break targeting                   */
 /* .page--cover_page, .page--section_divider, .page--chapter_opener, etc.    */
 
+/* Flowing content pages — no forced page break; content height drives layout  */
+/*                                                                             */
+/* Used for explanation pages, 2nd+ worksheets in a chapter, appendix pages,  */
+/* and the worksheet index — any content that can share a printed page with   */
+/* adjacent content when the previous page has room.                          */
+/*                                                                             */
+/* Screen mode: same card styling as .page minus min-height, plus a subtle    */
+/* top rule so stacked flow cards are visually separated from each other.     */
+/* Print / Pagedjs: padding and borders are stripped; Pagedjs flows content   */
+/* continuously across printed pages determined by actual content height.     */
+.page--flow {
+  position: relative;
+  width: var(--page-width);
+  margin: 0 auto;
+  background: var(--color-page);
+  padding: var(--page-margin-v) var(--page-margin-h);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  break-after: auto;
+  page-break-after: auto;
+  /* Subtle visual separator in screen preview mode */
+  border-top: var(--border-weight) solid var(--color-rule);
+}
+
+/* Optional modifier: hint to Pagedjs to avoid breaking before this element  */
+.page--flow--avoid {
+  break-before: avoid;
+  page-break-before: avoid;
+}
+
 /* Dark full-bleed page types — background lives on the .page container so    */
 /* the colour fills the full card without any inner-div negative-margin hacks. */
 /* padding: 0 lets the inner content wrapper supply its own padding.           */
