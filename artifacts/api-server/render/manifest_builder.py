@@ -250,24 +250,21 @@ class ManifestBuilder:
             ))
 
         # ── 3. Dashboard Page ──────────────────────────────────────────────────
-        # Milestones = chapter titles (differentiated, content-specific).
-        # Falls back to success_criteria only when no chapters exist.
+        # Milestones come from system_architecture.critical_milestones, which
+        # are the concrete project checkpoints (not chapter titles).
+        # Falls back to success_criteria when no milestones were generated.
         success_criteria = arch.get("success_criteria", [])
+        critical_milestones = arch.get("critical_milestones", [])
 
-        if chapters:
-            milestones = [
-                {
-                    "sequence": i,
-                    "milestone": ch.get("chapter_title", f"Chapter {i}"),
-                    "description": "",
-                }
-                for i, ch in enumerate(chapters[:8], 1)
-            ]
-        else:
+        if critical_milestones:
+            milestones = critical_milestones[:8]
+        elif success_criteria:
             milestones = [
                 {"sequence": i, "milestone": criterion, "description": ""}
                 for i, criterion in enumerate(success_criteria[:6], 1)
             ]
+        else:
+            milestones = []
 
         kpis: list[dict] = []
         if total_worksheets:
