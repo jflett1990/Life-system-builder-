@@ -184,10 +184,12 @@
   .page-break-after  { page-break-after:  always !important; break-after:  page !important; }
   .page-break-avoid  { page-break-inside: avoid  !important; break-inside: avoid  !important; }
 
-  /* Archetypes that must always open on a fresh page                         */
-  .page--cover_page,
-  .page--section_divider,
-  .page--chapter_opener {
+  /* Cover page must always open on a fresh page.
+     section_divider and chapter_opener do NOT need break-before — the
+     preceding .page already has page-break-after: always. Declaring both
+     break-after on the previous page AND break-before on the next can cause
+     Pagedjs to insert a blank page between them.                             */
+  .page--cover_page {
     page-break-before: always;
     break-before: page;
   }
@@ -432,10 +434,10 @@ tfoot {
   page-break-after: auto;
 }
 
-/* Archetypes that must open on a fresh page */
-.page--cover_page,
-.page--section_divider,
-.page--chapter_opener {
+/* Cover page must open on a fresh page.
+   section_divider and chapter_opener omitted — the preceding .page already
+   has break-after: page. Both rules firing produces a blank page in Pagedjs. */
+.page--cover_page {
   break-before: page;
   page-break-before: always;
 }

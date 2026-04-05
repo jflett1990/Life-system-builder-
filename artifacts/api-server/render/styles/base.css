@@ -80,6 +80,10 @@ body {
   padding: var(--page-margin-v) var(--page-margin-h);
   display: flex;
   flex-direction: column;
+  overflow: hidden;   /* Defensive: any child overflow is clipped at the page
+                         boundary rather than bleeding into the next page.
+                         Pagedjs paginates content before painting, so legitimate
+                         multi-page content is never clipped — only accidents are. */
 }
 
 /* Page-type modifier — used for print page-break targeting                   */
