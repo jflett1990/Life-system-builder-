@@ -9,7 +9,7 @@ class Project(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    life_event: Mapped[str] = mapped_column(String(255), nullable=False)
+    life_event: Mapped[str] = mapped_column(Text, nullable=False)
     audience: Mapped[str | None] = mapped_column(Text, nullable=True)
     tone: Mapped[str | None] = mapped_column(String(100), nullable=True)
     context: Mapped[str | None] = mapped_column(Text, nullable=True)

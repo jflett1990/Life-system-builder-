@@ -213,6 +213,20 @@ def _m007_add_sub_progress_to_stage_outputs(conn, dialect: str) -> None:
     _add_column_if_missing(conn, "stage_outputs", "sub_progress", col_type, dialect)
 
 
+def _m009_widen_life_event_to_text(conn, dialect: str) -> None:
+    """
+    Widen projects.life_event from VARCHAR(255) to TEXT.
+
+    Users regularly supply life_event descriptions that exceed 255 characters.
+    VARCHAR(255) causes a StringDataRightTruncation 500 on project creation.
+    SQLite does not enforce VARCHAR length so no action needed there.
+    """
+    if dialect == "postgresql":
+        conn.execute(text(
+            "ALTER TABLE projects ALTER COLUMN life_event TYPE TEXT"
+        ))
+
+
 def _m008_convert_sub_progress_to_jsonb(conn, dialect: str) -> None:
     """
     Convert sub_progress column from TEXT to JSONB on PostgreSQL.
@@ -272,6 +286,7 @@ MIGRATIONS: list[tuple[int, str, MigrationFn]] = [
     (6, "add_raw_model_output_to_stage_outputs", _m006_add_raw_model_output),
     (7, "add_sub_progress_to_stage_outputs", _m007_add_sub_progress_to_stage_outputs),
     (8, "convert_sub_progress_to_jsonb", _m008_convert_sub_progress_to_jsonb),
+    (9, "widen_life_event_to_text", _m009_widen_life_event_to_text),
 ]
 
 
