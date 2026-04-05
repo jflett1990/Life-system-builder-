@@ -192,10 +192,12 @@
 
   /* Grayscale safety for domain colours — substitute mono values when printing */
   /* without colour so text remains readable on a plain-paper printer.          */
+  /* Table header background (.ws-table__header) uses --domain-color; without  */
+  /* this override, white text on a near-white background becomes illegible.   */
   @media (monochrome) {
     .page--worksheet_page {
-      --domain-color: #444;
-      --domain-color-light: #f2f2f2;
+      --domain-color: #333;
+      --domain-color-light: #f0f0f0;
     }
   }
 
