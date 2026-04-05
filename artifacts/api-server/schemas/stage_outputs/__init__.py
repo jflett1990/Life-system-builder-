@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from schemas.stage_outputs.system_architecture import SystemArchitectureOutput
 from schemas.stage_outputs.document_outline import DocumentOutlineOutput
 from schemas.stage_outputs.chapter_expansion import ChapterExpansionOutput, ExpandedChapter
+from schemas.stage_outputs.chapter_worksheets import ChapterWorksheetsStageOutput, ChapterWorksheetsOutput
 from schemas.stage_outputs.appendix_builder import AppendixBuilderOutput
 from schemas.stage_outputs.layout_mapping import LayoutMappingOutput
 from schemas.stage_outputs.render_blueprint import RenderBlueprintOutput
@@ -22,6 +23,7 @@ STAGE_SCHEMA_REGISTRY: dict[str, type[BaseModel]] = {
     "system_architecture": SystemArchitectureOutput,
     "document_outline":    DocumentOutlineOutput,
     "chapter_expansion":   ChapterExpansionOutput,
+    "chapter_worksheets":  ChapterWorksheetsStageOutput,
     "appendix_builder":    AppendixBuilderOutput,
     "layout_mapping":      LayoutMappingOutput,
     "render_blueprint":    RenderBlueprintOutput,
@@ -44,6 +46,8 @@ __all__ = [
     "DocumentOutlineOutput",
     "ChapterExpansionOutput",
     "ExpandedChapter",
+    "ChapterWorksheetsStageOutput",
+    "ChapterWorksheetsOutput",
     "AppendixBuilderOutput",
     "LayoutMappingOutput",
     "RenderBlueprintOutput",

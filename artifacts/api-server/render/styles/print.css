@@ -184,10 +184,12 @@
   .page-break-after  { page-break-after:  always !important; break-after:  page !important; }
   .page-break-avoid  { page-break-inside: avoid  !important; break-inside: avoid  !important; }
 
-  /* Archetypes that must always open on a fresh page                         */
-  .page--cover_page,
-  .page--section_divider,
-  .page--chapter_opener {
+  /* Cover page must always open on a fresh page.
+     section_divider and chapter_opener do NOT need break-before — the
+     preceding .page already has page-break-after: always. Declaring both
+     break-after on the previous page AND break-before on the next can cause
+     Pagedjs to insert a blank page between them.                             */
+  .page--cover_page {
     page-break-before: always;
     break-before: page;
   }
@@ -300,16 +302,10 @@
 
   /* ── Dark Page Backgrounds ──────────────────────────────────────────────── */
   /*
-    Cover and section divider use dark backgrounds.
-    print-color-adjust: exact (set on body) ensures they render.
-    Force-set here for environments that need explicit instruction.
+    Cover and section divider use dark backgrounds set on the .page container.
+    print-color-adjust: exact ensures they render correctly when printing.
+    (Handled per-selector in the grayscale block below for specificity.)
   */
-  .cover__body,
-  .divider__body {
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-    color-adjust: exact;
-  }
 
 
   /* ── Grayscale Safety Overrides ─────────────────────────────────────────── */
@@ -381,13 +377,19 @@
   }
 
   /* Dark pages — keep dark background, force white text                      */
-  /* Chrome respects this with print-color-adjust: exact on body              */
-  .page--cover_page .cover__body {
+  /* Background is now on .page container directly (base.css).                */
+  /* print-color-adjust: exact on body covers most cases; explicit here for   */
+  /* browsers that need per-element instruction.                              */
+  .page--cover_page {
     background: #0D0C09 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
-  .page--section_divider .divider__body {
+  .page--section_divider {
     background: #1A1814 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .page--chapter_opener [style*="background: var(--color-chapter-bar)"],
@@ -432,28 +434,43 @@ tfoot {
   page-break-after: auto;
 }
 
-/* Archetypes that must open on a fresh page */
-.page--cover_page,
-.page--section_divider,
-.page--chapter_opener {
+/* Cover page must open on a fresh page.
+   section_divider and chapter_opener omitted — the preceding .page already
+   has break-after: page. Both rules firing produces a blank page in Pagedjs. */
+.page--cover_page {
   break-before: page;
   page-break-before: always;
 }
 
 /*
-  Dark full-bleed pages (section_divider, chapter_opener) use negative
-  left/right margins to extend their background to the page edge. Their
-  dark bars previously also used a negative TOP margin to escape the page's
-  top padding — but that causes the dark background to bleed above the
-  break-before cut point, creating a phantom black bar at the bottom of the
-  preceding page.
+  Full-bleed dark pages need their .page padding zeroed so dark backgrounds
+  can fill edge-to-edge without fighting the page container's margins.
 
-  Fix: zero out the top padding so the dark bar sits flush at y=0 without
-  needing a negative top margin. The templates already use margin: 0 on top.
+  section_divider: dark body fills the ENTIRE page card — zero ALL padding.
+    In screen mode: .divider__body { min-height: page-height } fills the card.
+    In Pagedjs: @page provides the 20mm margin; content area = content-height.
+
+  chapter_opener: only the top bar spans full width; body content keeps its
+    horizontal padding for the text below. Zero only vertical padding.
 */
-.page--section_divider,
+.page--section_divider {
+  padding: 0;
+}
+
 .page--chapter_opener {
   padding-top: 0;
+  padding-bottom: 0;
+}
+
+/*
+  Chapter bar negative horizontal margins escape the .page's 20mm horizontal
+  padding in screen mode. In Pagedjs, .page already has padding:0 (see
+  .pagedjs_page .page rule below), so the negative margins overflow the content
+  area by 40mm. The .chapter-bar class lets us reset them in Pagedjs context.
+*/
+.pagedjs_page .chapter-bar {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 
@@ -477,6 +494,15 @@ tfoot {
   padding: 0;
   background: transparent;
   box-shadow: none;
+}
+
+/* Restore dark backgrounds that the rule above strips.
+   Background is now set on the .page container (base.css), so we must
+   re-declare it after the transparent override. Inner wrappers use flex:1
+   to fill the Pagedjs content area; no min-height arithmetic required. */
+.pagedjs_page .page--cover_page,
+.pagedjs_page .page--section_divider {
+  background: var(--color-primary) !important;
 }
 
 /* Pagedjs page shell — give it the warm document background that body had   */

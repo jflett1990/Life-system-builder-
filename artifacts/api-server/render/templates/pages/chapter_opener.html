@@ -6,8 +6,11 @@
 {#            domain_purpose, scope_items, primary_outputs                    #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 
-<!-- Chapter bar — full-width dark strip at top -->
-<div style="
+<!-- Chapter bar — full-width dark strip at top.
+     .chapter-bar class used by Pagedjs override in print.css to reset
+     negative horizontal margins (which escape screen-mode padding but
+     overflow the Pagedjs content area where .page already has padding:0). -->
+<div class="chapter-bar" style="
   background: var(--color-chapter-bar);
   margin: 0 calc(-1 * var(--page-margin-h)) var(--space-10);
   padding: var(--space-6) var(--page-margin-h);

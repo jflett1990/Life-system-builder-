@@ -6,6 +6,7 @@ STAGE_NAMES = [
     "system_architecture",
     "document_outline",
     "chapter_expansion",
+    "chapter_worksheets",
     "appendix_builder",
     "layout_mapping",
     "render_blueprint",

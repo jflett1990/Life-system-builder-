@@ -3,11 +3,13 @@
 {# COVER PAGE                                                                  #}
 {# data keys: system_name, life_event, system_objective, time_horizon,        #}
 {#            audience, generated_date, document_id                           #}
+{#                                                                             #}
+{# Background lives on .page--cover_page (base.css) — no negative-margin     #}
+{# bleed. This wrapper uses flex:1 so it stretches to fill the .page height   #}
+{# in both screen and Pagedjs contexts.                                       #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
-<div class="cover__body" style="
-  background: var(--color-primary);
-  min-height: var(--page-height);
-  margin: calc(-1 * var(--page-margin-v)) calc(-1 * var(--page-margin-h));
+<div style="
+  flex: 1;
   padding: 48mm var(--page-margin-h) var(--page-margin-v);
   display: flex;
   flex-direction: column;

@@ -20,6 +20,7 @@ STAGE_CONTRACT_MAP: dict[str, str] = {
     "system_architecture": "life_event_system_core",
     "document_outline":    "document_outline",
     "chapter_expansion":   "chapter_expansion",
+    "chapter_worksheets":  "chapter_worksheets",
     "appendix_builder":    "appendix_builder",
     "layout_mapping":      "layout_architecture_mapper",
     "render_blueprint":    "pdf_render_blueprint",
@@ -30,10 +31,11 @@ STAGE_UPSTREAM_MAP: dict[str, list[str]] = {
     "system_architecture": [],
     "document_outline":    ["system_architecture"],
     "chapter_expansion":   ["system_architecture", "document_outline"],
+    "chapter_worksheets":  ["system_architecture", "document_outline", "chapter_expansion"],
     "appendix_builder":    ["system_architecture", "document_outline", "chapter_expansion"],
-    "layout_mapping":      ["system_architecture", "document_outline", "chapter_expansion"],
-    "render_blueprint":    ["system_architecture", "document_outline", "chapter_expansion", "layout_mapping"],
-    "validation_audit":    ["system_architecture", "document_outline", "chapter_expansion", "appendix_builder", "layout_mapping", "render_blueprint"],
+    "layout_mapping":      ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets"],
+    "render_blueprint":    ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "layout_mapping"],
+    "validation_audit":    ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "appendix_builder", "layout_mapping", "render_blueprint"],
 }
 
 

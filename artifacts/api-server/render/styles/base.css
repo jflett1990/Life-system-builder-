@@ -80,10 +80,24 @@ body {
   padding: var(--page-margin-v) var(--page-margin-h);
   display: flex;
   flex-direction: column;
+  overflow: hidden;   /* Defensive: any child overflow is clipped at the page
+                         boundary rather than bleeding into the next page.
+                         Pagedjs paginates content before painting, so legitimate
+                         multi-page content is never clipped — only accidents are. */
 }
 
 /* Page-type modifier — used for print page-break targeting                   */
 /* .page--cover_page, .page--section_divider, .page--chapter_opener, etc.    */
+
+/* Dark full-bleed page types — background lives on the .page container so    */
+/* the colour fills the full card without any inner-div negative-margin hacks. */
+/* padding: 0 lets the inner content wrapper supply its own padding.           */
+/* flex: 1 on the inner wrapper stretches it to fill the page height.         */
+.page--cover_page,
+.page--section_divider {
+  background: var(--color-primary);
+  padding: 0;
+}
 
 
 /* ── Visibility Utilities ───────────────────────────────────────────────── */

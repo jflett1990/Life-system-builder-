@@ -211,6 +211,7 @@ class ManifestBuilder:
 
         arch = all_outputs.get("system_architecture", {})
         chapter_exp = all_outputs.get("chapter_expansion", {})
+        chapter_ws_stage = all_outputs.get("chapter_worksheets", {})
         ws_system   = all_outputs.get("worksheet_system", {})   # legacy fallback
 
         generated_date = date.today().strftime("%B %d, %Y")
@@ -221,13 +222,24 @@ class ManifestBuilder:
         domains = arch.get("control_domains", [])
         domain_map: dict[str, dict] = {d.get("id", ""): d for d in domains}
 
+        # Build worksheet lookup from the dedicated chapter_worksheets stage (new pipeline).
+        # Falls back to worksheets embedded in chapter_expansion (old pipeline) for
+        # backwards compatibility with existing projects.
+        ws_by_chapter: dict[int, list[dict]] = {}
+        if chapter_ws_stage:
+            for ch_ws in chapter_ws_stage.get("chapters", []):
+                ws_by_chapter[ch_ws.get("chapter_number", 0)] = ch_ws.get("worksheets", [])
+
         # Prefer chapter_expansion chapters; fall back to worksheet_system worksheets
         chapters: list[dict] = chapter_exp.get("chapters", [])
         legacy_worksheets: list[dict] = ws_system.get("worksheets", [])
 
-        # Compute totals for KPIs
+        # Compute totals for KPIs — use chapter_worksheets counts when available
         if chapters:
-            total_worksheets = sum(len(ch.get("worksheets", [])) for ch in chapters)
+            if ws_by_chapter:
+                total_worksheets = sum(len(wsl) for wsl in ws_by_chapter.values())
+            else:
+                total_worksheets = sum(len(ch.get("worksheets", [])) for ch in chapters)
         else:
             total_worksheets = len(legacy_worksheets)
 
@@ -243,9 +255,10 @@ class ManifestBuilder:
         toc_chapters = []
         if chapters:
             for ch in chapters:
-                ch_ws = ch.get("worksheets", [])
+                ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
+                ch_ws = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
                 toc_chapters.append({
-                    "chapter_number": ch.get("chapter_number", chapters.index(ch) + 1),
+                    "chapter_number": ch_num,
                     "chapter_title": ch.get("chapter_title", ""),
                     "worksheet_count": len(ch_ws),
                     "worksheets": [ws.get("title", "") for ws in ch_ws],
@@ -282,24 +295,21 @@ class ManifestBuilder:
             ))
 
         # ── 3. Dashboard Page ──────────────────────────────────────────────────
-        # Milestones = chapter titles (differentiated, content-specific).
-        # Falls back to success_criteria only when no chapters exist.
+        # Milestones come from system_architecture.critical_milestones, which
+        # are the concrete project checkpoints (not chapter titles).
+        # Falls back to success_criteria when no milestones were generated.
         success_criteria = arch.get("success_criteria", [])
+        critical_milestones = arch.get("critical_milestones", [])
 
-        if chapters:
-            milestones = [
-                {
-                    "sequence": i,
-                    "milestone": ch.get("chapter_title", f"Chapter {i}"),
-                    "description": "",
-                }
-                for i, ch in enumerate(chapters[:8], 1)
-            ]
-        else:
+        if critical_milestones:
+            milestones = critical_milestones[:8]
+        elif success_criteria:
             milestones = [
                 {"sequence": i, "milestone": criterion, "description": ""}
                 for i, criterion in enumerate(success_criteria[:6], 1)
             ]
+        else:
+            milestones = []
 
         kpis: list[dict] = []
         if total_worksheets:
@@ -366,7 +376,9 @@ class ManifestBuilder:
                 ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
                 ch_narrative = ch.get("narrative", "")
                 ch_rules = ch.get("quick_reference_rules", [])
-                ch_worksheets = ch.get("worksheets", [])
+                # Prefer worksheets from the dedicated chapter_worksheets stage;
+                # fall back to any worksheets embedded in chapter_expansion (old pipeline).
+                ch_worksheets = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
 
                 # Resolve domain info from system_architecture
                 domain_id = ch.get("domain_id", "")
@@ -487,7 +499,8 @@ class ManifestBuilder:
             for ch in chapters:
                 ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
                 ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
-                for ws in ch.get("worksheets", []):
+                ch_ws_list = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
+                for ws in ch_ws_list:
                     ws_title = ws.get("title", "")
                     if ws_title:
                         all_ws_entries.append({
