@@ -176,6 +176,29 @@
     break-after: auto;
   }
 
+  /* Flowing content pages — no forced page break                               */
+  /* Content fills available space; Pagedjs breaks when the page is full.      */
+  .page--flow {
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-top: none;
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* Grayscale safety for domain colours — substitute mono values when printing */
+  /* without colour so text remains readable on a plain-paper printer.          */
+  @media (monochrome) {
+    .page--worksheet_page {
+      --domain-color: #444;
+      --domain-color-light: #f2f2f2;
+    }
+  }
+
 
   /* ── Page Break Rules ──────────────────────────────────────────────────── */
 
@@ -503,6 +526,21 @@ tfoot {
 .pagedjs_page .page--cover_page,
 .pagedjs_page .page--section_divider {
   background: var(--color-primary) !important;
+}
+
+/* Strip screen card styles from flowing pages — same treatment as .page.    */
+/* The @page margins handle outer whitespace; .page--flow is a semantic      */
+/* container only. Content flows across printed pages as Pagedjs decides.   */
+.pagedjs_page .page--flow {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-top: none;
+  break-after: auto;
+  page-break-after: auto;
 }
 
 /* Pagedjs page shell — give it the warm document background that body had   */

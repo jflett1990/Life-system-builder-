@@ -122,7 +122,10 @@ class ManifestPage:
     sequence: int
     archetype: str          # must match a templates/pages/<archetype>.html file
     data: dict[str, Any]
-    page_break_before: bool = True
+    page_break: str = "always"   # "always" | "auto" | "avoid"
+    #   always — this page MUST start on a new printed page (cover, dark dividers, openers)
+    #   auto   — flow continuously from the previous page; browser/Pagedjs breaks as needed
+    #   avoid  — prefer keeping with the preceding content (currently unused; reserved)
 
 
 @dataclass
@@ -136,6 +139,24 @@ class RenderManifest:
     @property
     def page_count(self) -> int:
         return len(self.pages)
+
+
+# ── Domain color palette ───────────────────────────────────────────────────────
+# 8 visually distinct colors, each with a 10%-opacity-equivalent light tint.
+# Compatible with the warm-ink design token palette:
+#   primary → header bars, badges (white text over colour)
+#   light   → section background tints (dark text over light colour)
+# Assigned by chapter index modulo 8 so a document with > 8 chapters cycles.
+DOMAIN_COLORS: list[dict[str, str]] = [
+    {"primary": "#2D4A3E", "light": "#E8F0EC"},  # forest green
+    {"primary": "#3B3A5C", "light": "#ECECF3"},  # slate purple
+    {"primary": "#5C3D2E", "light": "#F2EBE7"},  # warm brown
+    {"primary": "#1E3A5F", "light": "#E6ECF3"},  # navy
+    {"primary": "#5A4235", "light": "#F0EBE7"},  # espresso
+    {"primary": "#2E5945", "light": "#E8F0EC"},  # sage
+    {"primary": "#4A3728", "light": "#EFEBE6"},  # umber
+    {"primary": "#3D4F5F", "light": "#EAEFF3"},  # steel blue
+]
 
 
 # ── Builder ────────────────────────────────────────────────────────────────────
@@ -224,7 +245,6 @@ class ManifestBuilder:
             page_id="pg-cover",
             sequence=next_seq(),
             archetype="cover_page",
-            page_break_before=False,
             data={
                 "system_name": system_name,
                 "life_event": arch.get("life_event", ""),
@@ -310,6 +330,7 @@ class ManifestBuilder:
                 page_id="pg-arch-explain",
                 sequence=next_seq(),
                 archetype="explanation_page",
+                page_break="auto",
                 data={
                     "page_label": "System Architecture",
                     "page_title": system_name,
@@ -326,8 +347,8 @@ class ManifestBuilder:
 
         # ── 6a. Chapters from chapter_expansion (current pipeline) ─────────────
         if chapters:
-            for ch in chapters:
-                ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
+            for ch_idx, ch in enumerate(chapters):
+                ch_num = ch.get("chapter_number", ch_idx + 1)
                 ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
                 ch_narrative = ch.get("narrative", "")
                 ch_rules = ch.get("quick_reference_rules", [])
@@ -390,6 +411,9 @@ class ManifestBuilder:
                     },
                 ))
 
+                # Domain color for this chapter — cycles through palette by chapter index
+                ch_color = DOMAIN_COLORS[ch_idx % len(DOMAIN_COLORS)]
+
                 # One worksheet page per worksheet in this chapter
                 for ws_idx, ws in enumerate(ch_worksheets):
                     ws_id = ws.get("id", f"ws-{ch_num}-{ws_idx + 1:02d}")
@@ -399,10 +423,17 @@ class ManifestBuilder:
                     ws_data["chapter_number"] = ch_num
                     ws_data["chapter_title"] = ch_title
                     ws_data["system_name"] = system_name
+                    # Domain colour injected as CSS custom-property values (Task 3)
+                    ws_data["domain_color"] = ch_color["primary"]
+                    ws_data["domain_color_light"] = ch_color["light"]
                     pages.append(ManifestPage(
                         page_id=f"pg-ws-{ws_id}",
                         sequence=next_seq(),
                         archetype="worksheet_page",
+                        # First worksheet in a chapter always starts a fresh page;
+                        # subsequent worksheets flow continuously so Pagedjs can pack
+                        # content without wasting nearly-empty pages.
+                        page_break="always" if ws_idx == 0 else "auto",
                         data=ws_data,
                     ))
 
@@ -469,6 +500,7 @@ class ManifestBuilder:
                     page_id="pg-ws-index",
                     sequence=next_seq(),
                     archetype="worksheet_index_page",
+                    page_break="auto",
                     data={
                         "index_entries": all_ws_entries,
                         "total_worksheets": len(all_ws_entries),
@@ -505,6 +537,7 @@ class ManifestBuilder:
                     page_id="pg-appendix-glossary",
                     sequence=next_seq(),
                     archetype="appendix_glossary",
+                    page_break="auto",
                     data={
                         "life_event": life_event,
                         "glossary_terms": glossary_terms,
@@ -517,6 +550,7 @@ class ManifestBuilder:
                     page_id="pg-appendix-professional-guide",
                     sequence=next_seq(),
                     archetype="appendix_professional_guide",
+                    page_break="auto",
                     data={
                         "life_event": life_event,
                         "professional_triggers": professional_triggers,
@@ -529,6 +563,7 @@ class ManifestBuilder:
                     page_id="pg-appendix-key-resources",
                     sequence=next_seq(),
                     archetype="worksheet_page",
+                    page_break="auto",
                     data={
                         "id": "appendix-key-resources",
                         "title": "Key Resources & Contacts",
@@ -551,6 +586,7 @@ class ManifestBuilder:
                         page_id=f"pg-appendix-notes-{note_page_idx + 1}",
                         sequence=next_seq(),
                         archetype="appendix_notes",
+                        page_break="auto",
                         data={
                             "page_number": note_page_idx + 1,
                             "total_pages": notes_count,
