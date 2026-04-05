@@ -441,19 +441,44 @@ tfoot {
 }
 
 /*
-  Dark full-bleed pages (section_divider, chapter_opener) use negative
-  left/right margins to extend their background to the page edge. Their
-  dark bars previously also used a negative TOP margin to escape the page's
-  top padding — but that causes the dark background to bleed above the
-  break-before cut point, creating a phantom black bar at the bottom of the
-  preceding page.
+  Full-bleed dark pages need their .page padding zeroed so dark backgrounds
+  can fill edge-to-edge without fighting the page container's margins.
 
-  Fix: zero out the top padding so the dark bar sits flush at y=0 without
-  needing a negative top margin. The templates already use margin: 0 on top.
+  section_divider: dark body fills the ENTIRE page card — zero ALL padding.
+    In screen mode: .divider__body { min-height: page-height } fills the card.
+    In Pagedjs: @page provides the 20mm margin; content area = content-height.
+
+  chapter_opener: only the top bar spans full width; body content keeps its
+    horizontal padding for the text below. Zero only vertical padding.
 */
-.page--section_divider,
+.page--section_divider {
+  padding: 0;
+}
+
 .page--chapter_opener {
   padding-top: 0;
+  padding-bottom: 0;
+}
+
+/*
+  Pagedjs content area is content-height (239.4mm), not page-height (279.4mm).
+  In screen mode padding:0 means min-height:page-height fills the card correctly.
+  In Pagedjs, cap to content-height to prevent 40mm overflow into the next page
+  which rendered as a phantom black bar at the top of the following page.
+*/
+.pagedjs_page .page--section_divider .divider__body {
+  min-height: var(--content-height);
+}
+
+/*
+  Chapter bar negative horizontal margins escape the .page's 20mm horizontal
+  padding in screen mode. In Pagedjs, .page already has padding:0 (see
+  .pagedjs_page .page rule below), so the negative margins overflow the content
+  area by 40mm. The .chapter-bar class lets us reset them in Pagedjs context.
+*/
+.pagedjs_page .chapter-bar {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 
