@@ -447,6 +447,23 @@ body {
   background: var(--color-pass-bg);
 }
 
+/* Callout variant: real-world scenario scene / "In Practice" example box     */
+.callout--scenario {
+  border-left-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-left-width: calc(var(--border-weight-xl) * 1.5);
+}
+
+.callout--scenario .callout__text {
+  color: var(--color-text-primary);
+  font-size: var(--text-md);
+}
+
+.callout--scenario .eyebrow {
+  color: var(--color-accent);
+  letter-spacing: var(--tracking-widest);
+}
+
 
 /* ── Field Row ──────────────────────────────────────────────────────────── */
 /*
