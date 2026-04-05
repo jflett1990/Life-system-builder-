@@ -78,7 +78,13 @@ class ExpandedWorksheet(BaseModel):
 
 
 class ExpandedChapter(BaseModel):
-    """Schema for a single chapter expansion call (per-domain loop)."""
+    """Schema for a single chapter expansion call (per-domain loop).
+
+    worksheets is kept as an optional field (default=[]) for backwards
+    compatibility with projects run before the chapter_worksheets stage
+    was introduced. New runs will have worksheets=[] here and worksheets
+    populated in the separate chapter_worksheets stage output instead.
+    """
     model_config = ConfigDict(extra="allow")
 
     chapter_number: int = 0
@@ -86,7 +92,7 @@ class ExpandedChapter(BaseModel):
     chapter_title: str = Field(..., min_length=1)
     narrative: str = Field(..., min_length=100)
     quick_reference_rules: list[str] = []
-    worksheets: list[ExpandedWorksheet] = []
+    worksheets: list[ExpandedWorksheet] = []   # legacy / backwards compat only
     cascade_triggers: list[str] = []
 
 

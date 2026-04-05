@@ -138,14 +138,24 @@ class PipelineService:
 
         # ── Route to loop or single-call path ─────────────────────────────────
         if contract.execution_mode == "loop_per_chapter":
-            self._run_chapter_loop(
-                project_id=project_id,
-                stage=stage,
-                project=project,
-                stage_row=stage_row,
-                contract=contract,
-                all_outputs=all_outputs,
-            )
+            if stage == "chapter_worksheets":
+                self._run_chapter_worksheets_loop(
+                    project_id=project_id,
+                    stage=stage,
+                    project=project,
+                    stage_row=stage_row,
+                    contract=contract,
+                    all_outputs=all_outputs,
+                )
+            else:
+                self._run_chapter_loop(
+                    project_id=project_id,
+                    stage=stage,
+                    project=project,
+                    stage_row=stage_row,
+                    contract=contract,
+                    all_outputs=all_outputs,
+                )
         else:
             assembler = _get_assembler()
             prompt = assembler.assemble(contract, payload, upstream_outputs=upstream)
@@ -455,6 +465,222 @@ class PipelineService:
         logger.info(
             "chapter_expansion COMPLETE | project=%d | chapters=%d/%d | worksheets=%d",
             project_id, len(expanded_chapters), len(chapters_plan), total_worksheets,
+        )
+
+    def _run_chapter_worksheets_loop(
+        self,
+        project_id: int,
+        stage: str,
+        project: Any,
+        stage_row: Any,
+        contract: Any,
+        all_outputs: dict[str, Any],
+    ) -> None:
+        """
+        Execute the chapter_worksheets stage by running one LLM call per chapter
+        concurrently (up to 4 at once), then accumulating results in chapter_number order.
+
+        Each call receives the chapter plan from document_outline plus the narrative
+        from chapter_expansion, so worksheets are built with full content context.
+
+        Progress is written to stage_row.sub_progress after each chapter completes.
+        """
+        from schemas.stage_outputs.chapter_worksheets import ChapterWorksheetsOutput
+
+        outline_data = all_outputs.get("document_outline", {})
+        chapters_plan = outline_data.get("chapters", [])
+
+        if not chapters_plan:
+            stage_row.status = "failed"
+            stage_row.error_message = "document_outline contains no chapters to generate worksheets for"
+            stage_row.updated_at = datetime.now(timezone.utc)
+            self._repo.save(stage_row)
+            logger.error("chapter_worksheets aborted: document_outline has no chapters")
+            return
+
+        # Build narrative lookup from chapter_expansion output
+        chapter_expansion = all_outputs.get("chapter_expansion", {})
+        narrative_by_number: dict[int, str] = {}
+        for ch in chapter_expansion.get("chapters", []):
+            cn = ch.get("chapter_number", 0)
+            narrative_by_number[cn] = ch.get("narrative", "")
+
+        upstream = orchestrator.collect_upstream_outputs(stage, all_outputs)
+        assembler = _get_assembler()
+
+        base_payload = {
+            "life_event": project.life_event,
+            "audience": project.audience or "general adult",
+            "tone": project.tone or "professional",
+            "context": project.context or "",
+            "document_title": outline_data.get("document_title", project.life_event),
+        }
+
+        total = len(chapters_plan)
+
+        logger.info(
+            "chapter_worksheets | project=%d | starting parallel loop over %d chapters (max_workers=4)",
+            project_id, total,
+        )
+
+        # ── Per-chapter worker ────────────────────────────────────────────────
+        def _generate_worksheets(chapter_plan: dict, idx: int) -> tuple[int, str, dict | None, str]:
+            chapter_number = chapter_plan.get("chapter_number", idx + 1)
+            domain_name = chapter_plan.get("domain_name", f"Chapter {chapter_number}")
+            narrative = narrative_by_number.get(chapter_number, "")
+
+            chapter_payload = {
+                **base_payload,
+                "current_chapter_json": json.dumps(chapter_plan, indent=2, ensure_ascii=False),
+                "chapter_narrative": narrative,
+                "chapter_number": int(chapter_number),
+                "domain_name": domain_name,
+            }
+
+            try:
+                prompt = assembler.assemble(contract, chapter_payload, upstream_outputs=upstream)
+                structured, parse_result = self._model.generate_structured_output(
+                    prompt, contract,
+                    schema_class_override=ChapterWorksheetsOutput,
+                )
+                raw = structured.raw_text
+
+                if parse_result.success and parse_result.parsed_data:
+                    logger.info(
+                        "chapter_worksheets | chapter %d OK | worksheets=%d",
+                        chapter_number,
+                        len(parse_result.parsed_data.get("worksheets", [])),
+                    )
+                    return chapter_number, domain_name, parse_result.parsed_data, raw
+                else:
+                    logger.warning(
+                        "chapter_worksheets | chapter %d schema soft-fail — using raw data",
+                        chapter_number,
+                    )
+                    return chapter_number, domain_name, structured.data, raw
+
+            except Exception as e:
+                logger.error(
+                    "chapter_worksheets | chapter %d FAILED | %s",
+                    chapter_number, str(e)[:200],
+                )
+                return chapter_number, domain_name, None, ""
+
+        # ── Collect results ───────────────────────────────────────────────────
+        results_by_number: dict[int, dict] = {}
+        failed_chapter_numbers: list[int] = []
+        raw_texts_by_number: dict[int, str] = {}
+        completed_count = 0
+
+        _WORKERS = 4
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=_WORKERS, thread_name_prefix="ws-worker"
+        ) as pool:
+            future_to_chapter: dict[concurrent.futures.Future, dict] = {
+                pool.submit(_generate_worksheets, chap, i): chap
+                for i, chap in enumerate(chapters_plan)
+            }
+            pending_futures: set[concurrent.futures.Future] = set(future_to_chapter.keys())
+
+            def _current_domains() -> list[str]:
+                running = [
+                    future_to_chapter[f].get(
+                        "domain_name",
+                        f"Chapter {future_to_chapter[f].get('chapter_number', '?')}"
+                    )
+                    for f in pending_futures
+                    if f.running()
+                ]
+                if running:
+                    return running[:_WORKERS]
+                return [
+                    future_to_chapter[f].get(
+                        "domain_name",
+                        f"Chapter {future_to_chapter[f].get('chapter_number', '?')}"
+                    )
+                    for f in list(pending_futures)[:_WORKERS]
+                ]
+
+            stage_row.set_sub_progress({
+                "completed": 0,
+                "total": total,
+                "current_domains": _current_domains(),
+            })
+            stage_row.updated_at = datetime.now(timezone.utc)
+            self._repo.save(stage_row)
+
+            for future in concurrent.futures.as_completed(future_to_chapter):
+                chapter_number, domain_name, chapter_data, raw_text = future.result()
+                completed_count += 1
+                pending_futures.discard(future)
+
+                if chapter_data is not None:
+                    results_by_number[chapter_number] = chapter_data
+                    raw_texts_by_number[chapter_number] = raw_text
+                else:
+                    failed_chapter_numbers.append(chapter_number)
+
+                stage_row.set_sub_progress({
+                    "completed": completed_count,
+                    "total": total,
+                    "current_domains": _current_domains(),
+                })
+                stage_row.updated_at = datetime.now(timezone.utc)
+                self._repo.save(stage_row)
+
+                logger.info(
+                    "chapter_worksheets | project=%d | %d/%d complete | domain='%s' | in_flight=%d",
+                    project_id, completed_count, total, domain_name, len(pending_futures),
+                )
+
+        # ── Rebuild in document order ─────────────────────────────────────────
+        chapter_results: list[dict] = []
+        raw_texts: list[str] = []
+        for chap in chapters_plan:
+            cn = chap.get("chapter_number", 0)
+            if cn in results_by_number:
+                chapter_results.append(results_by_number[cn])
+                raw_texts.append(raw_texts_by_number.get(cn, ""))
+
+        stage_row.set_raw_output("\n\n---CHAPTER SEPARATOR---\n\n".join(raw_texts))
+
+        if not chapter_results:
+            stage_row.status = "failed"
+            stage_row.error_message = f"All {len(chapters_plan)} chapters failed worksheet generation"
+            stage_row.sub_progress = None
+            stage_row.updated_at = datetime.now(timezone.utc)
+            self._repo.save(stage_row)
+            logger.error("chapter_worksheets | ALL chapters failed | project=%d", project_id)
+            return
+
+        total_worksheets = sum(len(c.get("worksheets", [])) for c in chapter_results)
+        accumulated = {
+            "total_chapters": len(chapter_results),
+            "total_worksheets": total_worksheets,
+            "chapters": chapter_results,
+        }
+
+        stage_row.set_output(accumulated)
+        stage_row.preview_text = (
+            f"{len(chapter_results)} chapters | {total_worksheets} worksheets generated"
+            + (f" | {len(failed_chapter_numbers)} chapter(s) failed" if failed_chapter_numbers else "")
+        )
+        stage_row.status = "complete"
+        stage_row.sub_progress = None
+
+        if failed_chapter_numbers:
+            stage_row.error_message = (
+                f"Partial: chapters {sorted(failed_chapter_numbers)} failed — "
+                f"{len(chapter_results)}/{len(chapters_plan)} succeeded"
+            )
+
+        stage_row.updated_at = datetime.now(timezone.utc)
+        self._repo.save(stage_row)
+
+        logger.info(
+            "chapter_worksheets COMPLETE | project=%d | chapters=%d/%d | worksheets=%d",
+            project_id, len(chapter_results), len(chapters_plan), total_worksheets,
         )
 
     def run_full_pipeline(self, project_id: int) -> list[StageOutput]:
