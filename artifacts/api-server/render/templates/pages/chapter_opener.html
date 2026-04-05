@@ -79,17 +79,24 @@
 {% endif %}
 
 {% if data.cascade_triggers %}
-<div class="mt-8">
-  <span class="heading-component">Cascade Triggers</span>
-  <p class="body-text body-text--muted" style="margin-top:var(--space-1);margin-bottom:var(--space-3)">Downstream systems that activate if this chapter is incomplete or fails.</p>
-  <div style="margin-top:var(--space-2)">
-    {% for trigger in data.cascade_triggers %}
-    <div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:var(--border-rule);align-items:flex-start">
-      <span style="color:var(--color-warn);font-size:var(--text-xs);flex-shrink:0;margin-top:2px;font-weight:700">!</span>
-      <span class="body-text body-text--secondary">{{ trigger }}</span>
-    </div>
-    {% endfor %}
+<div class="mt-8" style="
+  background: var(--color-warn-bg);
+  border-left: 3px solid var(--color-warn);
+  padding: var(--space-4) var(--space-5);
+  break-inside: avoid;
+  page-break-inside: avoid;
+">
+  <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2)">
+    <span style="font-size:var(--text-sm);color:var(--color-warn);font-weight:var(--weight-bold)">⚠</span>
+    <span class="heading-component" style="color:var(--color-warn)">Cascade Triggers</span>
   </div>
+  <p class="body-text body-text--muted" style="margin-bottom:var(--space-3);font-size:var(--text-sm)">Downstream systems that activate if this chapter is incomplete or fails.</p>
+  {% for trigger in data.cascade_triggers %}
+  <div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:var(--border-weight) solid rgba(0,0,0,0.06);align-items:flex-start">
+    <span style="color:var(--color-warn);font-size:var(--text-xs);flex-shrink:0;margin-top:3px;font-weight:var(--weight-bold)">→</span>
+    <span class="body-text" style="font-size:var(--text-sm);line-height:var(--leading-normal)">{{ trigger }}</span>
+  </div>
+  {% endfor %}
 </div>
 {% endif %}
 

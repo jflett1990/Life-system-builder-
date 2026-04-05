@@ -494,12 +494,14 @@ body {
 /*
   Top-level grouping within a worksheet page.
   Heading + ruled separator + field grid.
-  Avoids page break inside so a section doesn't orphan its header.
+  break-inside: avoid removed — sections with many fields can be taller than a
+  full page. Pagedjs can't honour avoid for over-height elements and responds by
+  pushing the entire section to a fresh page, leaving a gap.
+  Instead, break-after: avoid on .worksheet-section__header keeps the heading
+  with the first field without preventing natural mid-section page breaks.
 */
 .worksheet-section {
   margin-bottom: var(--section-gap);
-  break-inside: avoid;
-  page-break-inside: avoid;
 }
 
 .worksheet-section + .worksheet-section {
@@ -507,11 +509,14 @@ body {
   border-top: var(--border-rule);
 }
 
+/* Section header — stays with the first field below it */
 .worksheet-section__header {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   margin-bottom: var(--space-5);
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .worksheet-section__rule {
@@ -728,10 +733,10 @@ body {
 /* The physical checkbox — open square, printed for manual completion         */
 .checklist__box {
   flex-shrink: 0;
-  width: 13px;
-  height: 13px;
-  border: var(--border-weight-md) solid var(--color-rule-heavy);
-  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--color-text-primary); /* Heavier border — more prominent at small size */
+  margin-top: 3px;
 }
 
 
@@ -1047,12 +1052,13 @@ body {
 .ws-table__header {
   font-family: var(--font-label);
   font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--color-text-primary);
-  background: var(--color-surface-inset);
-  border: var(--border-weight-md) solid var(--color-rule-mid);
+  /* Domain colour fills header row — falls back to accent via :root token     */
+  background: var(--domain-color);
+  color: #fff;
+  border: var(--border-weight) solid transparent;
   padding: var(--space-3) var(--space-4);
   text-align: left;
   white-space: nowrap;
@@ -1060,48 +1066,57 @@ body {
 
 .ws-table__cell {
   border: var(--border-weight) solid var(--color-rule);
-  height: 44px;
-  padding: 0 var(--space-3);
-  vertical-align: bottom;
-  padding-bottom: var(--space-1);
+  height: 48px;                          /* Slightly taller — comfortable writing space */
+  padding: var(--space-2) var(--space-3); /* Vertical breathing room in each cell */
+  vertical-align: middle;
 }
 
 .ws-table__row--alt {
-  background: var(--color-surface);
+  /* Domain colour light tint — visually distinct from white but still light   */
+  background: var(--domain-color-light);
 }
 
 .ws-table thead tr .ws-table__rownum {
-  background: var(--color-surface-inset);
-  border: var(--border-weight-md) solid var(--color-rule-mid);
-  color: var(--color-text-muted);
+  background: var(--domain-color);
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 
 /* ── CHECKLIST Worksheet ─────────────────────────────────────────────────── */
 /*
   Audit / verification / compliance checklists.
-  Two-column layout of checkbox items for maximum page density.
+  Single-column layout — compliance items are multi-sentence verification
+  statements that need the full page width. Two-column packing was replaced
+  because it forced long items to wrap into illegible dense blocks.
 */
 .ws-checklist {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 var(--space-10);
+  display: flex;
+  flex-direction: column;
   margin-top: var(--space-4);
 }
 
 .ws-checklist__col {
   display: flex;
   flex-direction: column;
-  gap: 0;
+}
+
+/* Seamless visual join between the two halves of the split list               */
+.ws-checklist__col + .ws-checklist__col .ws-checklist__item:first-child {
+  border-top: var(--border-weight) solid var(--color-rule);
+}
+.ws-checklist__col:last-child .ws-checklist__item:last-child {
+  border-bottom: none;
 }
 
 .ws-checklist__item {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
+  gap: var(--space-4);           /* Wider gap so checkbox is visually distinct */
+  padding: var(--space-4) 0;    /* Generous vertical padding — each item breathes */
   border-bottom: var(--border-weight) solid var(--color-rule);
-  min-height: 36px;
+  break-inside: avoid;           /* Don't split a verification item across pages */
+  page-break-inside: avoid;
 }
 
 .ws-checklist__item:last-child {
@@ -1110,9 +1125,9 @@ body {
 
 .ws-checklist__text {
   font-size: var(--text-sm);
-  line-height: var(--leading-snug);
+  line-height: var(--leading-relaxed); /* 1.72 — makes multi-sentence items readable */
   color: var(--color-text-primary);
-  padding-top: 1px;
+  flex: 1;                             /* Prevent text from overflowing the box */
 }
 
 

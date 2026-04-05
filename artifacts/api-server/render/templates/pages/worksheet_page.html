@@ -58,13 +58,23 @@
   {% if data.purpose %}
   <p class="body-text body-text--secondary" style="max-width:140mm;line-height:var(--leading-normal)">{{ data.purpose }}</p>
   {% endif %}
-  {% if data.estimated_completion_time %}
-  <p style="font-family:var(--font-label);font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-2)">Estimated time: {{ data.estimated_completion_time }}</p>
-  {% endif %}
-  {% if data.cross_references and data.cross_references | length > 0 %}
-  <div style="margin-top:var(--space-3);display:flex;align-items:baseline;gap:var(--space-2)">
-    <span style="font-family:var(--font-label);font-size:var(--text-xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--color-text-muted);white-space:nowrap">See also:</span>
-    <span style="font-family:var(--font-body);font-size:var(--text-xs);color:var(--color-text-muted)">{{ data.cross_references | join(' · ') }}</span>
+  {% if data.estimated_completion_time or (data.cross_references and data.cross_references | length > 0) %}
+  <div style="margin-top:var(--space-4);display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
+    {% if data.estimated_completion_time %}
+    <span style="
+      display:inline-flex;align-items:center;gap:var(--space-2);
+      font-family:var(--font-label);font-size:var(--text-xs);
+      color:var(--color-text-muted);
+      border:var(--border-weight) solid var(--color-rule-mid);
+      border-radius:2px;padding:var(--space-1) var(--space-3);
+    ">⏱ {{ data.estimated_completion_time }}</span>
+    {% endif %}
+    {% if data.cross_references and data.cross_references | length > 0 %}
+    <span style="display:inline-flex;align-items:baseline;gap:var(--space-2)">
+      <span style="font-family:var(--font-label);font-size:var(--text-xs);font-weight:var(--weight-bold);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--color-text-muted)">↗ See also:</span>
+      <span style="font-family:var(--font-body);font-size:var(--text-xs);color:var(--color-text-muted);font-style:italic">{{ data.cross_references | join(' · ') }}</span>
+    </span>
+    {% endif %}
   </div>
   {% endif %}
 </div>
@@ -93,15 +103,15 @@
 </div>
 
 {% for section in data.sections | default([]) %}
-<div class="worksheet-section" style="margin-bottom:var(--space-8);break-inside:avoid;page-break-inside:avoid">
+<div class="worksheet-section" style="margin-bottom:var(--space-8)">
   {% if section.section_title %}
-  <div style="margin-bottom:var(--space-4);display:flex;align-items:center;gap:var(--space-4)">
+  <div class="worksheet-section__header" style="margin-bottom:var(--space-4)">
     <span class="heading-component">{{ section.section_title }}</span>
     <div style="flex:1;height:0.5px;background:var(--color-rule)"></div>
   </div>
   {% endif %}
   {% if section.instructions %}
-  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-4)">{{ section.instructions }}</p>
+  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-4);line-height:var(--leading-relaxed)">{{ section.instructions }}</p>
   {% endif %}
 
   {% for field in section.fields | default([]) %}
@@ -139,19 +149,19 @@
 {# ── FORM LAYOUT (default) ────────────────────────────────────────────────── #}
 {% else %}
 {% for section in data.sections | default([]) %}
-<div class="worksheet-section" style="margin-bottom:var(--space-10);break-inside:avoid;page-break-inside:avoid">
+<div class="worksheet-section" style="margin-bottom:var(--space-10)">
   {% if section.section_title %}
-  <div style="margin-bottom:var(--space-5);display:flex;align-items:center;gap:var(--space-4)">
+  <div class="worksheet-section__header" style="margin-bottom:var(--space-5)">
     <span class="heading-component">{{ section.section_title }}</span>
-    <div style="flex:1;height:0.5px;background:var(--color-rule)"></div>
+    <div class="worksheet-section__rule"></div>
     {% if section.section_id %}
-    <span style="font-family:var(--font-mono);font-size:var(--text-2xs);color:var(--color-text-muted)">{{ section.section_id }}</span>
+    <span class="worksheet-section__id">{{ section.section_id }}</span>
     {% endif %}
   </div>
   {% endif %}
 
   {% if section.instructions %}
-  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-5)">{{ section.instructions }}</p>
+  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-5);line-height:var(--leading-relaxed)">{{ section.instructions }}</p>
   {% endif %}
 
   <div>
