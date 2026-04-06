@@ -393,6 +393,8 @@ class ManifestBuilder:
                         "scope_items": ch_rules,
                         "primary_outputs": [ws.get("title", "") for ws in ch_worksheets],
                         "cascade_triggers": cascade_triggers,
+                        "outcome_metrics": ch.get("outcome_metrics", []),
+                        "scenario_scene": ch.get("scenario_scene", ""),
                     },
                 ))
 

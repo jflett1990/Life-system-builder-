@@ -1550,3 +1550,77 @@ body {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
+
+
+/* ── Outcome Metrics Strip ──────────────────────────────────────────────── */
+/*
+  Horizontal band on the chapter_opener page listing 3-5 quantifiable
+  success metrics for the domain (revenue, time saved, lead count, etc.).
+  Uses a subtle accent-tinted background with left accent border.
+*/
+.metrics-strip {
+  background: var(--color-accent-subtle);
+  border-left: 3px solid var(--color-accent-dark);
+  padding: var(--space-4) var(--space-5);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.metrics-strip__label {
+  margin-bottom: var(--space-3);
+}
+
+.metrics-strip__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.metrics-strip__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  border-bottom: var(--border-weight) solid rgba(0,0,0,0.06);
+}
+
+.metrics-strip__item:last-child {
+  border-bottom: none;
+}
+
+.metrics-strip__arrow {
+  color: var(--color-accent-dark);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+
+/* ── Scenario Scene Callout ─────────────────────────────────────────────── */
+/*
+  Highlighted box showing the "when this works" success scenario — a vivid,
+  concrete 3-4 sentence description of the domain operating perfectly.
+  Styled as a positive variant: light green tint, green accent border.
+*/
+.scene-callout {
+  background: var(--color-pass-bg, #D4EDDA);
+  border-left: 3px solid var(--color-pass, #2D6A4F);
+  padding: var(--space-4) var(--space-5);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.scene-callout__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.scene-callout__text {
+  font-style: italic;
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}

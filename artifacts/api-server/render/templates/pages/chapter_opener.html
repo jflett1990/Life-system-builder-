@@ -78,6 +78,32 @@
 </div>
 {% endif %}
 
+{% if data.outcome_metrics %}
+<div class="metrics-strip mt-8">
+  <div class="metrics-strip__label">
+    <span class="heading-component">When This Works</span>
+  </div>
+  <div class="metrics-strip__items">
+    {% for metric in data.outcome_metrics %}
+    <div class="metrics-strip__item">
+      <span class="metrics-strip__arrow">↑</span>
+      <span class="body-text" style="font-size:var(--text-sm)">{{ metric }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if data.scenario_scene %}
+<div class="scene-callout mt-8">
+  <div class="scene-callout__eyebrow">
+    <span style="font-size:var(--text-sm);margin-right:var(--space-2)">✓</span>
+    <span class="heading-component" style="color:var(--color-pass)">Success Scenario</span>
+  </div>
+  <p class="body-text scene-callout__text">{{ data.scenario_scene }}</p>
+</div>
+{% endif %}
+
 {% if data.cascade_triggers %}
 <div class="mt-8" style="
   background: var(--color-warn-bg);

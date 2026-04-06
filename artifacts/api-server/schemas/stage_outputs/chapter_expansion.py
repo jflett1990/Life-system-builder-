@@ -94,6 +94,8 @@ class ExpandedChapter(BaseModel):
     quick_reference_rules: list[str] = []
     worksheets: list[ExpandedWorksheet] = []   # legacy / backwards compat only
     cascade_triggers: list[str] = []
+    outcome_metrics: list[str] = []   # 3-5 quantifiable success metrics (leads, revenue, time)
+    scenario_scene: str = ""          # 3-4 sentence "when it works" highlight scene
 
 
 class ChapterExpansionOutput(BaseModel):
