@@ -1,8 +1,10 @@
 """Pydantic schemas for the chapter_expansion pipeline stage.
 
-Two schemas:
-  ExpandedChapter         — validates each per-chapter LLM call during the loop
-  ChapterExpansionOutput  — validates the accumulated output saved to the DB
+Four schemas:
+  ChapterNarrativeOutput      — validates sub-call 1 (narrative-only pass) per chapter
+  ChapterExpansionStructure   — validates sub-call 2 (structure pass) per chapter
+  ExpandedChapter             — validates the merged result of both sub-calls
+  ChapterExpansionOutput      — validates the accumulated output saved to the DB
 """
 from __future__ import annotations
 
@@ -77,8 +79,48 @@ class ExpandedWorksheet(BaseModel):
     cross_references: list[str] = []
 
 
+# ── Sub-call 1: Narrative-only pass ───────────────────────────────────────────
+
+class ChapterNarrativeOutput(BaseModel):
+    """Schema for sub-call 1 of chapter expansion — narrative only.
+
+    Used as schema_class_override in generate_structured_output so the
+    model is validated purely on the presence of a non-empty narrative.
+    All other fields are optional to avoid validation failures if the model
+    returns minimal metadata alongside the narrative.
+    """
+    model_config = ConfigDict(extra="allow")
+
+    chapter_number: int = 0
+    domain_id: str = ""
+    chapter_title: str = Field(..., min_length=1)
+    narrative: str = Field(..., min_length=500)
+
+
+# ── Sub-call 2: Structure pass ─────────────────────────────────────────────────
+
+class ChapterExpansionStructure(BaseModel):
+    """Schema for sub-call 2 of chapter expansion — structural elements only.
+
+    Validates quick_reference_rules, cascade_triggers, scenario_scene, and
+    success_metrics. Does NOT include narrative — that comes from sub-call 1.
+    Used as schema_class_override in generate_structured_output.
+    """
+    model_config = ConfigDict(extra="allow")
+
+    chapter_number: int = 0
+    domain_id: str = ""
+    chapter_title: str = Field(..., min_length=1)
+    quick_reference_rules: list[str] = []
+    cascade_triggers: list[str] = []
+    scenario_scene: str = ""
+    success_metrics: list[str] = []
+
+
+# ── Merged per-chapter result ──────────────────────────────────────────────────
+
 class ExpandedChapter(BaseModel):
-    """Schema for a single chapter expansion call (per-domain loop).
+    """Schema for the merged result of both sub-calls (narrative + structure).
 
     worksheets is kept as an optional field (default=[]) for backwards
     compatibility with projects run before the chapter_worksheets stage
@@ -94,6 +136,8 @@ class ExpandedChapter(BaseModel):
     quick_reference_rules: list[str] = []
     worksheets: list[ExpandedWorksheet] = []   # legacy / backwards compat only
     cascade_triggers: list[str] = []
+    scenario_scene: str = ""
+    success_metrics: list[str] = []
 
 
 class ChapterExpansionOutput(BaseModel):
