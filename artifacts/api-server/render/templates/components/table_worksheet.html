@@ -1,13 +1,45 @@
-{% macro table_worksheet(columns=[], row_count=12) %}
+{% macro table_worksheet(columns=[], row_count=12, sample_rows=[]) %}
 {#
   table_worksheet — Renders an inventory/directory/registry worksheet as a grid.
 
   Used when layout == "table". Produces a print-ready table with column
   headers and blank write-in rows sized for comfortable handwriting.
-  No placeholder text or pre-filled content inside cells.
+
+  If sample_rows are provided (up to 2 shown), they are rendered above the
+  blank rows with muted italic styling to show the reader what a completed
+  entry looks like — the level of detail, format, and values expected.
 #}
 
 <div class="ws-table-wrap">
+
+  {# ── Example rows — shown before blank table when sample data is available ── #}
+  {% if sample_rows and sample_rows | length > 0 %}
+  <div class="ws-example-section">
+    <div class="ws-example-section__label">Example entry</div>
+    <table class="ws-table ws-table--example">
+      <thead>
+        <tr>
+          <th class="ws-table__rownum ws-table__rownum--example">#</th>
+          {% for col in columns %}
+          <th class="ws-table__header ws-table__header--example">{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in sample_rows[:2] %}
+        <tr class="ws-table__row ws-example-row">
+          <td class="ws-table__rownum ws-table__cell ws-example-row__num">{{ loop.index }}</td>
+          {% for col in columns %}
+          <td class="ws-table__cell ws-example-row__cell">{{ row[col] | default("") }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {# ── Blank table — the actual write-in grid ────────────────────────────── #}
   <table class="ws-table">
     <thead>
       <tr>
