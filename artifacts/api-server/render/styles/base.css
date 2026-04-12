@@ -80,10 +80,7 @@ body {
   padding: var(--page-margin-v) var(--page-margin-h);
   display: flex;
   flex-direction: column;
-  overflow: hidden;   /* Defensive: any child overflow is clipped at the page
-                         boundary rather than bleeding into the next page.
-                         Pagedjs paginates content before painting, so legitimate
-                         multi-page content is never clipped — only accidents are. */
+  overflow: visible;
 }
 
 /* Page-type modifier — used for print page-break targeting                   */
@@ -100,14 +97,9 @@ body {
 /* Print / Pagedjs: padding and borders are stripped; Pagedjs flows content   */
 /* continuously across printed pages determined by actual content height.     */
 .page--flow {
-  position: relative;
-  width: var(--page-width);
-  margin: 0 auto;
-  background: var(--color-page);
-  padding: var(--page-margin-v) var(--page-margin-h);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  min-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
   break-after: auto;
   page-break-after: auto;
   /* Subtle visual separator in screen preview mode */
@@ -383,6 +375,8 @@ body {
   padding-bottom: var(--space-5);
   border-bottom: var(--border-weight-lg) solid var(--color-text-primary);
   margin-bottom: var(--space-8);
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .section-header__label {
@@ -605,6 +599,19 @@ body {
   margin-bottom: var(--space-5);
   break-after: avoid;
   page-break-after: avoid;
+}
+
+/* Keep headers attached to the first meaningful block below them. */
+.section-header + .worksheet-section,
+.section-header + p,
+.section-header + ul,
+.section-header + .body-text,
+.worksheet-section__header + .ws-section-instructions,
+.worksheet-section__header + .field-grid,
+.worksheet-section__header + .ws-two-col-row,
+.worksheet-section__header + .ws-table {
+  break-before: avoid;
+  page-break-before: avoid;
 }
 
 .worksheet-section__rule {
