@@ -45,6 +45,85 @@
   <script>
   (function () {
     var TIMEOUT_MS = 4000;
+    function nearestPagedPage(el) {
+      if (!el || !el.closest) return null;
+      return el.closest('.pagedjs_page');
+    }
+
+    function pageIndex(el) {
+      var page = nearestPagedPage(el);
+      if (!page || !page.parentNode) return -1;
+      return Array.prototype.indexOf.call(page.parentNode.children, page);
+    }
+
+    function collectLayoutDiagnostics() {
+      var diagnostics = {
+        timestamp: new Date().toISOString(),
+        underfilled_pages: [],
+        orphaned_headers: [],
+        split_structures: [],
+      };
+
+      var pages = document.querySelectorAll('.pagedjs_page');
+      pages.forEach(function(page, index) {
+        var content = page.querySelector('.pagedjs_page_content, .pagedjs_area, .pagedjs_pagebox') || page;
+        var logicalPage = page.querySelector('.page');
+        if (!logicalPage) return;
+
+        var pageType = '';
+        var classes = logicalPage.className || '';
+        if (classes.indexOf('page--') >= 0) {
+          pageType = classes.split(' ').filter(function(c){ return c.indexOf('page--') === 0 && c !== 'page--flow' && c !== 'page--flow--avoid'; })[0] || '';
+        }
+
+        // Skip known decorative pages from whitespace heuristics.
+        if (pageType === 'page--cover_page' || pageType === 'page--section_divider') return;
+
+        var h = content.clientHeight || page.clientHeight || 1;
+        var fill = (logicalPage.scrollHeight || 0) / h;
+        if (fill < 0.50) {
+          diagnostics.underfilled_pages.push({
+            page_index: index + 1,
+            archetype: pageType.replace('page--', ''),
+            fill_ratio: Number(fill.toFixed(2)),
+          });
+        }
+      });
+
+      document.querySelectorAll('.section-header, .worksheet-section__header').forEach(function(header) {
+        var next = header.nextElementSibling;
+        if (!next) return;
+        var hPage = pageIndex(header);
+        var nPage = pageIndex(next);
+        if (hPage >= 0 && nPage >= 0 && hPage !== nPage) {
+          diagnostics.orphaned_headers.push({
+            text: (header.textContent || '').trim().slice(0, 120),
+            header_page: hPage + 1,
+            next_page: nPage + 1,
+          });
+        }
+      });
+
+      document.querySelectorAll(
+        '.worksheet-section, .callout, .gate, .matrix-row, .field-row, .ws-two-col-row, .ws-table__row'
+      ).forEach(function(block) {
+        var parent = block.parentElement;
+        if (!parent) return;
+        var first = block.firstElementChild || block;
+        var last = block.lastElementChild || block;
+        var startPage = pageIndex(first);
+        var endPage = pageIndex(last);
+        if (startPage >= 0 && endPage >= 0 && startPage !== endPage) {
+          diagnostics.split_structures.push({
+            class_name: block.className,
+            start_page: startPage + 1,
+            end_page: endPage + 1,
+          });
+        }
+      });
+
+      return diagnostics;
+    }
 
     function hideLoading() {
       var el = document.getElementById('lsb-loading');
@@ -70,6 +149,18 @@
       function LSBHandler() { _super.apply(this, arguments); }
       LSBHandler.prototype = Object.create(_super.prototype);
       LSBHandler.prototype.afterRendered = function(pages) {
+        try {
+          window.__lsb_render_diagnostics = collectLayoutDiagnostics();
+          if (
+            window.__lsb_render_diagnostics.orphaned_headers.length ||
+            window.__lsb_render_diagnostics.split_structures.length ||
+            window.__lsb_render_diagnostics.underfilled_pages.length
+          ) {
+            console.warn('LSB layout diagnostics', window.__lsb_render_diagnostics);
+          }
+        } catch (err) {
+          window.__lsb_render_diagnostics = { error: String(err) };
+        }
         clearTimeout(fallback);
         hideLoading();
         // Signal to the headless PDF renderer that pagination is complete
@@ -129,13 +220,7 @@
     "auto"   → .page--flow  (break-after: auto; content flows into available space)
     "avoid"  → .page--flow .page--flow--avoid  (prefer keeping with previous content)
 #}
-{% if page.page_break == "auto" %}
-<div class="page--flow page--{{ page.archetype }}"
-{% elif page.page_break == "avoid" %}
-<div class="page--flow page--flow--avoid page--{{ page.archetype }}"
-{% else %}
-<div class="page page--{{ page.archetype }}"
-{% endif %}
+<div class="page page--{{ page.archetype }}{% if page.page_break == 'auto' %} page--flow{% elif page.page_break == 'avoid' %} page--flow page--flow--avoid{% endif %}"
   id="{{ page.page_id }}"
   {%- if page.archetype == "worksheet_page" and page.data.domain_color %}
   style="--domain-color: {{ page.data.domain_color }}; --domain-color-light: {{ page.data.domain_color_light }};"

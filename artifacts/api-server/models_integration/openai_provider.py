@@ -267,6 +267,29 @@ class OpenAIProvider(BaseModelProvider):
             kwargs["base_url"] = base_url
         return OpenAI(**kwargs)
 
+    def _extract_text_from_response(self, response: Any) -> str:
+        """
+        Extract plain text from a Responses API result.
+
+        Uses `output_text` when available, with a structural fallback for
+        SDK/runtime variants where that convenience field is absent.
+        """
+        text = getattr(response, "output_text", None)
+        if isinstance(text, str) and text.strip():
+            return text
+
+        parts: list[str] = []
+        output = getattr(response, "output", None) or []
+        for item in output:
+            if getattr(item, "type", "") != "message":
+                continue
+            for content in getattr(item, "content", []) or []:
+                if getattr(content, "type", "") in ("output_text", "text"):
+                    value = getattr(content, "text", "")
+                    if value:
+                        parts.append(value)
+        return "\n".join(parts).strip()
+
     def _call_with_retry(
         self,
         messages: list[dict[str, str]],
@@ -281,19 +304,14 @@ class OpenAIProvider(BaseModelProvider):
 
         for attempt in range(self._max_retries):
             try:
-                response = self._client.chat.completions.create(
+                response = self._client.responses.create(
                     model=active_model,
-                    messages=messages,  # type: ignore[arg-type]
+                    input=messages,  # type: ignore[arg-type]
                 )
-                choice = response.choices[0]
-                finish_reason = choice.finish_reason or "unknown"
-                # Reasoning models (o1/o3 family) may return content=None when the
-                # completion_token budget is exhausted by internal reasoning steps.
-                # Fall back to empty string; caller will handle the parse failure.
-                content = choice.message.content or ""
+                content = self._extract_text_from_response(response)
                 logger.info(
-                    "OpenAI response | stage=%s attempt=%d len=%d finish_reason=%s",
-                    stage, attempt, len(content), finish_reason,
+                    "OpenAI response | stage=%s attempt=%d len=%d",
+                    stage, attempt, len(content),
                 )
                 return content
 
@@ -422,11 +440,12 @@ class OpenAIProvider(BaseModelProvider):
                 {"role": "system", "content": "Summarise structured data in one sentence (max 150 chars). Return only the sentence."},
                 {"role": "user", "content": f"Summarise this '{stage}' output:\n" + _json.dumps(output, indent=2)[:1500]},
             ]
-            response = self._client.chat.completions.create(
-                model=self._model, messages=preview_messages,  # type: ignore[arg-type]
-                max_completion_tokens=80,
+            response = self._client.responses.create(
+                model=self._model,
+                input=preview_messages,  # type: ignore[arg-type]
+                max_output_tokens=80,
             )
-            text = (response.choices[0].message.content or "").strip()[:_PREVIEW_MAX_CHARS]
+            text = self._extract_text_from_response(response)[:_PREVIEW_MAX_CHARS]
             return PreviewText(text=text, stage=stage, from_llm=True)
         except Exception as e:
             logger.debug("Preview LLM fallback failed for stage '%s': %s", stage, e)

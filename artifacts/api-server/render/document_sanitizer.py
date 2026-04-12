@@ -263,7 +263,9 @@ def run_quality_gates(
       QG2  No placeholder instructions remaining
       QG3  No raw booleans remaining
       QG4  chapter_expansion has at least one chapter
-      QG5  No chapter with zero worksheets (warning, not failure)
+      QG5  Chapter opener has complete orientation fields
+      QG6  Action/trigger blocks present (scan/action mode)
+      QG7  Worksheet linkage surfaced in chapter structures
     """
     failures: list[str] = []
 
@@ -279,12 +281,35 @@ def run_quality_gates(
     if stage_outputs.get("chapter_expansion") and not chapters:
         failures.append("QG4: chapter_expansion has no chapters")
 
-    # QG5 — no chapter with zero worksheets (flag only)
-    empty_ws_chapters = [
-        ch.get("chapter_number", "?")
-        for ch in chapters
-        if not ch.get("worksheets")
-    ]
+    for ch in chapters:
+        num = ch.get("chapter_number", "?")
+        opener = ch.get("chapter_opener") or {}
+        required_opener = ("what_this_is_for", "when_it_matters", "failure_looks_like", "produces", "do_first")
+        missing_opener = [k for k in required_opener if not opener.get(k)]
+        if missing_opener:
+            failures.append(f"QG5: chapter {num} opener incomplete ({', '.join(missing_opener)})")
+
+        action_counts = {
+            "minimum_viable_actions": len(ch.get("minimum_viable_actions") or []),
+            "decision_guide": len(ch.get("decision_guide") or []),
+            "trigger_blocks": len(ch.get("trigger_blocks") or []),
+            "risk_blocks": len(ch.get("risk_blocks") or []),
+        }
+        if (
+            action_counts["minimum_viable_actions"] < 2
+            or action_counts["decision_guide"] < 2
+            or action_counts["trigger_blocks"] == 0
+            or action_counts["risk_blocks"] == 0
+        ):
+            failures.append(
+                "QG6: chapter "
+                f"{num} weak action hierarchy (mva={action_counts['minimum_viable_actions']}, "
+                f"decisions={action_counts['decision_guide']}, triggers={action_counts['trigger_blocks']}, "
+                f"risks={action_counts['risk_blocks']})"
+            )
+
+        if not (ch.get("worksheet_linkage") or []):
+            failures.append(f"QG7: chapter {num} missing worksheet_linkage")
 
     flagged_count = sum(1 for w in warnings if w.flagged)
 
