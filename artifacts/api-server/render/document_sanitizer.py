@@ -266,6 +266,8 @@ def run_quality_gates(
       QG5  Chapter opener has complete orientation fields
       QG6  Action/trigger blocks present (scan/action mode)
       QG7  Worksheet linkage surfaced in chapter structures
+      QG8  Deep explanation layer present
+      QG9  Paragraph density remains readable (no oversized prose blocks)
     """
     failures: list[str] = []
 
@@ -296,10 +298,10 @@ def run_quality_gates(
             "risk_blocks": len(ch.get("risk_blocks") or []),
         }
         if (
-            action_counts["minimum_viable_actions"] < 2
-            or action_counts["decision_guide"] < 2
-            or action_counts["trigger_blocks"] == 0
-            or action_counts["risk_blocks"] == 0
+            action_counts["minimum_viable_actions"] < 3
+            or action_counts["decision_guide"] < 3
+            or action_counts["trigger_blocks"] < 2
+            or action_counts["risk_blocks"] < 2
         ):
             failures.append(
                 "QG6: chapter "
@@ -310,6 +312,17 @@ def run_quality_gates(
 
         if not (ch.get("worksheet_linkage") or []):
             failures.append(f"QG7: chapter {num} missing worksheet_linkage")
+
+        detailed = (ch.get("detailed_explanation") or "").strip()
+        if not detailed:
+            failures.append(f"QG8: chapter {num} missing detailed_explanation")
+
+        paragraphs = [
+            p.strip() for p in re.split(r"\n{2,}", ch.get("narrative", ""))
+            if p.strip() and not p.strip().startswith("## ")
+        ]
+        if any(len(p.split()) > 140 for p in paragraphs):
+            failures.append(f"QG9: chapter {num} contains paragraph(s) over 140 words")
 
     flagged_count = sum(1 for w in warnings if w.flagged)
 
