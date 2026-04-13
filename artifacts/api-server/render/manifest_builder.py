@@ -139,6 +139,23 @@ def _format_narrative(text: str, max_chars: int = 6000) -> str:
     return result
 
 
+def _collect_quick_start_steps(chapters: list[dict]) -> list[dict[str, Any]]:
+    """Build a concise cross-chapter quick-start sequence for stressed users."""
+    steps: list[dict[str, Any]] = []
+    for idx, ch in enumerate(chapters):
+        opener = ch.get("chapter_opener") or {}
+        first_actions = opener.get("do_first") or ch.get("minimum_viable_actions") or []
+        if not first_actions:
+            continue
+        steps.append({
+            "chapter_number": ch.get("chapter_number", idx + 1),
+            "chapter_title": ch.get("chapter_title", f"Chapter {idx + 1}"),
+            "action": first_actions[0],
+            "why": opener.get("when_it_matters", ""),
+        })
+    return steps[:10]
+
+
 # ── Data Models ────────────────────────────────────────────────────────────────
 
 @dataclass
@@ -194,8 +211,9 @@ class ManifestBuilder:
     Page sequence:
       1  cover_page           — system identity
       2  dashboard_page        — system objective callout, KPIs, chapter milestones, success criteria
-      3  section_divider       — "System Architecture" divider
-      4  explanation_page      — operating premise, domains, constraints
+      3  quick_start_page      — stressed-user first actions across chapters
+      4  section_divider       — "System Architecture" divider
+      5  explanation_page      — operating premise, domains, constraints
       [for each chapter in chapter_expansion]:
         N  section_divider     — "Operational Content" divider (once, before first chapter)
         N  chapter_opener      — domain intro, narrative, quick-reference rules, cascade triggers
@@ -354,6 +372,21 @@ class ManifestBuilder:
             },
         ))
 
+        # ── 2b. Quick-start execution map (productization + stressed-user mode) ─
+        if chapters:
+            quick_start_steps = _collect_quick_start_steps(chapters)
+            if quick_start_steps:
+                pages.append(ManifestPage(
+                    page_id="pg-quick-start",
+                    sequence=next_seq(),
+                    archetype="quick_start_page",
+                    page_break="auto",
+                    data={
+                        "system_name": system_name,
+                        "steps": quick_start_steps,
+                    },
+                ))
+
         # ── 3. Architecture Section Divider ────────────────────────────────────
         pages.append(ManifestPage(
             page_id="pg-div-arch",
@@ -435,7 +468,17 @@ class ManifestBuilder:
                         "chapter_summary": _format_narrative(ch_narrative, max_chars=2000),
                         "domain_name": domain_name,
                         "domain_purpose": domain_info.get("purpose", ""),
+                        "chapter_opener": ch.get("chapter_opener", {}),
+                        "minimum_viable_actions": ch.get("minimum_viable_actions", []),
                         "scope_items": ch_rules,
+                        "decision_guide": ch.get("decision_guide", []),
+                        "trigger_blocks": ch.get("trigger_blocks", []),
+                        "risk_blocks": ch.get("risk_blocks", []),
+                        "output_summaries": ch.get("output_summaries", []),
+                        "worksheet_linkage": ch.get("worksheet_linkage", []),
+                        "detailed_explanation": _format_narrative(
+                            ch.get("detailed_explanation", ch_narrative), max_chars=2800
+                        ),
                         "primary_outputs": [ws.get("title", "") for ws in ch_worksheets],
                         "cascade_triggers": cascade_triggers,
                         "scenario_scene": ch.get("scenario_scene", ""),

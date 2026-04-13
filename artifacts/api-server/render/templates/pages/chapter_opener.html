@@ -1,16 +1,6 @@
 {% from 'templates/components/page_footer.html' import page_footer %}
 {% from 'templates/components/callout_block.html' import callout %}
-{# ─────────────────────────────────────────────────────────────────────────── #}
-{# CHAPTER OPENER                                                              #}
-{# data keys: chapter_number, chapter_title, chapter_summary, domain_name,    #}
-{#            domain_purpose, scope_items, primary_outputs,                   #}
-{#            scenario_scene, success_metrics, cascade_triggers               #}
-{# ─────────────────────────────────────────────────────────────────────────── #}
 
-<!-- Chapter bar — full-width dark strip at top.
-     .chapter-bar class used by Pagedjs override in print.css to reset
-     negative horizontal margins (which escape screen-mode padding but
-     overflow the Pagedjs content area where .page already has padding:0). -->
 <div class="chapter-bar" style="
   background: var(--color-chapter-bar);
   margin: 0 calc(-1 * var(--page-margin-h)) var(--space-10);
@@ -20,43 +10,68 @@
   gap: var(--space-4);
 ">
   {% if data.chapter_number %}
-  <span style="
-    font-family: var(--font-label);
-    font-size: var(--text-xs);
-    font-weight: 700;
-    letter-spacing: var(--tracking-widest);
-    text-transform: uppercase;
-    color: var(--color-accent);
-  ">Chapter {{ data.chapter_number }}</span>
+  <span style="font-family: var(--font-label);font-size: var(--text-xs);font-weight: 700;letter-spacing: var(--tracking-widest);text-transform: uppercase;color: var(--color-accent);">Chapter {{ data.chapter_number }}</span>
   <span style="color:rgba(255,255,255,.2);font-size:var(--text-xs)">|</span>
   {% endif %}
-  <span style="
-    font-family: var(--font-label);
-    font-size: var(--text-xs);
-    letter-spacing: var(--tracking-wide);
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.5);
-  ">{{ data.domain_name | default("") }}</span>
+  <span style="font-family: var(--font-label);font-size: var(--text-xs);letter-spacing: var(--tracking-wide);text-transform: uppercase;color: rgba(255,255,255,0.5);">{{ data.domain_name | default("") }}</span>
 </div>
 
-<!-- Chapter title -->
 <h2 class="heading-title" style="margin-bottom:var(--space-3);max-width:140mm">{{ data.chapter_title | default("Chapter") }}</h2>
 
-<!-- Summary -->
-{% if data.chapter_summary %}
-<div class="body-text body-text--secondary" style="max-width:130mm;margin-bottom:var(--space-10)">{{ data.chapter_summary | safe }}</div>
+{% set opener = data.chapter_opener | default({}) %}
+{% if opener %}
+<div class="signal-grid" style="margin:var(--space-6) 0 var(--space-8)">
+  <div class="signal-card">
+    <div class="signal-card__title">What this section is for</div>
+    <div class="body-text body-text--secondary">{{ opener.what_this_is_for | default('') }}</div>
+  </div>
+  <div class="signal-card">
+    <div class="signal-card__title">When it matters</div>
+    <div class="body-text body-text--secondary">{{ opener.when_it_matters | default('') }}</div>
+  </div>
+  <div class="signal-card">
+    <div class="signal-card__title">Failure looks like</div>
+    <div class="body-text body-text--secondary">{{ opener.failure_looks_like | default('') }}</div>
+  </div>
+  <div class="signal-card">
+    <div class="signal-card__title">This chapter produces</div>
+    <ul class="signal-list">
+      {% for output in opener.produces | default([]) %}
+      <li>{{ output }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
 {% endif %}
 
-<hr class="rule rule--heavy" style="margin-bottom:var(--space-10)">
+{% if data.minimum_viable_actions %}
+<div class="mt-6">
+  <span class="heading-component">Minimum Viable Actions (Start Here)</span>
+  <div class="execution-list mt-4">
+    {% for action in data.minimum_viable_actions %}
+    <div class="execution-item">
+      <div class="execution-item__title">Action {{ loop.index }}</div>
+      <div class="execution-item__text">{{ action }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
-<!-- Domain context -->
+{% if data.chapter_summary %}
+<div class="body-text body-text--secondary" style="max-width:130mm;margin:var(--space-8) 0">
+  <span class="heading-component" style="display:block;margin-bottom:var(--space-3)">Orientation Snapshot</span>
+  {{ data.chapter_summary | safe }}
+</div>
+{% endif %}
+
 {% if data.domain_purpose %}
 {{ callout(label="Domain Purpose", text=data.domain_purpose) }}
 {% endif %}
 
 {% if data.scope_items %}
 <div class="mt-8">
-  <span class="heading-component">Scope</span>
+  <span class="heading-component">Quick Reference Rules</span>
   <div class="mt-4">
     {% for item in data.scope_items %}
     <div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:var(--border-rule);align-items:flex-start">
@@ -68,62 +83,61 @@
 </div>
 {% endif %}
 
-{% if data.primary_outputs %}
+{% if data.decision_guide %}
 <div class="mt-8">
-  <span class="heading-component">Worksheets in this Chapter</span>
-  <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-4)">
-    {% for output in data.primary_outputs %}
-    <span class="badge badge--accent">{{ output }}</span>
+  <span class="heading-component">Decision Guide</span>
+  <div class="execution-list mt-4">
+    {% for gate in data.decision_guide %}
+    <div class="execution-item">
+      <div class="execution-item__title">{{ gate.decision | default('Decision') }}</div>
+      <div class="execution-item__text"><strong>If:</strong> {{ gate.if_condition | default('') }}</div>
+      <div class="execution-item__text"><strong>Then:</strong> {{ gate.then_action | default('') }}</div>
+      <div class="execution-item__text"><strong>Else:</strong> {{ gate.else_action | default('') }}</div>
+      {% if gate.escalate_when %}<div class="execution-item__text"><strong>Escalate when:</strong> {{ gate.escalate_when }}</div>{% endif %}
+    </div>
     {% endfor %}
   </div>
 </div>
 {% endif %}
 
-<!-- Scenario Scene — highlighted real-world example box -->
-{% if data.scenario_scene %}
-<div class="mt-8 callout callout--scenario">
-  <div class="callout__label">
-    <span class="eyebrow">In Practice</span>
+{% if data.trigger_blocks or data.risk_blocks %}
+<div class="signal-grid" style="margin-top:var(--space-8)">
+  {% if data.trigger_blocks %}
+  <div class="signal-card" style="border-left:3px solid var(--color-warn)">
+    <div class="signal-card__title">Trigger Blocks</div>
+    <ul class="signal-list">{% for trigger in data.trigger_blocks %}<li>{{ trigger }}</li>{% endfor %}</ul>
   </div>
-  <div class="callout__text body-text" style="font-style:italic;line-height:var(--leading-relaxed)">{{ data.scenario_scene }}</div>
+  {% endif %}
+  {% if data.risk_blocks %}
+  <div class="signal-card" style="border-left:3px solid var(--color-danger)">
+    <div class="signal-card__title">Risk Blocks</div>
+    <ul class="signal-list">{% for risk in data.risk_blocks %}<li>{{ risk }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
 </div>
 {% endif %}
 
-<!-- Success Metrics — what working looks like -->
-{% if data.success_metrics %}
+{% if data.worksheet_linkage %}
 <div class="mt-8">
-  <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)">
-    <span style="font-size:var(--text-sm);color:var(--color-pass);font-weight:var(--weight-bold)">✓</span>
-    <span class="heading-component" style="color:var(--color-pass)">When This Works</span>
+  <span class="heading-component">Worksheet Linkage</span>
+  <div class="execution-list mt-4">
+    {% for link in data.worksheet_linkage %}
+    <div class="execution-item">
+      <div class="execution-item__title">{{ link.worksheet_title | default('Worksheet') }}</div>
+      <div class="execution-item__text">Use when: {{ link.use_when | default('') }}</div>
+      <div class="execution-item__text">Unblocks: {{ link.unblocks | default('') }}</div>
+    </div>
+    {% endfor %}
   </div>
-  {% for metric in data.success_metrics %}
-  <div style="display:flex;gap:var(--space-4);padding:var(--space-3) 0;border-bottom:var(--border-rule);align-items:flex-start">
-    <span class="eyebrow" style="color:var(--color-pass);flex-shrink:0;min-width:16px;margin-top:2px">{{ loop.index }}</span>
-    <span class="body-text" style="font-size:var(--text-sm);line-height:var(--leading-normal)">{{ metric }}</span>
-  </div>
-  {% endfor %}
 </div>
 {% endif %}
 
-{% if data.cascade_triggers %}
-<div class="mt-8" style="
-  background: var(--color-warn-bg);
-  border-left: 3px solid var(--color-warn);
-  padding: var(--space-4) var(--space-5);
-  break-inside: avoid;
-  page-break-inside: avoid;
-">
-  <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2)">
-    <span style="font-size:var(--text-sm);color:var(--color-warn);font-weight:var(--weight-bold)">⚠</span>
-    <span class="heading-component" style="color:var(--color-warn)">Cascade Triggers</span>
+{% if data.detailed_explanation %}
+<div class="mt-8">
+  <span class="heading-component">Detailed Explanation</span>
+  <div class="body-text body-text--secondary" style="margin-top:var(--space-4)">
+    {{ data.detailed_explanation | safe }}
   </div>
-  <p class="body-text body-text--muted" style="margin-bottom:var(--space-3);font-size:var(--text-sm)">Downstream systems that activate if this chapter is incomplete or fails.</p>
-  {% for trigger in data.cascade_triggers %}
-  <div style="display:flex;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:var(--border-weight) solid rgba(0,0,0,0.06);align-items:flex-start">
-    <span style="color:var(--color-warn);font-size:var(--text-xs);flex-shrink:0;margin-top:3px;font-weight:var(--weight-bold)">→</span>
-    <span class="body-text" style="font-size:var(--text-sm);line-height:var(--leading-normal)">{{ trigger }}</span>
-  </div>
-  {% endfor %}
 </div>
 {% endif %}
 

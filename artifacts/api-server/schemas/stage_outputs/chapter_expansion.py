@@ -108,13 +108,21 @@ class ChapterExpansionStructure(BaseModel):
     """
     model_config = ConfigDict(extra="allow")
 
-    chapter_number: int = 0
-    domain_id: str = ""
+    chapter_number: int = Field(..., ge=1)
+    domain_id: str = Field(..., min_length=1)
     chapter_title: str = Field(..., min_length=1)
+    chapter_opener: dict[str, Any] = Field(..., min_length=1)
+    minimum_viable_actions: list[str] = Field(..., min_length=3)
     quick_reference_rules: list[str] = []
+    decision_guide: list[dict[str, str]] = Field(..., min_length=3)
+    trigger_blocks: list[str] = Field(..., min_length=2)
+    risk_blocks: list[str] = Field(..., min_length=2)
+    output_summaries: list[str] = Field(..., min_length=2)
+    worksheet_linkage: list[dict[str, str]] = Field(..., min_length=1)
     cascade_triggers: list[str] = []
     scenario_scene: str = ""
     success_metrics: list[str] = []
+    detailed_explanation: str = Field(..., min_length=300)
 
 
 # ── Merged per-chapter result ──────────────────────────────────────────────────
@@ -133,11 +141,19 @@ class ExpandedChapter(BaseModel):
     domain_id: str = ""
     chapter_title: str = Field(..., min_length=1)
     narrative: str = Field(..., min_length=100)
+    chapter_opener: dict[str, Any] = {}
+    minimum_viable_actions: list[str] = []
     quick_reference_rules: list[str] = []
     worksheets: list[ExpandedWorksheet] = []   # legacy / backwards compat only
+    decision_guide: list[dict[str, str]] = []
+    trigger_blocks: list[str] = []
+    risk_blocks: list[str] = []
+    output_summaries: list[str] = []
+    worksheet_linkage: list[dict[str, str]] = []
     cascade_triggers: list[str] = []
     scenario_scene: str = ""
     success_metrics: list[str] = []
+    detailed_explanation: str = ""
 
 
 class ChapterExpansionOutput(BaseModel):
