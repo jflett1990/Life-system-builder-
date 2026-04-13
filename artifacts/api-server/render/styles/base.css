@@ -1188,13 +1188,15 @@ body {
   A ruled grid with column headers and blank write-in rows.
 */
 .ws-table-wrap {
-  overflow-x: auto;
+  overflow-x: visible;
+  max-width: 100%;
   margin-top: var(--space-4);
 }
 
 .ws-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-family: var(--font-body);
   font-size: var(--text-sm);
 }
@@ -1221,7 +1223,8 @@ body {
   border: var(--border-weight) solid transparent;
   padding: var(--space-3) var(--space-4);
   text-align: left;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .ws-table__cell {

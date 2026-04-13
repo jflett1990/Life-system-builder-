@@ -163,7 +163,7 @@
     width: 100%;
     min-height: 0;
     margin: 0;
-    padding: 0;
+    padding: var(--space-2) 0;
     background: transparent;
     box-shadow: none;
     page-break-after: always;         /* Each .page = one printed page        */
@@ -182,7 +182,7 @@
     width: 100%;
     min-height: 0;
     margin: 0;
-    padding: 0;
+    padding: var(--space-2) 0;
     background: transparent;
     box-shadow: none;
     border-top: none;
@@ -533,7 +533,7 @@ tfoot {
   width: 100%;
   min-height: 0;
   margin: 0;
-  padding: 0;
+  padding: var(--page-margin-v) var(--page-margin-h);
   background: transparent;
   box-shadow: none;
   overflow: visible;
@@ -555,12 +555,17 @@ tfoot {
   width: 100%;
   min-height: 0;
   margin: 0;
-  padding: 0;
+  padding: var(--page-margin-v) var(--page-margin-h);
   background: transparent;
   box-shadow: none;
   border-top: none;
   break-after: auto;
   page-break-after: auto;
+}
+
+.pagedjs_page .ws-table-wrap {
+  overflow: visible;
+  max-width: 100%;
 }
 
 /* Pagedjs page shell — give it the warm document background that body had   */

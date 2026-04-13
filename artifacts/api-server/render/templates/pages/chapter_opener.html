@@ -59,7 +59,10 @@
 {% endif %}
 
 {% if data.chapter_summary %}
-<div class="body-text body-text--secondary" style="max-width:130mm;margin:var(--space-8) 0">{{ data.chapter_summary | safe }}</div>
+<div class="body-text body-text--secondary" style="max-width:130mm;margin:var(--space-8) 0">
+  <span class="heading-component" style="display:block;margin-bottom:var(--space-3)">Orientation Snapshot</span>
+  {{ data.chapter_summary | safe }}
+</div>
 {% endif %}
 
 {% if data.domain_purpose %}
@@ -125,6 +128,15 @@
       <div class="execution-item__text">Unblocks: {{ link.unblocks | default('') }}</div>
     </div>
     {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if data.detailed_explanation %}
+<div class="mt-8">
+  <span class="heading-component">Detailed Explanation</span>
+  <div class="body-text body-text--secondary" style="margin-top:var(--space-4)">
+    {{ data.detailed_explanation | safe }}
   </div>
 </div>
 {% endif %}

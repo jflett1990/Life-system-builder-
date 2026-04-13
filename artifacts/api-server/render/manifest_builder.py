@@ -476,6 +476,9 @@ class ManifestBuilder:
                         "risk_blocks": ch.get("risk_blocks", []),
                         "output_summaries": ch.get("output_summaries", []),
                         "worksheet_linkage": ch.get("worksheet_linkage", []),
+                        "detailed_explanation": _format_narrative(
+                            ch.get("detailed_explanation", ch_narrative), max_chars=2800
+                        ),
                         "primary_outputs": [ws.get("title", "") for ws in ch_worksheets],
                         "cascade_triggers": cascade_triggers,
                         "scenario_scene": ch.get("scenario_scene", ""),
