@@ -80,10 +80,7 @@ body {
   padding: var(--page-margin-v) var(--page-margin-h);
   display: flex;
   flex-direction: column;
-  overflow: hidden;   /* Defensive: any child overflow is clipped at the page
-                         boundary rather than bleeding into the next page.
-                         Pagedjs paginates content before painting, so legitimate
-                         multi-page content is never clipped — only accidents are. */
+  overflow: visible;
 }
 
 /* Page-type modifier — used for print page-break targeting                   */
@@ -100,14 +97,9 @@ body {
 /* Print / Pagedjs: padding and borders are stripped; Pagedjs flows content   */
 /* continuously across printed pages determined by actual content height.     */
 .page--flow {
-  position: relative;
-  width: var(--page-width);
-  margin: 0 auto;
-  background: var(--color-page);
-  padding: var(--page-margin-v) var(--page-margin-h);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  min-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
   break-after: auto;
   page-break-after: auto;
   /* Subtle visual separator in screen preview mode */
@@ -348,6 +340,71 @@ body {
   margin-top: 0.5em;
 }
 
+/* ── Scan/action component blocks ───────────────────────────────────────── */
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.signal-card {
+  border: var(--border-rule);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.signal-card__title {
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  margin-bottom: var(--space-2);
+}
+
+.signal-list > li {
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-rule);
+  font-size: var(--text-sm);
+}
+
+.quick-start-list,
+.execution-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.quick-start-item,
+.execution-item {
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface);
+  padding: var(--space-3) var(--space-4);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.quick-start-item__meta {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+}
+
+.quick-start-item__action,
+.execution-item__title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  margin-top: var(--space-1);
+}
+
+.quick-start-item__why,
+.execution-item__text {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
+
 
 /* ── Horizontal Rules ───────────────────────────────────────────────────── */
 
@@ -383,6 +440,8 @@ body {
   padding-bottom: var(--space-5);
   border-bottom: var(--border-weight-lg) solid var(--color-text-primary);
   margin-bottom: var(--space-8);
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .section-header__label {
@@ -605,6 +664,19 @@ body {
   margin-bottom: var(--space-5);
   break-after: avoid;
   page-break-after: avoid;
+}
+
+/* Keep headers attached to the first meaningful block below them. */
+.section-header + .worksheet-section,
+.section-header + p,
+.section-header + ul,
+.section-header + .body-text,
+.worksheet-section__header + .ws-section-instructions,
+.worksheet-section__header + .field-grid,
+.worksheet-section__header + .ws-two-col-row,
+.worksheet-section__header + .ws-table {
+  break-before: avoid;
+  page-break-before: avoid;
 }
 
 .worksheet-section__rule {
