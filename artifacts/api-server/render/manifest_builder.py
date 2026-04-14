@@ -165,6 +165,9 @@ class ManifestPage:
     archetype: str          # must match a templates/pages/<archetype>.html file
     data: dict[str, Any]
     page_break: str = "always"   # "always" | "auto" | "avoid"
+    layout_mode: str = "fixed"   # "fixed" | "flow" | "full_bleed"
+    break_before: bool = False   # explicit page-break marker set by layout policy pass
+    block_policy: str = "splittable"  # "atomic" | "splittable" | "page_forcing"
     #   always — this page MUST start on a new printed page (cover, dark dividers, openers)
     #   auto   — flow continuously from the previous page; browser/Pagedjs breaks as needed
     #   avoid  — prefer keeping with the preceding content (currently unused; reserved)
@@ -296,6 +299,7 @@ class ManifestBuilder:
             for ch in chapters:
                 ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
                 ch_ws = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
+                ch_ws = self._dedupe_worksheets(ch_ws)
                 toc_chapters.append({
                     "chapter_number": ch_num,
                     "chapter_title": ch.get("chapter_title", ""),
@@ -433,6 +437,7 @@ class ManifestBuilder:
                 # Prefer worksheets from the dedicated chapter_worksheets stage;
                 # fall back to any worksheets embedded in chapter_expansion (old pipeline).
                 ch_worksheets = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
+                ch_worksheets = self._dedupe_worksheets(ch_worksheets)
 
                 # Resolve domain info from system_architecture
                 domain_id = ch.get("domain_id", "")
@@ -576,6 +581,7 @@ class ManifestBuilder:
                 ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
                 ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
                 ch_ws_list = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
+                ch_ws_list = self._dedupe_worksheets(ch_ws_list)
                 for ws in ch_ws_list:
                     ws_title = ws.get("title", "")
                     if ws_title:
@@ -707,6 +713,11 @@ class ManifestBuilder:
                 },
             ))
 
+        # Final orchestration pass: normalize layout contract + explicit breaks +
+        # duplicate-page guardrails.
+        from render.layout_policy import LayoutOrchestrator
+        pages = LayoutOrchestrator().orchestrate(pages)
+
         return RenderManifest(
             document_id=document_id,
             document_title=doc_title,
@@ -714,3 +725,28 @@ class ManifestBuilder:
             theme_tokens=theme_tokens,
             pages=pages,
         )
+
+    @staticmethod
+    def _dedupe_worksheets(worksheets: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Remove accidental duplicates emitted by upstream stages.
+
+        Dedupes by stable worksheet identity in this precedence order:
+          1) explicit worksheet id
+          2) title + layout + section count signature
+        """
+        seen: set[str] = set()
+        deduped: list[dict[str, Any]] = []
+        for ws in worksheets or []:
+            ws_id = str(ws.get("id") or "").strip()
+            if ws_id:
+                key = f"id::{ws_id}"
+            else:
+                title = str(ws.get("title") or "").strip().lower()
+                layout = str(ws.get("layout") or "").strip().lower()
+                sec_count = len(ws.get("sections") or [])
+                key = f"sig::{title}::{layout}::{sec_count}"
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(ws)
+        return deduped

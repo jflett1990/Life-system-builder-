@@ -351,8 +351,8 @@ body {
   border: var(--border-rule);
   padding: var(--space-4);
   background: var(--color-surface);
-  break-inside: avoid;
-  page-break-inside: avoid;
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 .signal-card__title {
@@ -380,8 +380,8 @@ body {
   border-left: 3px solid var(--color-accent);
   background: var(--color-surface);
   padding: var(--space-3) var(--space-4);
-  break-inside: avoid;
-  page-break-inside: avoid;
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 .quick-start-item__meta {
@@ -463,14 +463,14 @@ body {
 /* ── Callout Block ──────────────────────────────────────────────────────── */
 /*
   Left-bar accent block for premises, constraints, key statements.
-  Break-inside: avoid so callouts never split across printed pages.
+  Splittable by design: long operational callouts can span pages.
 */
 .callout {
   padding: var(--space-4) var(--space-5);
   border-left: var(--border-weight-xl) solid var(--color-accent);
   background: var(--color-surface);
-  break-inside: avoid;
-  page-break-inside: avoid;
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 .callout + .callout {
@@ -821,8 +821,8 @@ body {
   gap: var(--space-4);
   padding: var(--space-4) 0;
   border-bottom: var(--border-rule);
-  break-inside: avoid;
-  page-break-inside: avoid;
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 .milestone-item:last-child {
@@ -908,8 +908,8 @@ body {
 .gate {
   border: var(--border-rule-heavy);
   padding: var(--space-5);
-  break-inside: avoid;
-  page-break-inside: avoid;
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 .gate + .gate {
@@ -1327,7 +1327,7 @@ body {
   align-items: center;
   padding: var(--space-2) 0;
   border-bottom: var(--border-weight) solid var(--color-rule);
-  min-height: 52px;
+  min-height: 0;
 }
 
 .ws-two-col-label {
@@ -1340,12 +1340,13 @@ body {
 }
 
 .ws-two-col-cell {
-  min-height: 44px;
+  min-height: 36px;
   border: var(--border-weight) solid var(--color-rule);
   padding: 0 var(--space-3);
   display: flex;
-  align-items: flex-end;
-  padding-bottom: var(--space-1);
+  align-items: stretch;
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
 }
 
 
@@ -1365,8 +1366,8 @@ body {
   background: var(--color-surface-inset);
   border-left: 3px solid var(--color-accent);
   border-radius: 0 2px 2px 0;
-  break-inside: avoid;
-  page-break-inside: avoid;
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 .ws-section-instructions__label {
