@@ -215,13 +215,15 @@
 
 {% for page in manifest.pages %}
 {#
-  page_break controls the CSS container class:
-    "always" → .page  (break-after: page; each page forces a fresh printed page)
-    "auto"   → .page--flow  (break-after: auto; content flows into available space)
-    "avoid"  → .page--flow .page--flow--avoid  (prefer keeping with previous content)
+  Layout policy pass (render/layout_policy.py) assigns:
+    page.layout_mode   → fixed | flow | full_bleed
+    page.break_before  → explicit break-before marker
+    page.block_policy  → atomic | splittable | page_forcing
 #}
-<div class="page page--{{ page.archetype }}{% if page.page_break == 'auto' %} page--flow{% elif page.page_break == 'avoid' %} page--flow page--flow--avoid{% endif %}"
+<div class="page page--{{ page.archetype }} page--layout-{{ page.layout_mode }} block-policy--{{ page.block_policy }}{% if page.break_before %} page-break-before{% endif %}"
   id="{{ page.page_id }}"
+  data-layout-mode="{{ page.layout_mode }}"
+  data-block-policy="{{ page.block_policy }}"
   {%- if page.archetype == "worksheet_page" and page.data.domain_color %}
   style="--domain-color: {{ page.data.domain_color }}; --domain-color-light: {{ page.data.domain_color_light }};"
   {%- endif %}

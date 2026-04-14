@@ -166,8 +166,8 @@
     padding: var(--space-2) 0;
     background: transparent;
     box-shadow: none;
-    page-break-after: always;         /* Each .page = one printed page        */
-    break-after: page;
+    page-break-after: auto;
+    break-after: auto;
   }
 
   /* Last page — no trailing blank page                                        */
@@ -176,18 +176,20 @@
     break-after: auto;
   }
 
-  /* Flowing content pages — no forced page break                               */
-  /* Content fills available space; Pagedjs breaks when the page is full.      */
-  .page--flow {
-    width: 100%;
-    min-height: 0;
-    margin: 0;
-    padding: var(--space-2) 0;
-    background: transparent;
-    box-shadow: none;
-    border-top: none;
-    break-after: auto;
+  /* Coherent page model contract from layout policy pass:
+     - fixed      => own printed page
+     - flow       => may continue across breaks naturally
+     - full_bleed => own printed page with dark background variants
+  */
+  .page--layout-fixed,
+  .page--layout-full_bleed {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .page--layout-flow {
     page-break-after: auto;
+    break-after: auto;
   }
 
   /* Grayscale safety for domain colours — substitute mono values when printing */
@@ -222,22 +224,30 @@
 
   /* ── Break-Inside Avoidance ─────────────────────────────────────────────── */
   /*
-    These components must never be split across a page break.
-    Each is a single unit of meaning — a half-visible gate or callout
-    degrades the document's operational usability.
+    Keep break protection only on truly atomic units.
+    Large composite blocks are deliberately left splittable.
   */
-  .callout,
-  .gate,
   .domain-card,
-  .milestone-item,
   .checklist__item,
   .field-row,
   .stat-box,
-  .matrix-row,
   .data-table thead,
   .data-table tbody tr {
     page-break-inside: avoid;
     break-inside: avoid;
+  }
+
+  /* Large composite blocks are splittable by design.
+     Avoiding breaks on these causes clipping / giant whitespace when content
+     exceeds remaining page height. */
+  .callout,
+  .gate,
+  .milestone-item,
+  .matrix-row,
+  .worksheet-section,
+  .ws-section-instructions {
+    page-break-inside: auto;
+    break-inside: auto;
   }
 
   /* Headings must not be orphaned at the bottom of a page                    */
