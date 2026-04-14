@@ -267,7 +267,7 @@ class ManifestBuilder:
         ws_by_chapter: dict[int, list[dict]] = {}
         if chapter_ws_stage:
             for ch_ws in chapter_ws_stage.get("chapters", []):
-                ws_by_chapter[ch_ws.get("chapter_number", 0)] = ch_ws.get("worksheets", [])
+                ws_by_chapter[ch_ws.get("chapter_number", 0)] = ch_ws.get("worksheets") or []
 
         # Prefer chapter_expansion chapters; fall back to worksheet_system worksheets
         chapters: list[dict] = chapter_exp.get("chapters", [])
@@ -276,7 +276,7 @@ class ManifestBuilder:
         # Compute totals for KPIs — use chapter_worksheets counts when available
         if chapters:
             if ws_by_chapter:
-                total_worksheets = sum(len(wsl) for wsl in ws_by_chapter.values())
+                total_worksheets = sum(len(wsl) for wsl in ws_by_chapter.values() if wsl is not None)
             else:
                 total_worksheets = sum(len(ch.get("worksheets", [])) for ch in chapters)
         else:
@@ -296,6 +296,8 @@ class ManifestBuilder:
             for ch in chapters:
                 ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
                 ch_ws = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
+                if ch_ws is None:
+                    ch_ws = []
                 toc_chapters.append({
                     "chapter_number": ch_num,
                     "chapter_title": ch.get("chapter_title", ""),
@@ -432,7 +434,7 @@ class ManifestBuilder:
                 ch_rules = ch.get("quick_reference_rules", [])
                 # Prefer worksheets from the dedicated chapter_worksheets stage;
                 # fall back to any worksheets embedded in chapter_expansion (old pipeline).
-                ch_worksheets = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
+                ch_worksheets = (ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])) or []
 
                 # Resolve domain info from system_architecture
                 domain_id = ch.get("domain_id", "")
@@ -575,7 +577,7 @@ class ManifestBuilder:
             for ch in chapters:
                 ch_num = ch.get("chapter_number", chapters.index(ch) + 1)
                 ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
-                ch_ws_list = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
+                ch_ws_list = (ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])) or []
                 for ws in ch_ws_list:
                     ws_title = ws.get("title", "")
                     if ws_title:

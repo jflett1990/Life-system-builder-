@@ -45,7 +45,7 @@ _PREVIEW_MAX_CHARS = 200
 
 # Max tokens to request from the model. Claude supports up to 32k output tokens
 # for most models; 16k is a safe ceiling for pipeline stages.
-_MAX_OUTPUT_TOKENS = 16000
+_MAX_OUTPUT_TOKENS = 32000
 
 
 class AnthropicProvider(BaseModelProvider):
