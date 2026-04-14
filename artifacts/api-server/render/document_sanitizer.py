@@ -263,7 +263,10 @@ def run_quality_gates(
       QG2  No placeholder instructions remaining
       QG3  No raw booleans remaining
       QG4  chapter_expansion has at least one chapter
-      QG5  No chapter with zero worksheets (warning, not failure)
+      QG5  Chapter opener has complete orientation fields
+      QG6  Action layers present (minimum actions + operational sections)
+      QG7  Worksheet linkage surfaced in chapter structures
+      QG8  Paragraph density remains readable (no oversized prose blocks)
     """
     failures: list[str] = []
 
@@ -279,12 +282,39 @@ def run_quality_gates(
     if stage_outputs.get("chapter_expansion") and not chapters:
         failures.append("QG4: chapter_expansion has no chapters")
 
-    # QG5 — no chapter with zero worksheets (flag only)
-    empty_ws_chapters = [
-        ch.get("chapter_number", "?")
-        for ch in chapters
-        if not ch.get("worksheets")
-    ]
+    for ch in chapters:
+        num = ch.get("chapter_number", "?")
+        opener = ch.get("chapter_opener") or {}
+        required_opener = ("what_this_is_for", "when_it_matters", "failure_looks_like", "produces", "do_first")
+        missing_opener = [k for k in required_opener if not opener.get(k)]
+        if missing_opener:
+            failures.append(f"QG5: chapter {num} opener incomplete ({', '.join(missing_opener)})")
+
+        action_counts = {
+            "minimum_viable_actions": len(ch.get("minimum_viable_actions") or []),
+            "operational_sections": len(ch.get("operational_sections") or []),
+        }
+        if (
+            action_counts["minimum_viable_actions"] < 4
+            or action_counts["operational_sections"] < 4
+        ):
+            failures.append(
+                "QG6: chapter "
+                f"{num} weak action hierarchy (mva={action_counts['minimum_viable_actions']}, "
+                f"sections={action_counts['operational_sections']})"
+            )
+
+        if not (ch.get("worksheet_linkage") or []):
+            failures.append(f"QG7: chapter {num} missing worksheet_linkage")
+
+        # detailed_explanation is optional overflow; no failure when absent
+
+        paragraphs = [
+            p.strip() for p in re.split(r"\n{2,}", ch.get("narrative", ""))
+            if p.strip() and not p.strip().startswith("## ")
+        ]
+        if any(len(p.split()) > 140 for p in paragraphs):
+            failures.append(f"QG8: chapter {num} contains paragraph(s) over 140 words")
 
     flagged_count = sum(1 for w in warnings if w.flagged)
 

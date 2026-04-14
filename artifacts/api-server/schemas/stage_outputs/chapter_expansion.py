@@ -108,13 +108,16 @@ class ChapterExpansionStructure(BaseModel):
     """
     model_config = ConfigDict(extra="allow")
 
-    chapter_number: int = 0
-    domain_id: str = ""
+    chapter_number: int = Field(..., ge=1)
+    domain_id: str = Field(..., min_length=1)
     chapter_title: str = Field(..., min_length=1)
-    quick_reference_rules: list[str] = []
-    cascade_triggers: list[str] = []
-    scenario_scene: str = ""
-    success_metrics: list[str] = []
+    chapter_opener: dict[str, Any] = Field(..., min_length=1)
+    minimum_viable_actions: list[str] = Field(..., min_length=4)
+    orientation_snapshot: str = Field(..., min_length=250)
+    operational_sections: list[dict[str, Any]] = Field(..., min_length=4)
+    worksheet_linkage: list[dict[str, str]] = Field(..., min_length=1)
+    key_contacts: list[dict[str, str]] = []
+    detailed_explanation: str = ""
 
 
 # ── Merged per-chapter result ──────────────────────────────────────────────────
@@ -133,11 +136,14 @@ class ExpandedChapter(BaseModel):
     domain_id: str = ""
     chapter_title: str = Field(..., min_length=1)
     narrative: str = Field(..., min_length=100)
-    quick_reference_rules: list[str] = []
+    chapter_opener: dict[str, Any] = {}
+    minimum_viable_actions: list[str] = []
+    orientation_snapshot: str = ""
+    operational_sections: list[dict[str, Any]] = []
     worksheets: list[ExpandedWorksheet] = []   # legacy / backwards compat only
-    cascade_triggers: list[str] = []
-    scenario_scene: str = ""
-    success_metrics: list[str] = []
+    worksheet_linkage: list[dict[str, str]] = []
+    key_contacts: list[dict[str, str]] = []
+    detailed_explanation: str = ""
 
 
 class ChapterExpansionOutput(BaseModel):

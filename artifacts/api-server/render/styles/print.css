@@ -163,7 +163,7 @@
     width: 100%;
     min-height: 0;
     margin: 0;
-    padding: 0;
+    padding: var(--space-2) 0;
     background: transparent;
     box-shadow: none;
     page-break-after: always;         /* Each .page = one printed page        */
@@ -182,7 +182,7 @@
     width: 100%;
     min-height: 0;
     margin: 0;
-    padding: 0;
+    padding: var(--space-2) 0;
     background: transparent;
     box-shadow: none;
     border-top: none;
@@ -230,10 +230,11 @@
   .gate,
   .domain-card,
   .milestone-item,
+  .signal-card,
+  .execution-item,
   .checklist__item,
   .field-row,
   .stat-box,
-  .worksheet-section,
   .matrix-row,
   .data-table thead,
   .data-table tbody tr {
@@ -249,6 +250,21 @@
   .worksheet-section__header {
     page-break-after: avoid;
     break-after: avoid;
+  }
+
+  .section-header + .worksheet-section,
+  .section-header + p,
+  .section-header + ul,
+  .section-header + .body-text,
+  .chapter-bar + h2,
+  .heading-title + .signal-grid,
+  .heading-component + .execution-list,
+  .worksheet-section__header + .ws-section-instructions,
+  .worksheet-section__header + .field-grid,
+  .worksheet-section__header + .ws-two-col-row,
+  .worksheet-section__header + .ws-table {
+    page-break-before: avoid;
+    break-before: avoid;
   }
 
 
@@ -453,6 +469,12 @@ tfoot {
   page-break-after: always;
 }
 
+/* Flow pages share the same .page shell; explicitly opt them into auto flow. */
+.page--flow {
+  break-after: auto;
+  page-break-after: auto;
+}
+
 /* Last child — no trailing blank page */
 .page:last-child {
   break-after: auto;
@@ -516,9 +538,10 @@ tfoot {
   width: 100%;
   min-height: 0;
   margin: 0;
-  padding: 0;
+  padding: var(--page-margin-v) var(--page-margin-h);
   background: transparent;
   box-shadow: none;
+  overflow: visible;
 }
 
 /* Restore dark backgrounds that the rule above strips.
@@ -537,12 +560,17 @@ tfoot {
   width: 100%;
   min-height: 0;
   margin: 0;
-  padding: 0;
+  padding: var(--page-margin-v) var(--page-margin-h);
   background: transparent;
   box-shadow: none;
   border-top: none;
   break-after: auto;
   page-break-after: auto;
+}
+
+.pagedjs_page .ws-table-wrap {
+  overflow: visible;
+  max-width: 100%;
 }
 
 /* Pagedjs page shell — give it the warm document background that body had   */

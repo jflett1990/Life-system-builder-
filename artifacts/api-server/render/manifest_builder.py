@@ -139,6 +139,23 @@ def _format_narrative(text: str, max_chars: int = 6000) -> str:
     return result
 
 
+def _collect_quick_start_steps(chapters: list[dict]) -> list[dict[str, Any]]:
+    """Build a concise cross-chapter quick-start sequence for stressed users."""
+    steps: list[dict[str, Any]] = []
+    for idx, ch in enumerate(chapters):
+        opener = ch.get("chapter_opener") or {}
+        first_actions = opener.get("do_first") or ch.get("minimum_viable_actions") or []
+        if not first_actions:
+            continue
+        steps.append({
+            "chapter_number": ch.get("chapter_number", idx + 1),
+            "chapter_title": ch.get("chapter_title", f"Chapter {idx + 1}"),
+            "action": first_actions[0],
+            "why": opener.get("when_it_matters", ""),
+        })
+    return steps[:10]
+
+
 # ── Data Models ────────────────────────────────────────────────────────────────
 
 @dataclass
@@ -194,8 +211,9 @@ class ManifestBuilder:
     Page sequence:
       1  cover_page           — system identity
       2  dashboard_page        — system objective callout, KPIs, chapter milestones, success criteria
-      3  section_divider       — "System Architecture" divider
-      4  explanation_page      — operating premise, domains, constraints
+      3  quick_start_page      — stressed-user first actions across chapters
+      4  section_divider       — "System Architecture" divider
+      5  explanation_page      — operating premise, domains, constraints
       [for each chapter in chapter_expansion]:
         N  section_divider     — "Operational Content" divider (once, before first chapter)
         N  chapter_opener      — domain intro, narrative, quick-reference rules, cascade triggers
@@ -354,6 +372,21 @@ class ManifestBuilder:
             },
         ))
 
+        # ── 2b. Quick-start execution map (productization + stressed-user mode) ─
+        if chapters:
+            quick_start_steps = _collect_quick_start_steps(chapters)
+            if quick_start_steps:
+                pages.append(ManifestPage(
+                    page_id="pg-quick-start",
+                    sequence=next_seq(),
+                    archetype="quick_start_page",
+                    page_break="auto",
+                    data={
+                        "system_name": system_name,
+                        "steps": quick_start_steps,
+                    },
+                ))
+
         # ── 3. Architecture Section Divider ────────────────────────────────────
         pages.append(ManifestPage(
             page_id="pg-div-arch",
@@ -396,7 +429,7 @@ class ManifestBuilder:
                 ch_num = ch.get("chapter_number", ch_idx + 1)
                 ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
                 ch_narrative = ch.get("narrative", "")
-                ch_rules = ch.get("quick_reference_rules", [])
+                ch_rules = ch.get("quick_reference_rules", []) or ch.get("minimum_viable_actions", [])
                 # Prefer worksheets from the dedicated chapter_worksheets stage;
                 # fall back to any worksheets embedded in chapter_expansion (old pipeline).
                 ch_worksheets = ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])
@@ -435,7 +468,16 @@ class ManifestBuilder:
                         "chapter_summary": _format_narrative(ch_narrative, max_chars=2000),
                         "domain_name": domain_name,
                         "domain_purpose": domain_info.get("purpose", ""),
-                        "scope_items": ch_rules,
+                        "chapter_opener": ch.get("chapter_opener", {}),
+                        "minimum_viable_actions": ch.get("minimum_viable_actions", []),
+                        "orientation_snapshot": _format_narrative(
+                            ch.get("orientation_snapshot", ""), max_chars=1200
+                        ),
+                        "operational_sections": ch.get("operational_sections", []),
+                        "worksheet_linkage": ch.get("worksheet_linkage", []),
+                        "detailed_explanation": _format_narrative(
+                            ch.get("detailed_explanation", ch_narrative), max_chars=2800
+                        ),
                         "primary_outputs": [ws.get("title", "") for ws in ch_worksheets],
                         "cascade_triggers": cascade_triggers,
                         "scenario_scene": ch.get("scenario_scene", ""),
@@ -477,10 +519,8 @@ class ManifestBuilder:
                         page_id=f"pg-ws-{ws_id}",
                         sequence=next_seq(),
                         archetype="worksheet_page",
-                        # First worksheet in a chapter always starts a fresh page;
-                        # subsequent worksheets flow continuously so Pagedjs can pack
-                        # content without wasting nearly-empty pages.
-                        page_break="always" if ws_idx == 0 else "auto",
+                        # Each worksheet starts on a new page to prevent mixed worksheet boundaries.
+                        page_break="always",
                         data=ws_data,
                     ))
 
