@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import concurrent.futures
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -324,20 +325,40 @@ class PipelineService:
             }
 
             try:
-                # ── Pass 1: Deep narrative ─────────────────────────────────────────
-                narrative_prompt = assembler.assemble(
-                    narrative_contract, chapter_payload, upstream_outputs=upstream
-                )
-                narrative_structured, narrative_parse = self._model.generate_structured_output(
-                    narrative_prompt, narrative_contract,
-                    schema_class_override=ChapterNarrativeOutput,
-                )
-
+                # ── Pass 1: Deep narrative with UX-layer enforcement ───────────────
                 narrative = ""
-                if narrative_parse.success and narrative_parse.parsed_data:
-                    narrative = narrative_parse.parsed_data.get("narrative", "")
-                elif narrative_structured.data:
-                    narrative = narrative_structured.data.get("narrative", "")
+                narrative_raw_parts: list[str] = []
+                narrative_fix_instructions = ""
+                for narrative_attempt in range(2):
+                    narrative_payload = {
+                        **chapter_payload,
+                        "narrative_fix_instructions": narrative_fix_instructions,
+                    }
+                    narrative_prompt = assembler.assemble(
+                        narrative_contract, narrative_payload, upstream_outputs=upstream
+                    )
+                    narrative_structured, narrative_parse = self._model.generate_structured_output(
+                        narrative_prompt, narrative_contract,
+                        schema_class_override=ChapterNarrativeOutput,
+                    )
+                    narrative_raw_parts.append(narrative_structured.raw_text)
+
+                    if narrative_parse.success and narrative_parse.parsed_data:
+                        narrative = narrative_parse.parsed_data.get("narrative", "")
+                    elif narrative_structured.data:
+                        narrative = narrative_structured.data.get("narrative", "")
+
+                    narrative_defects = self._chapter_narrative_defects(narrative)
+                    if not narrative_defects:
+                        break
+                    narrative_fix_instructions = (
+                        "Previous draft failed narrative layering checks. Fix ALL items:\n- "
+                        + "\n- ".join(narrative_defects)
+                    )
+                    logger.warning(
+                        "chapter_expansion | chapter %d | narrative repair pass required: %s",
+                        chapter_number, "; ".join(narrative_defects),
+                    )
 
                 if not narrative:
                     logger.error(
@@ -345,7 +366,7 @@ class PipelineService:
                         "aborting chapter",
                         chapter_number,
                     )
-                    return chapter_number, domain_name, None, narrative_structured.raw_text
+                    return chapter_number, domain_name, None, "\n\n".join(narrative_raw_parts)
 
                 logger.info(
                     "chapter_expansion | chapter %d | Pass 1 complete | ~%d words",
@@ -354,38 +375,46 @@ class PipelineService:
 
                 # ── Pass 2: Structure (quick_reference_rules, cascade_triggers, scenario, metrics)
                 # Inject the narrative so every structural element is grounded in the chapter content.
-                chapter_payload_with_narrative = {
-                    **chapter_payload,
-                    "chapter_narrative": narrative,
-                }
+                merged: dict[str, Any] = {}
+                structure_raw_parts: list[str] = []
+                structure_fix_instructions = ""
+                for structure_attempt in range(2):
+                    chapter_payload_with_narrative = {
+                        **chapter_payload,
+                        "chapter_narrative": narrative,
+                        "structure_fix_instructions": structure_fix_instructions,
+                    }
 
-                structure_prompt = assembler.assemble(
-                    contract, chapter_payload_with_narrative, upstream_outputs=upstream
-                )
-                structure_structured, structure_parse = self._model.generate_structured_output(
-                    structure_prompt, contract,
-                    schema_class_override=ChapterExpansionStructure,
-                )
-
-                combined_raw = (
-                    narrative_structured.raw_text
-                    + "\n\n---NARRATIVE/STRUCTURE SEPARATOR---\n\n"
-                    + structure_structured.raw_text
-                )
-
-                if structure_parse.success and structure_parse.parsed_data:
-                    merged = dict(structure_parse.parsed_data)
-                else:
-                    logger.warning(
-                        "chapter_expansion | chapter %d | Pass 2 (structure) schema soft-fail — "
-                        "using raw data",
-                        chapter_number,
+                    structure_prompt = assembler.assemble(
+                        contract, chapter_payload_with_narrative, upstream_outputs=upstream
                     )
-                    merged = dict(structure_structured.data or {})
+                    structure_structured, structure_parse = self._model.generate_structured_output(
+                        structure_prompt, contract,
+                        schema_class_override=ChapterExpansionStructure,
+                    )
+                    structure_raw_parts.append(structure_structured.raw_text)
+
+                    if structure_parse.success and structure_parse.parsed_data:
+                        merged = dict(structure_parse.parsed_data)
+                    else:
+                        merged = dict(structure_structured.data or {})
+
+                    structure_defects = self._chapter_structure_defects(merged)
+                    if not structure_defects:
+                        break
+                    structure_fix_instructions = (
+                        "Previous draft failed required chapter schema. Fix ALL items:\n- "
+                        + "\n- ".join(structure_defects)
+                    )
+                    logger.warning(
+                        "chapter_expansion | chapter %d | structure repair pass required: %s",
+                        chapter_number, "; ".join(structure_defects),
+                    )
 
                 # Inject the narrative from Pass 1 into the merged output.
                 # Ensure required top-level fields are present even if Pass 2 omitted them.
                 merged["narrative"] = narrative
+                merged.setdefault("detailed_explanation", narrative)
                 merged.setdefault("chapter_number", chapter_number)
                 merged.setdefault(
                     "chapter_title",
@@ -394,6 +423,19 @@ class PipelineService:
                 merged.setdefault("domain_id", chapter_plan.get("domain_id", ""))
                 # worksheets field kept for backwards compat — populated by chapter_worksheets stage
                 merged.setdefault("worksheets", [])
+                final_defects = self._chapter_structure_defects(merged)
+                if final_defects:
+                    logger.error(
+                        "chapter_expansion | chapter %d FAILED contract enforcement: %s",
+                        chapter_number, "; ".join(final_defects),
+                    )
+                    return chapter_number, domain_name, None, "\n\n".join(narrative_raw_parts + structure_raw_parts)
+
+                combined_raw = (
+                    "\n\n---NARRATIVE/STRUCTURE SEPARATOR---\n\n".join(
+                        [*narrative_raw_parts, *structure_raw_parts]
+                    )
+                )
 
                 logger.info(
                     "chapter_expansion | chapter %d complete | ~%d words | "
@@ -551,6 +593,51 @@ class PipelineService:
             "chapter_expansion COMPLETE | project=%d | chapters=%d/%d | ~%d total words",
             project_id, len(expanded_chapters), len(chapters_plan), total_words,
         )
+
+    @staticmethod
+    def _chapter_narrative_defects(narrative: str) -> list[str]:
+        defects: list[str] = []
+        required_headings = [
+            "## Orientation Snapshot",
+            "## Immediate Execution Path",
+            "## Deep Operational Guidance",
+            "## Failure Dynamics and Recovery",
+            "## Cross-Domain Handoffs",
+        ]
+        for heading in required_headings:
+            if heading not in narrative:
+                defects.append(f"Missing heading: {heading}")
+
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}", narrative) if p.strip() and not p.strip().startswith("## ")]
+        oversized = [p for p in paragraphs if len(p.split()) > 140]
+        if oversized:
+            defects.append(f"{len(oversized)} paragraph(s) exceed 140 words")
+        return defects
+
+    @staticmethod
+    def _chapter_structure_defects(chapter: dict[str, Any]) -> list[str]:
+        defects: list[str] = []
+        opener = chapter.get("chapter_opener") or {}
+        required_opener = ("what_this_is_for", "when_it_matters", "failure_looks_like", "produces", "do_first")
+        for key in required_opener:
+            if not opener.get(key):
+                defects.append(f"chapter_opener.{key} is required")
+
+        if len(chapter.get("minimum_viable_actions") or []) < 3:
+            defects.append("minimum_viable_actions must contain at least 3 items")
+        if len(chapter.get("decision_guide") or []) < 3:
+            defects.append("decision_guide must contain at least 3 decisions")
+        if len(chapter.get("trigger_blocks") or []) < 2:
+            defects.append("trigger_blocks must contain at least 2 items")
+        if len(chapter.get("risk_blocks") or []) < 2:
+            defects.append("risk_blocks must contain at least 2 items")
+        if len(chapter.get("output_summaries") or []) < 2:
+            defects.append("output_summaries must contain at least 2 items")
+        if not (chapter.get("worksheet_linkage") or []):
+            defects.append("worksheet_linkage must contain at least 1 item")
+        if not (chapter.get("detailed_explanation") or "").strip():
+            defects.append("detailed_explanation is required")
+        return defects
 
     def _run_chapter_worksheets_loop(
         self,
@@ -769,6 +856,7 @@ class PipelineService:
         )
 
     def run_full_pipeline(self, project_id: int) -> list[StageOutput]:
+        import time as _time
         results: list[StageOutput] = []
         for stage in STAGE_NAMES:
             result = self.run_stage(project_id, stage)
@@ -778,4 +866,7 @@ class PipelineService:
                     "Pipeline halted at stage '%s' (status=%s)", stage, result.status
                 )
                 break
+            # Brief pause between stages so back-to-back large calls
+            # don't immediately saturate the token-per-minute window.
+            _time.sleep(5)
         return results

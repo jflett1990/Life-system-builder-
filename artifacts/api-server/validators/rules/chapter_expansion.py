@@ -9,10 +9,12 @@ Rules:
   CHAP_PARTIAL_FAILURE       error  — any chapter is marked failed or error
   CHAP_OPENER_INCOMPLETE     error  — chapter opener missing required orientation fields
   CHAP_ACTION_MODE_WEAK      warning — insufficient action/trigger structures
+  CHAP_DENSE_PROSE           warning — oversized paragraphs or missing orientation heading
 """
 from __future__ import annotations
 
 from typing import Any
+import re
 
 from validators.defect import Defect, Severity
 from validators.rules.base import BaseRule
@@ -169,13 +171,52 @@ class ActionModeCoverageRule(BaseRule):
             decisions = chap.get("decision_guide") or []
             triggers = chap.get("trigger_blocks") or []
             risks = chap.get("risk_blocks") or []
-            if len(mva) < 2 or len(decisions) < 2 or not triggers or not risks:
+            if len(mva) < 3 or len(decisions) < 3 or len(triggers) < 2 or len(risks) < 2:
                 defects.append(self._defect(
                     stage=STAGE,
                     field_path=f"chapters[{num}]",
                     evidence=f"mva={len(mva)}, decisions={len(decisions)}, triggers={len(triggers)}, risks={len(risks)}",
                     message=f"Chapter {num} under-serves scan/action mode; critical guidance may remain buried in prose.",
                     required_fix="Regenerate structure with richer minimum_viable_actions, decision_guide, trigger_blocks, and risk_blocks.",
+                ))
+        return defects
+
+
+class DenseProseRule(BaseRule):
+    rule_id  = "CHAP_DENSE_PROSE"
+    severity = Severity.warning
+    code     = "CHAP_DENSE_PROSE"
+    title    = "Chapter Prose Density Too High"
+    blocked_handoff = False
+
+    def check(self, stage_output: dict[str, Any], context: dict[str, Any]) -> list[Defect]:
+        chapters = stage_output.get("chapters") or stage_output.get("expanded_chapters") or []
+        defects = []
+        for chap in chapters:
+            num = chap.get("chapter_number", "?")
+            narrative = chap.get("narrative") or ""
+
+            if narrative and "## Orientation Snapshot" not in narrative:
+                defects.append(self._defect(
+                    stage=STAGE,
+                    field_path=f"chapters[{num}].narrative",
+                    evidence="missing heading ## Orientation Snapshot",
+                    message=f"Chapter {num} narrative is missing required orientation heading.",
+                    required_fix="Regenerate chapter narrative with required layered heading structure.",
+                ))
+
+            paragraphs = [
+                p.strip() for p in re.split(r"\n{2,}", narrative)
+                if p.strip() and not p.strip().startswith("## ")
+            ]
+            overlong = [p for p in paragraphs if len(p.split()) > 140]
+            if overlong:
+                defects.append(self._defect(
+                    stage=STAGE,
+                    field_path=f"chapters[{num}].narrative",
+                    evidence=f"{len(overlong)} paragraph(s) > 140 words",
+                    message=f"Chapter {num} has dense prose paragraphs that reduce scannability.",
+                    required_fix="Split long paragraphs and elevate logic into structured blocks.",
                 ))
         return defects
 
@@ -212,4 +253,5 @@ CHAPTER_EXPANSION_RULES: list[BaseRule] = [
     PartialFailureRule(),
     IncompleteOpenerRule(),
     ActionModeCoverageRule(),
+    DenseProseRule(),
 ]

@@ -11,11 +11,13 @@ def _chapter(**overrides):
             "produces": ["Verified medication baseline"],
             "do_first": ["Retrieve discharge medication reconciliation"],
         },
-        "minimum_viable_actions": ["Call pharmacy", "Confirm doses"],
-        "decision_guide": [{"decision": "Escalate", "if_condition": "A", "then_action": "B", "else_action": "C"}, {"decision": "Coverage", "if_condition": "X", "then_action": "Y", "else_action": "Z"}],
-        "trigger_blocks": ["If prescription changes, update care team immediately."],
-        "risk_blocks": ["Delayed updates can cause duplicate dosing."],
+        "minimum_viable_actions": ["Call pharmacy", "Confirm doses", "Update shared log"],
+        "decision_guide": [{"decision": "Escalate", "if_condition": "A", "then_action": "B", "else_action": "C"}, {"decision": "Coverage", "if_condition": "X", "then_action": "Y", "else_action": "Z"}, {"decision": "Records", "if_condition": "R", "then_action": "S", "else_action": "T"}],
+        "trigger_blocks": ["If prescription changes, update care team immediately.", "If provider callback exceeds SLA, escalate to supervisor."],
+        "risk_blocks": ["Delayed updates can cause duplicate dosing.", "Unverified records can create compliance exposure."],
         "worksheet_linkage": [{"worksheet_title": "Medication Log", "use_when": "After any care change", "unblocks": "Updated shift handoff"}],
+        "detailed_explanation": "## Context\nThis is a controlled deep explanation section that remains readable and operationally specific.",
+        "narrative": "## Orientation Snapshot\nClear orientation.\n\n## Immediate Execution Path\nActions.\n\n## Deep Operational Guidance\nDetails.\n\n## Failure Dynamics and Recovery\nRecovery.\n\n## Cross-Domain Handoffs\nHandoffs.",
     }
     base.update(overrides)
     return base
@@ -39,6 +41,7 @@ def test_quality_gates_fail_on_missing_orientation_and_action_structure():
                     trigger_blocks=[],
                     risk_blocks=[],
                     worksheet_linkage=[],
+                    detailed_explanation="",
                 )
             ]
         }
@@ -48,3 +51,4 @@ def test_quality_gates_fail_on_missing_orientation_and_action_structure():
     assert any(f.startswith("QG5:") for f in result.failures)
     assert any(f.startswith("QG6:") for f in result.failures)
     assert any(f.startswith("QG7:") for f in result.failures)
+    assert any(f.startswith("QG8:") for f in result.failures)
