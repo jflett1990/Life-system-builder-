@@ -88,3 +88,29 @@ def validate_manual(manual: ManualDocument, composed: ComposedDocument) -> Valid
             "orphan_headings": orphan_headings,
         },
     )
+
+
+def merge_geometry_probe(report: ValidationReport, probe: dict[str, Any]) -> ValidationReport:
+    """Merge physical pagination probe findings into the structural report."""
+    merged_errors = list(report.errors)
+    merged_warnings = list(report.warnings)
+
+    for e in probe.get("errors", []):
+        if e not in merged_errors:
+            merged_errors.append(e)
+    for w in probe.get("warnings", []):
+        if w not in merged_warnings:
+            merged_warnings.append(w)
+
+    stats = dict(report.stats)
+    pstats = probe.get("stats", {})
+    if "page_count" in pstats and pstats["page_count"]:
+        stats["page_count"] = int(pstats["page_count"])
+    stats["overflow_blocks"] = int(pstats.get("overflow_blocks", stats.get("overflow_blocks", 0)))
+    stats["orphan_headings"] = int(pstats.get("orphaned_headers", stats.get("orphan_headings", 0)))
+    stats["split_tables"] = int(stats.get("split_tables", 0))
+    stats["split_worksheet_headers"] = int(pstats.get("split_worksheet_headers", 0))
+    stats["split_structures"] = int(pstats.get("split_structures", 0))
+
+    status = "fail" if merged_errors else report.build_status
+    return ValidationReport(build_status=status, errors=merged_errors, warnings=merged_warnings, stats=stats)

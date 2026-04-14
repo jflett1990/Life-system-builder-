@@ -23,6 +23,8 @@ from sqlalchemy.orm import Session
 from core.logging import get_logger
 from models.render_artifact import RenderArtifact
 from render.manifest_builder import ManifestBuilder
+from render.geometry_validator import probe_layout
+from render.validation_report import ValidationReport, merge_geometry_probe
 from render.renderer import Renderer, RendererError
 from repositories.render_repo import RenderArtifactRepository
 from schemas.render import RenderResult, ExportBundle
@@ -64,6 +66,24 @@ class RenderService:
         except RendererError as e:
             raise RenderServiceError(str(e)) from e
 
+        # Stage 6: physical pagination probe (post-paged layout diagnostics).
+        # Merges real geometry findings (overflow/split headers/orphans) into the
+        # structural validation report before persistence/export.
+        geometry_probe = probe_layout(html)
+        merged_validation = merge_geometry_probe(
+            ValidationReport(
+                build_status=validation.get("build_status", "pass"),
+                errors=validation.get("errors", []),
+                warnings=validation.get("warnings", []),
+                stats=validation.get("stats", {}),
+            ),
+            geometry_probe.to_dict(),
+        ).to_dict()
+
+        if merged_validation.get("build_status") == "fail":
+            raise RenderServiceError(f"Render geometry validation failed: {merged_validation.get('errors', [])}")
+
+        manifest.validation_report = merged_validation
         self._persist_artifact(project_id, manifest, page_count=manifest.page_count)
 
         logger.info(
@@ -74,7 +94,7 @@ class RenderService:
             project_id=project_id,
             html=html,
             page_count=manifest.page_count,
-            validation_report=validation,
+            validation_report=merged_validation,
         )
 
     def export(self, project_id: int) -> ExportBundle:
