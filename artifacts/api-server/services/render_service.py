@@ -55,6 +55,10 @@ class RenderService:
         theme_tokens = self._extract_theme_tokens(all_outputs)
         manifest = self._manifest_builder.build(project_id, all_outputs, theme_tokens)
 
+        validation = manifest.validation_report or {}
+        if validation.get("build_status") == "fail":
+            raise RenderServiceError(f"Render validation failed: {validation.get('errors', [])}")
+
         try:
             html = self._renderer.render(manifest)
         except RendererError as e:
@@ -70,6 +74,7 @@ class RenderService:
             project_id=project_id,
             html=html,
             page_count=manifest.page_count,
+            validation_report=validation,
         )
 
     def export(self, project_id: int) -> ExportBundle:
@@ -80,6 +85,7 @@ class RenderService:
             html=render_result.html,
             stages_json=all_outputs,
             exported_at=datetime.now(timezone.utc),
+            validation_report=render_result.validation_report,
         )
 
     def render_page_preview(self, project_id: int, page_id: str) -> str:
@@ -115,10 +121,11 @@ class RenderService:
                     "page_id": p.page_id,
                     "sequence": p.sequence,
                     "archetype": p.archetype,
-                    "page_break_before": p.page_break_before,
+                    "page_break": p.page_break,
                 }
                 for p in manifest.pages
             ],
+            "validation_report": manifest.validation_report,
         }
 
     # ── Internal ───────────────────────────────────────────────────────────────
@@ -132,6 +139,7 @@ class RenderService:
             "document_title": manifest.document_title,
             "system_name": manifest.system_name,
             "page_count": page_count,
+            "validation_report": manifest.validation_report,
         }
 
         if row:

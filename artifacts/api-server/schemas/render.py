@@ -7,6 +7,7 @@ class RenderResult(BaseModel):
     project_id: int
     html: str
     page_count: int
+    validation_report: dict[str, Any] | None = None
 
 
 class CachedRenderInfo(BaseModel):
@@ -21,3 +22,4 @@ class ExportBundle(BaseModel):
     html: str
     stages_json: dict[str, Any]
     exported_at: datetime
+    validation_report: dict[str, Any] | None = None
