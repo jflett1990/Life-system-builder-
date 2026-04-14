@@ -1,0 +1,13 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+<div class="editorial-page page-break-avoid">
+  <h2 class="heading-section">{{ data.title }}</h2>
+  <table class="data-table" style="margin-top:var(--space-4)">
+    <thead><tr>{% for c in data.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for row in data.rows %}
+      <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

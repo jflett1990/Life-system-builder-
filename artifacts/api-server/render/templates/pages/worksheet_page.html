@@ -46,8 +46,9 @@
 
 <!-- Worksheet identity block -->
 <div style="margin-bottom: var(--space-8)">
-  <div style="margin-bottom:var(--space-3);display:flex;align-items:center;gap:var(--space-4)">
-    <span class="eyebrow" style="background:var(--domain-color);color:#fff;border-color:var(--domain-color)">Worksheet</span>
+  <div style="margin-bottom:var(--space-3);display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap">
+    <span class="eyebrow" style="background:var(--domain-color);color:#fff;border-color:var(--domain-color)">Worksheet {{ data.worksheet_number | default('') }}</span>
+    {% if data.usage_tag %}<span class="ws-format-badge">{{ data.usage_tag }}</span>{% endif %}
     {% if ws_layout != "form" %}
     <span class="ws-format-badge ws-format-badge--{{ ws_layout }}">{{ ws_layout | replace("-", " ") | upper }}</span>
     {% endif %}
@@ -56,7 +57,9 @@
     {% endif %}
   </div>
   <h2 class="heading-section" style="margin-bottom: var(--space-3)">{{ data.title | default("Worksheet") }}</h2>
-  {% if data.purpose %}
+  {% if data.instruction %}
+  <p class="body-text body-text--secondary" style="max-width:140mm;line-height:var(--leading-normal)">{{ data.instruction }}</p>
+  {% elif data.purpose %}
   <p class="body-text body-text--secondary" style="max-width:140mm;line-height:var(--leading-normal)">{{ data.purpose }}</p>
   {% endif %}
   {% if data.estimated_completion_time or (data.cross_references and data.cross_references | length > 0) %}

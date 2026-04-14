@@ -1,0 +1,7 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+<div class="editorial-page">
+  <p class="eyebrow">About</p>
+  <h2 class="heading-section">{{ data.title }}</h2>
+  <p class="body-text">{{ data.body }}</p>
+</div>
+{{ page_footer(doc_title=doc_title, page_num=seq) }}
