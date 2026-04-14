@@ -80,10 +80,7 @@ body {
   padding: var(--page-margin-v) var(--page-margin-h);
   display: flex;
   flex-direction: column;
-  overflow: hidden;   /* Defensive: any child overflow is clipped at the page
-                         boundary rather than bleeding into the next page.
-                         Pagedjs paginates content before painting, so legitimate
-                         multi-page content is never clipped — only accidents are. */
+  overflow: visible;
 }
 
 /* Page-type modifier — used for print page-break targeting                   */
@@ -100,14 +97,9 @@ body {
 /* Print / Pagedjs: padding and borders are stripped; Pagedjs flows content   */
 /* continuously across printed pages determined by actual content height.     */
 .page--flow {
-  position: relative;
-  width: var(--page-width);
-  margin: 0 auto;
-  background: var(--color-page);
-  padding: var(--page-margin-v) var(--page-margin-h);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  min-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
   break-after: auto;
   page-break-after: auto;
   /* Subtle visual separator in screen preview mode */
@@ -348,6 +340,71 @@ body {
   margin-top: 0.5em;
 }
 
+/* ── Scan/action component blocks ───────────────────────────────────────── */
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.signal-card {
+  border: var(--border-rule);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.signal-card__title {
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  margin-bottom: var(--space-2);
+}
+
+.signal-list > li {
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-rule);
+  font-size: var(--text-sm);
+}
+
+.quick-start-list,
+.execution-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.quick-start-item,
+.execution-item {
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface);
+  padding: var(--space-3) var(--space-4);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.quick-start-item__meta {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+}
+
+.quick-start-item__action,
+.execution-item__title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  margin-top: var(--space-1);
+}
+
+.quick-start-item__why,
+.execution-item__text {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
+
 
 /* ── Horizontal Rules ───────────────────────────────────────────────────── */
 
@@ -383,6 +440,8 @@ body {
   padding-bottom: var(--space-5);
   border-bottom: var(--border-weight-lg) solid var(--color-text-primary);
   margin-bottom: var(--space-8);
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .section-header__label {
@@ -605,6 +664,19 @@ body {
   margin-bottom: var(--space-5);
   break-after: avoid;
   page-break-after: avoid;
+}
+
+/* Keep headers attached to the first meaningful block below them. */
+.section-header + .worksheet-section,
+.section-header + p,
+.section-header + ul,
+.section-header + .body-text,
+.worksheet-section__header + .ws-section-instructions,
+.worksheet-section__header + .field-grid,
+.worksheet-section__header + .ws-two-col-row,
+.worksheet-section__header + .ws-table {
+  break-before: avoid;
+  page-break-before: avoid;
 }
 
 .worksheet-section__rule {
@@ -1116,13 +1188,15 @@ body {
   A ruled grid with column headers and blank write-in rows.
 */
 .ws-table-wrap {
-  overflow-x: auto;
+  overflow-x: visible;
+  max-width: 100%;
   margin-top: var(--space-4);
 }
 
 .ws-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-family: var(--font-body);
   font-size: var(--text-sm);
 }
@@ -1149,7 +1223,8 @@ body {
   border: var(--border-weight) solid transparent;
   padding: var(--space-3) var(--space-4);
   text-align: left;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .ws-table__cell {
@@ -1271,6 +1346,221 @@ body {
   display: flex;
   align-items: flex-end;
   padding-bottom: var(--space-1);
+}
+
+
+/* ── Worksheet: Section Instructions ────────────────────────────────────── */
+/*
+  Visually distinct pre-work block rendered above each section's fields.
+  Names the data sources to gather before starting and defines what "done"
+  looks like in verifiable terms. Left border + muted background tint makes
+  it clearly different from regular paragraph text.
+*/
+.ws-section-instructions {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-inset);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 2px 2px 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.ws-section-instructions__label {
+  font-family: var(--font-label);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-accent-dark);
+  white-space: nowrap;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+.ws-section-instructions__text {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+
+/* ── Worksheet: Common Errors / Pitfalls to Avoid ───────────────────────── */
+/*
+  Warning box rendered after the main worksheet content (form/table/checklist)
+  and before any decision gates. Surfaces 2-3 domain-specific mistakes that
+  operators commonly make when completing this specific worksheet.
+  Uses the warn colour tokens for amber/caution styling.
+*/
+.ws-pitfalls {
+  margin-top: var(--space-8);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-warn-bg);
+  border-left: 3px solid var(--color-warn);
+  border-radius: 0 2px 2px 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.ws-pitfalls__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.ws-pitfalls__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-warn);
+  color: #fff;
+  font-family: var(--font-label);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  flex-shrink: 0;
+}
+
+.ws-pitfalls__title {
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.ws-pitfalls__list {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.ws-pitfalls__item {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.ws-pitfalls__item:last-child {
+  margin-bottom: 0;
+}
+
+
+/* ── Worksheet: Example Data Sections ──────────────────────────────────── */
+/*
+  Rendered above blank tables (showing 1-2 example filled rows) and above
+  checklists (showing 1 example of a correctly-verified item). Teaches the
+  reader what a completed entry looks like — the format, level of detail,
+  and realistic values — before they begin filling in the worksheet.
+  Uses a pass-green accent to signal "this is what correct looks like".
+*/
+.ws-example-section {
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-pass-bg);
+  border-left: 3px solid var(--color-pass);
+  border-radius: 0 2px 2px 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.ws-example-section--checklist {
+  margin-bottom: var(--space-6);
+}
+
+.ws-example-section__label {
+  font-family: var(--font-label);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-pass);
+  margin-bottom: var(--space-3);
+}
+
+/* Example table — inherits .ws-table but with muted italic styling */
+.ws-table--example {
+  opacity: 0.75;
+  margin-top: 0;
+}
+
+.ws-table__rownum--example,
+.ws-table__header--example {
+  font-style: italic;
+}
+
+.ws-example-row .ws-table__cell,
+.ws-example-row__cell {
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: var(--color-text-secondary);
+  background: var(--color-pass-bg);
+}
+
+.ws-example-row__num {
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* Example verified checklist item */
+.ws-example-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+}
+
+.ws-example-check-item__box {
+  width: var(--space-5);
+  height: var(--space-5);
+  border: var(--border-weight-md) solid var(--color-pass);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--color-pass);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ws-example-check-item__text {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  flex: 1;
+}
+
+
+/* ── Checklist: Single-column layout modifier ───────────────────────────── */
+/*
+  .ws-checklist--single is applied when verification items are long
+  operational statements (not short labels). Single column ensures full
+  sentence text is readable and not split awkwardly across two columns.
+  Items are direct children of .ws-checklist, no column wrappers.
+*/
+.ws-checklist--single {
+  flex-direction: column;
+}
+
+.ws-checklist--single .ws-checklist__item {
+  border-bottom: var(--border-weight) solid var(--color-rule);
+}
+
+.ws-checklist--single .ws-checklist__item:last-child {
+  border-bottom: none;
 }
 
 

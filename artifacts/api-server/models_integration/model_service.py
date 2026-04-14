@@ -43,7 +43,10 @@ def _load_provider(name: str) -> BaseModelProvider:
     if name == "openai":
         from models_integration.openai_provider import OpenAIProvider
         return OpenAIProvider()
-    raise ValueError(f"Unknown model_provider '{name}'. Supported: 'openai'")
+    if name == "anthropic":
+        from models_integration.anthropic_provider import AnthropicProvider
+        return AnthropicProvider()
+    raise ValueError(f"Unknown model_provider '{name}'. Supported: 'openai', 'anthropic'")
 
 
 _provider_instance: BaseModelProvider | None = None

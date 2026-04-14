@@ -1,33 +1,38 @@
-{% macro checklist_worksheet(items=[]) %}
+{% macro checklist_worksheet(items=[], example_items=[]) %}
 {#
   checklist_worksheet — Renders an audit/verification worksheet as a
-  two-column checkbox list.
+  single-column checkbox list.
 
-  Used when layout == "checklist". Items are split across two columns
-  to maximise page density while keeping each item on a single line.
-  Each item has a print-ready checkbox box on the left.
+  Used when layout == "checklist". Each item is a complete verification
+  statement (what to check, where to find it, pass vs fail criteria,
+  escalation path). Items are rendered in a single column for readability —
+  these are operational statements, not short labels.
+
+  If example_items are provided (up to 1 shown), they are rendered above the
+  main list in a styled "What a verified item looks like" box to show the
+  reader the expected level of detail and format for a correctly-verified item.
 #}
 
-{% set half = (items | length // 2) %}
-{% set col_a = items[:half] %}
-{% set col_b = items[half:] %}
+{# ── Example verification — shown before checklist when examples are available #}
+{% if example_items and example_items | length > 0 %}
+<div class="ws-example-section ws-example-section--checklist">
+  <div class="ws-example-section__label">What a verified item looks like</div>
+  {% for item in example_items[:1] %}
+  <div class="ws-example-check-item">
+    <div class="ws-example-check-item__box">✓</div>
+    <span class="ws-example-check-item__text">{{ item }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
-<div class="ws-checklist">
-  <div class="ws-checklist__col">
-    {% for item in col_a %}
-    <div class="ws-checklist__item">
-      <div class="checklist__box"></div>
-      <span class="ws-checklist__text">{{ item }}</span>
-    </div>
-    {% endfor %}
+{# ── Main checklist — single-column verification items ──────────────────── #}
+<div class="ws-checklist ws-checklist--single">
+  {% for item in items %}
+  <div class="ws-checklist__item">
+    <div class="checklist__box"></div>
+    <span class="ws-checklist__text">{{ item }}</span>
   </div>
-  <div class="ws-checklist__col">
-    {% for item in col_b %}
-    <div class="ws-checklist__item">
-      <div class="checklist__box"></div>
-      <span class="ws-checklist__text">{{ item }}</span>
-    </div>
-    {% endfor %}
-  </div>
+  {% endfor %}
 </div>
 {% endmacro %}

@@ -1,0 +1,23 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+{% from 'templates/components/section_header.html' import section_header %}
+
+{{ section_header(label="Quick-Start", title="First Actions Under Pressure") }}
+
+<p class="body-text body-text--secondary" style="margin-bottom:var(--space-6)">
+  Use this page when you need immediate execution before deep reading. Complete steps in sequence,
+  then move to each chapter opener for full trigger and escalation details.
+</p>
+
+<div class="quick-start-list">
+  {% for step in data.steps | default([]) %}
+  <div class="quick-start-item">
+    <div class="quick-start-item__meta">Chapter {{ step.chapter_number }} · {{ step.chapter_title }}</div>
+    <div class="quick-start-item__action">{{ step.action }}</div>
+    {% if step.why %}
+    <div class="quick-start-item__why">When this matters: {{ step.why }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

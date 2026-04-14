@@ -7,9 +7,10 @@
 {# ─────────────────────────────────────────────────────────────────────────── #}
 {# WORKSHEET PAGE                                                              #}
 {# data keys: id, title, domain_name, purpose, layout, sections,             #}
-{#            decision_gates, table_columns, table_row_count,                 #}
-{#            checklist_items, left_column_label, right_column_label,        #}
-{#            chapter_number, chapter_title, system_name, repeat_use         #}
+{#            decision_gates, table_columns, table_row_count, sample_rows,   #}
+{#            checklist_items, example_items, left_column_label,             #}
+{#            right_column_label, chapter_number, chapter_title, system_name,#}
+{#            repeat_use, common_errors                                       #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 
 {% set ws_layout = data.layout | default("form") %}
@@ -83,13 +84,17 @@
 {% if ws_layout == "table" %}
 {{ table_worksheet(
     columns=data.table_columns | default([]),
-    row_count=data.table_row_count | default(12)
+    row_count=data.table_row_count | default(12),
+    sample_rows=data.sample_rows | default([])
   ) }}
 
 {# ── CHECKLIST LAYOUT ─────────────────────────────────────────────────────── #}
 {% elif ws_layout == "checklist" %}
 {% if data.checklist_items %}
-{{ checklist_worksheet(items=data.checklist_items) }}
+{{ checklist_worksheet(
+    items=data.checklist_items,
+    example_items=data.example_items | default([])
+  ) }}
 {% else %}
 <p class="body-text body-text--secondary" style="color:var(--color-text-muted)">No checklist items defined.</p>
 {% endif %}
@@ -111,7 +116,10 @@
   </div>
   {% endif %}
   {% if section.instructions %}
-  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-4);line-height:var(--leading-relaxed)">{{ section.instructions }}</p>
+  <div class="ws-section-instructions">
+    <span class="ws-section-instructions__label">Before you start</span>
+    <p class="ws-section-instructions__text">{{ section.instructions }}</p>
+  </div>
   {% endif %}
 
   {% for field in section.fields | default([]) %}
@@ -161,7 +169,10 @@
   {% endif %}
 
   {% if section.instructions %}
-  <p class="body-text body-text--secondary" style="margin-bottom:var(--space-5);line-height:var(--leading-relaxed)">{{ section.instructions }}</p>
+  <div class="ws-section-instructions">
+    <span class="ws-section-instructions__label">Before you start</span>
+    <p class="ws-section-instructions__text">{{ section.instructions }}</p>
+  </div>
   {% endif %}
 
   <div>
@@ -177,7 +188,7 @@
           field_type=field.type | default("text"),
           required=field.required | default(False),
           placeholder=field.placeholder | default(""),
-          hint=field.description | default(""),
+          hint=field.validation_hint | default(field.description | default("")),
           options=field.options | default([])
         ) }}
     </div>
@@ -185,6 +196,21 @@
   </div>
 </div>
 {% endfor %}
+{% endif %}
+
+<!-- Common Errors / Pitfalls to Avoid -->
+{% if data.common_errors and data.common_errors | length > 0 %}
+<div class="ws-pitfalls">
+  <div class="ws-pitfalls__header">
+    <span class="ws-pitfalls__icon">!</span>
+    <span class="ws-pitfalls__title">Common Errors to Avoid</span>
+  </div>
+  <ul class="ws-pitfalls__list">
+    {% for error in data.common_errors %}
+    <li class="ws-pitfalls__item">{{ error }}</li>
+    {% endfor %}
+  </ul>
+</div>
 {% endif %}
 
 <!-- Decision Gates -->
