@@ -856,6 +856,7 @@ class PipelineService:
         )
 
     def run_full_pipeline(self, project_id: int) -> list[StageOutput]:
+        import time as _time
         results: list[StageOutput] = []
         for stage in STAGE_NAMES:
             result = self.run_stage(project_id, stage)
@@ -865,4 +866,7 @@ class PipelineService:
                     "Pipeline halted at stage '%s' (status=%s)", stage, result.status
                 )
                 break
+            # Brief pause between stages so back-to-back large calls
+            # don't immediately saturate the token-per-minute window.
+            _time.sleep(5)
         return results
