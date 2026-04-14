@@ -2,7 +2,7 @@
   "name": "document_outline",
   "version": "2.0",
   "stage": "document_outline",
-  "model_role": "planner",
+  "model_role": "executor",
   "description": "Converts the system architecture into a complete document blueprint — every chapter title, every worksheet title, cascade chain, and master operating rules. No content is written here; this is the architectural map that drives all downstream chapter expansion.",
   "output_mode": "json",
   "upstream_dependencies": [
