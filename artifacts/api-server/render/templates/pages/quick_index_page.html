@@ -1,0 +1,11 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+<div class="editorial-page">
+  <p class="eyebrow">Quick Index</p>
+  <h2 class="heading-section">{{ data.title }}</h2>
+  <ul class="checklist">
+    {% for e in data.entries %}
+      <li class="checklist__item">{{ e.label or e.title or e.name }}{% if e.ref %} — {{ e.ref }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+</div>
+{{ page_footer(doc_title=doc_title, page_num=seq) }}

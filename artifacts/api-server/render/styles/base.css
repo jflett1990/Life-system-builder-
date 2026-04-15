@@ -1928,3 +1928,6 @@ body {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
 }
+
+.editorial-page { max-width: 165mm; }
+

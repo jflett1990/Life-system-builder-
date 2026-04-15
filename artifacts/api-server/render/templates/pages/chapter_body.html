@@ -1,0 +1,21 @@
+{% from 'templates/components/page_footer.html' import page_footer %}
+<div class="editorial-page">
+  <p class="eyebrow">Chapter {{ data.chapter_number }}</p>
+  <h2 class="heading-section">{{ data.chapter_title }}</h2>
+  {% for sec in data.sections %}
+    <div class="worksheet-section page-break-avoid" style="margin-top:var(--space-6)">
+      <div class="worksheet-section__header">
+        <span class="heading-component">{{ sec["title"] }}</span>
+        <div class="worksheet-section__rule"></div>
+      </div>
+      {% if sec["content"].get("text") %}
+        <p class="body-text">{{ sec["content"]["text"] }}</p>
+      {% elif sec["content"].get("items") %}
+        <ul class="checklist">{% for item in sec["content"]["items"] %}<li class="checklist__item">{{ item }}</li>{% endfor %}</ul>
+      {% elif sec["content"].get("rows") %}
+        <table class="data-table"><tbody>{% for row in sec["content"]["rows"] %}<tr><td>{{ row }}</td></tr>{% endfor %}</tbody></table>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+{{ page_footer(doc_title=doc_title, page_num=seq) }}
