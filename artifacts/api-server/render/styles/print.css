@@ -219,6 +219,16 @@
     break-before: page;
   }
 
+  /* Hard-start pages that must never inherit leftover space from a flowing
+     predecessor page. Prevents worksheet headers and chapter openers from
+     starting halfway down a page when the previous page uses break-after:auto. */
+  .page--chapter_opener,
+  .page--worksheet_page,
+  .page--quick_index_page {
+    page-break-before: always;
+    break-before: page;
+  }
+
 
   /* ── Break-Inside Avoidance ─────────────────────────────────────────────── */
   /*

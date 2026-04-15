@@ -146,6 +146,12 @@ def build_manual_document(project_id: int, all_outputs: dict[str, Any]) -> Manua
         if not domain_id and domains:
             domain_id = domains[min(idx, len(domains) - 1)].id
 
+        quick_rules = ch.get("quick_reference_rules", [])
+        decision_rows = ch.get("decision_guide", [])
+        scenario_scene = ch.get("scenario_scene", "")
+        cascade_rows = ch.get("cascade_triggers", [])
+        detailed = ch.get("detailed_explanation") or ch.get("narrative", "")
+
         sections = [
             ManualSection(
                 id=f"sec-{ch_num:02d}-a",
@@ -157,19 +163,37 @@ def build_manual_document(project_id: int, all_outputs: dict[str, Any]) -> Manua
             ManualSection(
                 id=f"sec-{ch_num:02d}-b",
                 type="key_insight",
-                title="Failure patterns",
-                content={"items": ch.get("risk_blocks", [])},
+                title="Key concepts and failure patterns",
+                content={
+                    "text": detailed,
+                    "items": ch.get("risk_blocks", []),
+                    "rules": quick_rules,
+                },
                 page_break_policy="keep_together",
             ),
             ManualSection(
                 id=f"sec-{ch_num:02d}-c",
                 type="decision_framework",
                 title="Decision logic",
-                content={"rows": ch.get("decision_guide", [])},
+                content={"rows": decision_rows},
                 page_break_policy="auto",
             ),
             ManualSection(
                 id=f"sec-{ch_num:02d}-d",
+                type="scenario_box",
+                title="Scenario",
+                content={"text": scenario_scene},
+                page_break_policy="keep_together",
+            ),
+            ManualSection(
+                id=f"sec-{ch_num:02d}-e",
+                type="cascade_map",
+                title="Cascade / dependency map",
+                content={"rows": cascade_rows},
+                page_break_policy="auto",
+            ),
+            ManualSection(
+                id=f"sec-{ch_num:02d}-f",
                 type="checklist",
                 title="Operational checklist",
                 content={"items": ch.get("minimum_viable_actions", [])},
