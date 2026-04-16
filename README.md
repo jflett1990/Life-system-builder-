@@ -67,6 +67,13 @@ The renderer is a pure structured-data → HTML transformation (no LLM):
 
 ---
 
+
+## Proposed v2 architecture
+
+A redesign proposal focused on reducing pipeline complexity, adding a dedicated research stage, and making PDF generation deterministic is documented in `docs/architecture-v2-proposal.md`.
+
+---
+
 ## Running Locally
 
 ### Prerequisites
