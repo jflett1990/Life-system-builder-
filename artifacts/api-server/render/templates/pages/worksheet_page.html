@@ -4,6 +4,12 @@
 {% from 'templates/components/criteria_checklist.html' import criteria_checklist %}
 {% from 'templates/components/table_worksheet.html' import table_worksheet %}
 {% from 'templates/components/checklist_worksheet.html' import checklist_worksheet %}
+{# v2: render continuation markers when the manifest flags this page as a split #}
+{% if page.continuation_of %}
+{% set continuation_direction = "from" %}
+{% set block_title = data.title | default("") %}
+{% include 'templates/components/continuation_marker.html' %}
+{% endif %}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 {# WORKSHEET PAGE                                                              #}
 {# data keys: id, title, domain_name, purpose, layout, sections,             #}

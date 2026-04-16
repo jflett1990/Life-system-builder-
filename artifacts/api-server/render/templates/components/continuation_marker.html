@@ -1,0 +1,26 @@
+{#
+  continuation_marker.html — renders "Continued from previous page" or
+  "Continued on next page" banners based on the block's continuation flags.
+
+  Expected variables (set by caller):
+    continuation_direction: "from" | "to"
+    block_title:            str  (table or worksheet title)
+
+  PDR §08: Both markers are derived from continuation flags in the manifest,
+  not from template logic. This template is a pure data-to-HTML mapping.
+#}
+{% if continuation_direction == "from" %}
+<div class="continuation-marker continuation-marker--from" aria-label="Continued from previous page">
+  <span class="continuation-marker__icon">↑</span>
+  <span class="continuation-marker__text">
+    <strong>{{ block_title }}</strong> — Continued from previous page
+  </span>
+</div>
+{% elif continuation_direction == "to" %}
+<div class="continuation-marker continuation-marker--to" aria-label="Continued on next page">
+  <span class="continuation-marker__text">
+    <strong>{{ block_title }}</strong> — Continued on next page
+  </span>
+  <span class="continuation-marker__icon">↓</span>
+</div>
+{% endif %}

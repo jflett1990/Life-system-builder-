@@ -1931,3 +1931,35 @@ body {
 
 .editorial-page { max-width: 165mm; }
 
+
+/* ── v2: Continuation markers (PDR §08) ─────────────────────────────────── */
+.continuation-marker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  border-top: 1px dashed var(--color-border-light, #d0ccc4);
+  border-bottom: 1px dashed var(--color-border-light, #d0ccc4);
+  margin-bottom: var(--space-4);
+}
+
+.continuation-marker--from {
+  margin-top: 0;
+  border-top: none;
+  border-bottom: 1px dashed var(--color-border-light, #d0ccc4);
+}
+
+.continuation-marker--to {
+  margin-top: var(--space-4);
+  border-top: 1px dashed var(--color-border-light, #d0ccc4);
+  border-bottom: none;
+  justify-content: flex-end;
+}
+
+.continuation-marker__icon {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
