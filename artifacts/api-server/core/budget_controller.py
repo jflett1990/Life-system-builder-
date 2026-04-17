@@ -175,6 +175,7 @@ class BudgetController:
             was_retry=was_retry,
         )
         self._events.append(event)
+        record_project_spend(event)
         logger.debug(
             "Spend | project=%d | stage=%s | tier=%s | in=%d out=%d total=%d",
             self._project_id, stage, event.model_tier.value,
@@ -203,3 +204,48 @@ class BudgetController:
 
     def events(self) -> list[dict[str, Any]]:
         return [e.to_dict() for e in self._events]
+
+
+# ── Module-level project-scoped spend registry (PDR §09 dashboard) ─────────────
+#
+# BudgetController instances are transient (one per stage run). To expose cost
+# observability via /api/telemetry/spend/{project_id}, each recorded event also
+# appends to this process-wide registry keyed by project_id.
+
+_SPEND_REGISTRY: dict[int, list[SpendEvent]] = {}
+
+
+def record_project_spend(event: SpendEvent) -> None:
+    """Append a spend event to the module-level registry."""
+    _SPEND_REGISTRY.setdefault(event.project_id, []).append(event)
+
+
+def project_spend_events(project_id: int) -> list[SpendEvent]:
+    return list(_SPEND_REGISTRY.get(project_id, []))
+
+
+def project_spend_summary(project_id: int) -> dict[str, Any]:
+    events = _SPEND_REGISTRY.get(project_id, [])
+    total_tokens = sum(e.total_tokens for e in events)
+    per_stage: dict[str, dict[str, int]] = {}
+    for e in events:
+        bucket = per_stage.setdefault(e.stage, {"calls": 0, "input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
+        bucket["calls"] += 1
+        bucket["input_tokens"] += e.input_tokens
+        bucket["output_tokens"] += e.output_tokens
+        bucket["total_tokens"] += e.total_tokens
+
+    return {
+        "project_id": project_id,
+        "event_count": len(events),
+        "total_tokens": total_tokens,
+        "premium_tokens": sum(e.total_tokens for e in events if e.model_tier == ModelTier.PREMIUM),
+        "mid_tokens": sum(e.total_tokens for e in events if e.model_tier == ModelTier.MID),
+        "small_tokens": sum(e.total_tokens for e in events if e.model_tier == ModelTier.SMALL),
+        "retry_count": sum(1 for e in events if e.was_retry),
+        "per_stage": per_stage,
+    }
+
+
+def clear_project_spend(project_id: int) -> None:
+    _SPEND_REGISTRY.pop(project_id, None)

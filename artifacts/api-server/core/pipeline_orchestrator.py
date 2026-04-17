@@ -103,3 +103,37 @@ class PipelineOrchestrator:
             "remaining": [s for s in STAGE_NAMES if s not in completed_stages],
             "next": self.next_runnable_stage(completed_stages),
         }
+
+    # ── Delta regeneration (PDR §07) ───────────────────────────────────────────
+
+    def downstream_stages(self, stage: str) -> list[str]:
+        """Return all stages that transitively depend on `stage`."""
+        if stage not in STAGE_UPSTREAM_MAP:
+            raise PipelineError(f"Unknown stage '{stage}'")
+        dependents: set[str] = set()
+        frontier = [stage]
+        while frontier:
+            current = frontier.pop()
+            for s, required in STAGE_UPSTREAM_MAP.items():
+                if current in required and s not in dependents:
+                    dependents.add(s)
+                    frontier.append(s)
+        # Preserve canonical order
+        return [s for s in ALL_STAGE_NAMES if s in dependents]
+
+    def delta_scope(self, edited_stage: str) -> dict[str, list[str]]:
+        """Compute the minimum rerun scope when `edited_stage` changes.
+
+        Returns a dict with:
+          - edited: the stage the user edited
+          - invalidated: downstream stages whose cached output is no longer valid
+          - rerun_order: canonical order to re-execute (edited + invalidated)
+        """
+        invalidated = self.downstream_stages(edited_stage)
+        all_rerun = [edited_stage] + invalidated
+        rerun_order = [s for s in ALL_STAGE_NAMES if s in set(all_rerun)]
+        return {
+            "edited": edited_stage,
+            "invalidated": invalidated,
+            "rerun_order": rerun_order,
+        }

@@ -1,11 +1,21 @@
 """
 LayoutSafetyValidator — pre-render overflow check against the document manifest.
 
-Phase A: runs in warning mode (blocking=False). Logs issues but does not halt render.
-Phase B: promoted to blocking mode (blocking=True). Holds render on hard errors.
+Phase A (current): runs in warning mode (BLOCKING_MODE=False).
+  Logs overflow, orphan, and continuation issues against the layout report but
+  does not block the render. Useful for observability while the manifest builder
+  and height estimator stabilise on real production data.
 
-The validator delegates to LayoutAnalyzer. This module is the pipeline integration
-point — it owns the decision of whether to block or warn.
+Phase B (promotion): flip BLOCKING_MODE to True.
+  Overflow errors then surface as hard failures and the render endpoint returns
+  a 409 instead of a broken PDF. Safe to promote once the layout report shows a
+  stable overflow rate < 2% across the last N production runs (PDR §11 SLO).
+
+Callers can also override the module flag per-invocation via the `blocking=`
+kwarg on validate_layout_safety().
+
+The validator delegates to LayoutAnalyzer. This module is the pipeline
+integration point — it owns the decision of whether to block or warn.
 """
 from __future__ import annotations
 
@@ -18,7 +28,7 @@ from core.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Set to True in Phase B to promote overflow warnings to hard errors.
+# Flip to True to promote overflow warnings to hard errors (Phase B).
 BLOCKING_MODE: bool = False
 
 

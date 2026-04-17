@@ -598,6 +598,17 @@ class PipelineService:
         total_words = sum(
             len(c.get("narrative", "").split()) for c in expanded_chapters
         )
+
+        # Phase C: post-generation validators (non-blocking — results attached to validation_result)
+        validation_summary = self._run_post_chapter_validators(
+            project_id=project_id,
+            expanded_chapters=expanded_chapters,
+            voice_profile=voice_profile_output,
+            research_graph=all_outputs.get("research_graph", {}),
+        )
+        if validation_summary:
+            stage_row.set_validation(validation_summary)
+
         stage_row.preview_text = (
             f"{len(expanded_chapters)} chapters expanded | "
             f"~{total_words:,} words of narrative generated"
@@ -619,6 +630,79 @@ class PipelineService:
             "chapter_expansion COMPLETE | project=%d | chapters=%d/%d | ~%d total words",
             project_id, len(expanded_chapters), len(chapters_plan), total_words,
         )
+
+    def _run_post_chapter_validators(
+        self,
+        project_id: int,
+        expanded_chapters: list[dict[str, Any]],
+        voice_profile: dict[str, Any],
+        research_graph: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Run voice_compliance and research_integrity validators post chapter generation.
+        Attaches results to stage_row.validation_result. Non-blocking in Phase C —
+        surfaces violations for observability without rejecting the stage."""
+        if not expanded_chapters:
+            return None
+
+        chapter_packets = [
+            {
+                "chapter_id": str(c.get("chapter_number", i + 1)),
+                "blocks": [
+                    {
+                        "block_id": f"narrative_{c.get('chapter_number', i + 1)}",
+                        "block_type": "narrative",
+                        "content": c.get("narrative", ""),
+                        "fact_ids": c.get("fact_ids", []) or [],
+                    }
+                ],
+            }
+            for i, c in enumerate(expanded_chapters)
+        ]
+
+        summary: dict[str, Any] = {}
+
+        if voice_profile:
+            try:
+                from validators.voice_compliance import VoiceComplianceValidator
+                vcv = VoiceComplianceValidator(project_id=project_id, voice_profile=voice_profile)
+                vc_result = vcv.validate_chapters(chapter_packets)
+                summary["voice_compliance"] = vc_result.to_dict()
+                logger.info(
+                    "voice_compliance | project=%d | passed=%s | failed_chapters=%d",
+                    project_id, vc_result.passed, vc_result.to_dict().get("chapters_failed", 0),
+                )
+            except Exception as e:
+                logger.warning("voice_compliance validator error: %s", str(e)[:200])
+                summary["voice_compliance"] = {"error": str(e)[:200]}
+
+        if research_graph:
+            try:
+                from validators.research_integrity import ResearchIntegrityValidator
+                riv = ResearchIntegrityValidator(research_graph=research_graph)
+                per_chapter: list[dict[str, Any]] = []
+                total_coverage = 0.0
+                all_passed = True
+                for packet in chapter_packets:
+                    ri_result = riv.validate_chapter(packet)
+                    per_chapter.append(ri_result.to_dict())
+                    total_coverage += ri_result.citation_coverage
+                    if not ri_result.passed:
+                        all_passed = False
+                avg_coverage = total_coverage / max(len(chapter_packets), 1)
+                summary["research_integrity"] = {
+                    "passed": all_passed,
+                    "average_citation_coverage": round(avg_coverage, 3),
+                    "chapters": per_chapter,
+                }
+                logger.info(
+                    "research_integrity | project=%d | passed=%s | avg_coverage=%.0f%%",
+                    project_id, all_passed, avg_coverage * 100,
+                )
+            except Exception as e:
+                logger.warning("research_integrity validator error: %s", str(e)[:200])
+                summary["research_integrity"] = {"error": str(e)[:200]}
+
+        return summary or None
 
     @staticmethod
     def _chapter_narrative_defects(narrative: str) -> list[str]:
@@ -1042,6 +1126,52 @@ class PipelineService:
             self._repo.save(stage_row)
 
         return stage_row
+
+    def invalidate_downstream(self, project_id: int, edited_stage: str) -> dict[str, Any]:
+        """Invalidate downstream stage cache for delta regeneration (PDR §07).
+
+        Marks every downstream stage as status='pending' (preserving stored JSON
+        for rollback but declaring it stale). The edited stage itself is NOT
+        deleted — callers should trigger a re-run explicitly via run_stage(force=True).
+        Returns the delta scope for inspection by the caller.
+        """
+        if edited_stage not in ALL_STAGE_NAMES:
+            raise PipelineError(f"Unknown stage '{edited_stage}'")
+
+        scope = orchestrator.delta_scope(edited_stage)
+        invalidated_now: list[str] = []
+        for s in scope["invalidated"]:
+            row = self._repo.find_by_project_and_stage(project_id, s)
+            if row and row.status == "complete":
+                row.status = "pending"
+                row.error_message = f"Invalidated by edit to upstream '{edited_stage}'"
+                row.updated_at = datetime.now(timezone.utc)
+                self._repo.save(row)
+                invalidated_now.append(s)
+        logger.info(
+            "delta_invalidate | project=%d | edited=%s | invalidated=%s",
+            project_id, edited_stage, invalidated_now,
+        )
+        return {
+            "edited": edited_stage,
+            "invalidated": invalidated_now,
+            "rerun_order": scope["rerun_order"],
+        }
+
+    def rerun_from(self, project_id: int, edited_stage: str) -> list[StageOutput]:
+        """Invalidate downstream stages and rerun the edited stage + all invalidated stages
+        in canonical order. Returns the resulting stage rows."""
+        scope = self.invalidate_downstream(project_id, edited_stage)
+        results: list[StageOutput] = []
+        for s in scope["rerun_order"]:
+            result = self.run_stage(project_id, s, force=True)
+            results.append(result)
+            if result.status in ("failed", "schema_failed"):
+                logger.warning(
+                    "Delta rerun halted at stage '%s' (status=%s)", s, result.status
+                )
+                break
+        return results
 
     def run_full_pipeline(self, project_id: int) -> list[StageOutput]:
         import time as _time
