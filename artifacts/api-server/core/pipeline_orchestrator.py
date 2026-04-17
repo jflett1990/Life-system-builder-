@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from core.logging import get_logger
-from schemas.stage import STAGE_NAMES, STAGE_ORDER
+from schemas.stage import STAGE_NAMES, STAGE_ORDER, ALL_STAGE_NAMES
 
 logger = get_logger(__name__)
 
@@ -17,6 +17,7 @@ class PipelineError(Exception):
 
 
 STAGE_CONTRACT_MAP: dict[str, str] = {
+    # v1 stages
     "system_architecture": "life_event_system_core",
     "document_outline":    "document_outline",
     "chapter_expansion":   "chapter_expansion",
@@ -25,9 +26,14 @@ STAGE_CONTRACT_MAP: dict[str, str] = {
     "layout_mapping":      "layout_architecture_mapper",
     "render_blueprint":    "pdf_render_blueprint",
     "validation_audit":    "life_system_validation_agent",
+    # v2 stages (Phase C)
+    "research_graph":      "research_graph",
+    "content_plan":        "content_plan",
+    "voice_profile":       "voice_profile",
 }
 
 STAGE_UPSTREAM_MAP: dict[str, list[str]] = {
+    # v1 stages
     "system_architecture": [],
     "document_outline":    ["system_architecture"],
     "chapter_expansion":   ["system_architecture", "document_outline"],
@@ -36,6 +42,10 @@ STAGE_UPSTREAM_MAP: dict[str, list[str]] = {
     "layout_mapping":      ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets"],
     "render_blueprint":    ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "layout_mapping"],
     "validation_audit":    ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "appendix_builder", "layout_mapping", "render_blueprint"],
+    # v2 stages — can run as soon as system_architecture is complete
+    "research_graph":      ["system_architecture"],
+    "content_plan":        ["system_architecture", "research_graph"],
+    "voice_profile":       ["system_architecture", "research_graph"],
 }
 
 
@@ -43,7 +53,7 @@ class PipelineOrchestrator:
     def resolve_contract_name(self, stage: str) -> str:
         if stage not in STAGE_CONTRACT_MAP:
             raise PipelineError(
-                f"Unknown stage '{stage}'. Valid stages: {STAGE_NAMES}"
+                f"Unknown stage '{stage}'. Valid stages: {ALL_STAGE_NAMES}"
             )
         return STAGE_CONTRACT_MAP[stage]
 
@@ -92,4 +102,38 @@ class PipelineOrchestrator:
             "completed": len(completed_stages & set(STAGE_NAMES)),
             "remaining": [s for s in STAGE_NAMES if s not in completed_stages],
             "next": self.next_runnable_stage(completed_stages),
+        }
+
+    # ── Delta regeneration (PDR §07) ───────────────────────────────────────────
+
+    def downstream_stages(self, stage: str) -> list[str]:
+        """Return all stages that transitively depend on `stage`."""
+        if stage not in STAGE_UPSTREAM_MAP:
+            raise PipelineError(f"Unknown stage '{stage}'")
+        dependents: set[str] = set()
+        frontier = [stage]
+        while frontier:
+            current = frontier.pop()
+            for s, required in STAGE_UPSTREAM_MAP.items():
+                if current in required and s not in dependents:
+                    dependents.add(s)
+                    frontier.append(s)
+        # Preserve canonical order
+        return [s for s in ALL_STAGE_NAMES if s in dependents]
+
+    def delta_scope(self, edited_stage: str) -> dict[str, list[str]]:
+        """Compute the minimum rerun scope when `edited_stage` changes.
+
+        Returns a dict with:
+          - edited: the stage the user edited
+          - invalidated: downstream stages whose cached output is no longer valid
+          - rerun_order: canonical order to re-execute (edited + invalidated)
+        """
+        invalidated = self.downstream_stages(edited_stage)
+        all_rerun = [edited_stage] + invalidated
+        rerun_order = [s for s in ALL_STAGE_NAMES if s in set(all_rerun)]
+        return {
+            "edited": edited_stage,
+            "invalidated": invalidated,
+            "rerun_order": rerun_order,
         }

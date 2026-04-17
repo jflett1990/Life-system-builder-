@@ -142,10 +142,37 @@ class RenderService:
                     "sequence": p.sequence,
                     "archetype": p.archetype,
                     "page_break": p.page_break,
+                    "estimated_height_px": p.estimated_height_px,
+                    "overflow_risk": p.overflow_risk,
                 }
                 for p in manifest.pages
             ],
             "validation_report": manifest.validation_report,
+            "layout_report": manifest.layout_report,
+        }
+
+    def get_layout_report(self, project_id: int) -> dict:
+        """Build the manifest and return the layout report without rendering HTML.
+
+        This is a lightweight call — no Playwright, no HTML generation.
+        Suitable for surfacing geometry health in the UI during pipeline execution.
+        """
+        all_outputs = self._pipeline.all_stage_outputs_as_dict(project_id)
+        if not all_outputs:
+            raise RenderServiceError(f"No outputs for project {project_id}")
+
+        theme_tokens = self._extract_theme_tokens(all_outputs)
+        manifest = self._manifest_builder.build(project_id, all_outputs, theme_tokens)
+
+        from validators.layout_safety import validate_layout_safety
+        safety = validate_layout_safety(manifest)
+
+        return {
+            "project_id": project_id,
+            "document_id": manifest.document_id,
+            "page_count": manifest.page_count,
+            "layout_report": manifest.layout_report,
+            "safety": safety.to_dict(),
         }
 
     # ── Internal ───────────────────────────────────────────────────────────────

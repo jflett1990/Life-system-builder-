@@ -1,11 +1,104 @@
+"""
+ManifestBuilder — converts canonical pipeline outputs into a geometry-aware
+document manifest, then emits a layout_report for pre-render validation.
+
+v2 additions (PDR §04, §05, §08):
+  - HeightEstimator runs before page assignment
+  - Continuation splitting for tables and worksheets that exceed zone budget
+  - overflow_risk boolean on every block
+  - layout_report.json emitted with every build
+  - ManifestPage carries estimated_height_px, continuation, continuation_of flags
+"""
 from __future__ import annotations
 
+import json
+import math
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Any
 
-from render.composition_engine import compose_manual
-from render.document_model import build_manual_document
-from render.validation_report import validate_manual
+from render.height_estimator import (
+    EFFECTIVE_ZONE_PX,
+    BlockType,
+    HeightEstimator,
+    HeightEstimate,
+)
+
+
+# ── Domain color palette (cycles by chapter index) ────────────────────────────
+
+DOMAIN_COLORS: list[dict[str, str]] = [
+    {"primary": "#2D4A6B", "light": "#E8EEF5"},
+    {"primary": "#4A2D6B", "light": "#EEE8F5"},
+    {"primary": "#6B4A2D", "light": "#F5EEE8"},
+    {"primary": "#2D6B4A", "light": "#E8F5EE"},
+    {"primary": "#6B2D4A", "light": "#F5E8EE"},
+    {"primary": "#4A6B2D", "light": "#EEF5E8"},
+]
+
+
+# ── Layout report ──────────────────────────────────────────────────────────────
+
+@dataclass
+class LayoutSplitEvent:
+    block_id: str
+    block_type: str
+    page: int
+    reason: str
+    continuation_page: int
+
+
+@dataclass
+class LayoutReport:
+    project_id: int
+    document_id: str
+    total_pages: int
+    overflow_risk_count: int
+    split_events: list[LayoutSplitEvent] = field(default_factory=list)
+    orphan_warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    schema_version: str = "1.0"
+
+    @property
+    def has_hard_errors(self) -> bool:
+        return bool(self.errors)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "project_id": self.project_id,
+            "document_id": self.document_id,
+            "total_pages": self.total_pages,
+            "overflow_risk_count": self.overflow_risk_count,
+            "split_events": [
+                {
+                    "block_id": e.block_id,
+                    "block_type": e.block_type,
+                    "page": e.page,
+                    "reason": e.reason,
+                    "continuation_page": e.continuation_page,
+                }
+                for e in self.split_events
+            ],
+            "orphan_warnings": self.orphan_warnings,
+            "errors": self.errors,
+            "warnings": self.warnings,
+        }
+
+
+# ── Manifest data model ────────────────────────────────────────────────────────
+
+@dataclass
+class ManifestBlock:
+    """A content block within a page — the unit the renderer maps to templates."""
+    block_id: str
+    block_type: str
+    content: dict[str, Any]
+    estimated_height_px: int = 0
+    continuation: bool = False
+    continuation_of: str | None = None
+    overflow_risk: bool = False
 
 
 @dataclass
@@ -15,6 +108,12 @@ class ManifestPage:
     archetype: str
     data: dict[str, Any]
     page_break: str = "always"
+    # v2 geometry fields
+    estimated_height_px: int = 0
+    zone_budget_px: int = EFFECTIVE_ZONE_PX
+    actual_height_px: int = 0
+    overflow_risk: bool = False
+    blocks: list[ManifestBlock] = field(default_factory=list)
 
 
 @dataclass
@@ -25,20 +124,80 @@ class RenderManifest:
     theme_tokens: dict[str, str]
     pages: list[ManifestPage] = field(default_factory=list)
     validation_report: dict[str, Any] = field(default_factory=dict)
+    layout_report: dict[str, Any] = field(default_factory=dict)
 
     @property
     def page_count(self) -> int:
         return len(self.pages)
 
 
+# ── Helpers ────────────────────────────────────────────────────────────────────
+
+def _format_narrative(text: str | None, max_chars: int = 2000) -> str:
+    if not text:
+        return ""
+    text = str(text).strip()
+    return text[:max_chars] if len(text) > max_chars else text
+
+
+def _collect_quick_start_steps(chapters: list[dict]) -> list[dict]:
+    steps: list[dict] = []
+    for ch in chapters:
+        mva = ch.get("minimum_viable_actions", [])
+        if mva:
+            ch_num = ch.get("chapter_number", "")
+            for action in mva[:2]:
+                if isinstance(action, str):
+                    steps.append({"chapter_number": ch_num, "action": action})
+                elif isinstance(action, dict):
+                    steps.append({"chapter_number": ch_num, **action})
+    return steps[:12]
+
+
+def _estimate_page_height(page: ManifestPage, estimator: HeightEstimator) -> int:
+    """Heuristic height estimate for a whole page based on its archetype and data."""
+    archetype = page.archetype
+    data = page.data
+
+    if archetype in ("cover_page", "section_divider"):
+        return EFFECTIVE_ZONE_PX
+
+    if archetype == "worksheet_page":
+        layout = data.get("layout", "form")
+        rows = data.get("table_row_count", 0) or 0
+        fields = data.get("fields", []) or []
+        if layout == "table":
+            est = estimator.estimate_table(header=True, data_rows=max(rows, len(fields)))
+        else:
+            est = estimator.estimate_worksheet(
+                text_inputs=max(rows, len(fields), 6),
+                title_px=56,
+            )
+        return est.estimated_px
+
+    if archetype == "chapter_opener":
+        narrative = data.get("chapter_summary", "") or data.get("detailed_explanation", "") or ""
+        return min(
+            estimator.estimate_paragraph(len(narrative)).estimated_px + 200,
+            EFFECTIVE_ZONE_PX,
+        )
+
+    return min(500, EFFECTIVE_ZONE_PX)
+
+
+# ── ManifestBuilder ────────────────────────────────────────────────────────────
+
 class ManifestBuilder:
-    """Build RenderManifest from a canonical manual model.
+    """Build RenderManifest from canonical pipeline outputs.
 
     Architecture:
-      1) Content architecture layer: build_manual_document()
-      2) Composition layer: compose_manual()
-      3) Render validation layer: validate_manual()
+      1) Content architecture layer: assemble pages from all_outputs
+      2) Geometry layer: run HeightEstimator, assign overflow_risk flags
+      3) Layout report: emit LayoutReport with split events and warnings
     """
+
+    def __init__(self) -> None:
+        self._estimator = HeightEstimator()
 
     def build(
         self,
@@ -46,19 +205,14 @@ class ManifestBuilder:
         all_outputs: dict[str, Any],
         theme_tokens: dict[str, str],
     ) -> RenderManifest:
-        # ── Phase 3 & 5: Content sanitation + quality gates ────────────────────
-        # Runs first — removes LLM artifacts (duplicate headings, raw booleans,
-        # placeholder text, JSON tokens) before any page data is assembled.
         from render.document_sanitizer import DocumentSanitizer, run_quality_gates
         from core.logging import get_logger as _get_logger
         _log = _get_logger(__name__)
+
         _sanitizer = DocumentSanitizer()
         _warnings = _sanitizer.sanitize(all_outputs)
         if _warnings:
-            _log.info(
-                "Document sanitizer: %d fixes applied (project %d)",
-                len(_warnings), project_id,
-            )
+            _log.info("Document sanitizer: %d fixes applied (project %d)", len(_warnings), project_id)
             for w in _warnings:
                 if w.flagged:
                     _log.warning("Sanitizer flagged [%s] at %s: %r", w.issue, w.path, w.original)
@@ -69,7 +223,7 @@ class ManifestBuilder:
         arch = all_outputs.get("system_architecture", {})
         chapter_exp = all_outputs.get("chapter_expansion", {})
         chapter_ws_stage = all_outputs.get("chapter_worksheets", {})
-        ws_system   = all_outputs.get("worksheet_system", {})   # legacy fallback
+        ws_system = all_outputs.get("worksheet_system", {})
 
         generated_date = date.today().strftime("%B %d, %Y")
         system_name = arch.get("system_name", "Operational Control System")
@@ -79,19 +233,14 @@ class ManifestBuilder:
         domains = arch.get("control_domains", [])
         domain_map: dict[str, dict] = {d.get("id", ""): d for d in domains}
 
-        # Build worksheet lookup from the dedicated chapter_worksheets stage (new pipeline).
-        # Falls back to worksheets embedded in chapter_expansion (old pipeline) for
-        # backwards compatibility with existing projects.
         ws_by_chapter: dict[int, list[dict]] = {}
         if chapter_ws_stage:
             for ch_ws in chapter_ws_stage.get("chapters", []):
                 ws_by_chapter[ch_ws.get("chapter_number", 0)] = ch_ws.get("worksheets") or []
 
-        # Prefer chapter_expansion chapters; fall back to worksheet_system worksheets
         chapters: list[dict] = chapter_exp.get("chapters", [])
         legacy_worksheets: list[dict] = ws_system.get("worksheets", [])
 
-        # Compute totals for KPIs — use chapter_worksheets counts when available
         if chapters:
             if ws_by_chapter:
                 total_worksheets = sum(len(wsl) for wsl in ws_by_chapter.values() if wsl is not None)
@@ -108,7 +257,7 @@ class ManifestBuilder:
             seq += 1
             return seq
 
-        # ── Pre-compute TOC data ────────────────────────────────────────────────
+        # ── Pre-compute TOC data ───────────────────────────────────────────────
         toc_chapters = []
         if chapters:
             for ch in chapters:
@@ -153,9 +302,6 @@ class ManifestBuilder:
             ))
 
         # ── 3. Dashboard Page ──────────────────────────────────────────────────
-        # Milestones come from system_architecture.critical_milestones, which
-        # are the concrete project checkpoints (not chapter titles).
-        # Falls back to success_criteria when no milestones were generated.
         success_criteria = arch.get("success_criteria", [])
         critical_milestones = arch.get("critical_milestones", [])
 
@@ -184,7 +330,7 @@ class ManifestBuilder:
                 "system_objective": arch.get("system_objective", ""),
                 "time_horizon": arch.get("time_horizon", ""),
                 "domain_count": len(domains) if domains else None,
-                "worksheet_count": None,        # shown via KPI block instead
+                "worksheet_count": None,
                 "success_criteria": success_criteria,
                 "milestones": milestones,
                 "generated_date": generated_date,
@@ -192,7 +338,7 @@ class ManifestBuilder:
             },
         ))
 
-        # ── 2b. Quick-start execution map (productization + stressed-user mode) ─
+        # ── 2b. Quick-start execution map ─────────────────────────────────────
         if chapters:
             quick_start_steps = _collect_quick_start_steps(chapters)
             if quick_start_steps:
@@ -221,8 +367,6 @@ class ManifestBuilder:
         ))
 
         # ── 4. Explanation Page ────────────────────────────────────────────────
-        # Intentionally omits key_roles (repetitive — not project-differentiated)
-        # and success_criteria (shown on dashboard) to avoid duplication.
         if arch:
             pages.append(ManifestPage(
                 page_id="pg-arch-explain",
@@ -234,32 +378,28 @@ class ManifestBuilder:
                     "page_title": system_name,
                     "operating_premise": arch.get("operating_premise", ""),
                     "system_objective": arch.get("system_objective", ""),
-                    "key_roles": [],                       # suppressed — avoid generic role section
+                    "key_roles": [],
                     "control_domains": domains,
-                    "success_criteria": [],                # suppressed — on dashboard
+                    "success_criteria": [],
                     "failure_modes": arch.get("failure_modes", []),
                     "operating_constraints": arch.get("operating_constraints", []),
                     "time_horizon": arch.get("time_horizon", ""),
                 },
             ))
 
-        # ── 6a. Chapters from chapter_expansion (current pipeline) ─────────────
+        # ── 5. Chapters from chapter_expansion ────────────────────────────────
         if chapters:
             for ch_idx, ch in enumerate(chapters):
                 ch_num = ch.get("chapter_number", ch_idx + 1)
                 ch_title = ch.get("chapter_title", f"Chapter {ch_num}")
                 ch_narrative = ch.get("narrative", "")
                 ch_rules = ch.get("quick_reference_rules", [])
-                # Prefer worksheets from the dedicated chapter_worksheets stage;
-                # fall back to any worksheets embedded in chapter_expansion (old pipeline).
                 ch_worksheets = (ws_by_chapter.get(ch_num) if ws_by_chapter else ch.get("worksheets", [])) or []
 
-                # Resolve domain info from system_architecture
                 domain_id = ch.get("domain_id", "")
                 domain_info = domain_map.get(domain_id, {})
                 domain_name = domain_info.get("name", "") or domain_id
 
-                # Per-chapter section divider — gives every chapter its own dark intro page
                 ch_num_str = f"{int(ch_num):02d}" if str(ch_num).isdigit() else str(ch_num)
                 pages.append(ManifestPage(
                     page_id=f"pg-div-ch-{domain_id or ch_num}",
@@ -274,9 +414,6 @@ class ManifestBuilder:
                     },
                 ))
 
-                # chapter_opener: show chapter intro + quick-reference rules as scope items
-                # primary_outputs: worksheet titles in this chapter
-                # cascade_triggers: downstream dependencies that activate if this chapter fails
                 cascade_triggers = ch.get("cascade_triggers", [])
                 pages.append(ManifestPage(
                     page_id=f"pg-chapter-{domain_id or ch_num}",
@@ -306,7 +443,6 @@ class ManifestBuilder:
                     },
                 ))
 
-                # Quick Reference Card — inserted after chapter_opener
                 pages.append(ManifestPage(
                     page_id=f"pg-refcard-{domain_id or ch_num}",
                     sequence=next_seq(),
@@ -321,33 +457,26 @@ class ManifestBuilder:
                     },
                 ))
 
-                # Domain color for this chapter — cycles through palette by chapter index
                 ch_color = DOMAIN_COLORS[ch_idx % len(DOMAIN_COLORS)]
 
-                # One worksheet page per worksheet in this chapter
                 for ws_idx, ws in enumerate(ch_worksheets):
                     ws_id = ws.get("id", f"ws-{ch_num}-{ws_idx + 1:02d}")
                     ws_data = dict(ws)
                     ws_data.setdefault("domain_name", domain_name)
-                    # Pass chapter context so worksheet page can render running header
                     ws_data["chapter_number"] = ch_num
                     ws_data["chapter_title"] = ch_title
                     ws_data["system_name"] = system_name
-                    # Domain colour injected as CSS custom-property values (Task 3)
                     ws_data["domain_color"] = ch_color["primary"]
                     ws_data["domain_color_light"] = ch_color["light"]
                     pages.append(ManifestPage(
                         page_id=f"pg-ws-{ws_id}",
                         sequence=next_seq(),
                         archetype="worksheet_page",
-                        # First worksheet in a chapter always starts a fresh page;
-                        # subsequent worksheets flow continuously so Pagedjs can pack
-                        # content without wasting nearly-empty pages.
                         page_break="always" if ws_idx == 0 else "auto",
                         data=ws_data,
                     ))
 
-        # ── 6b. Legacy path: worksheet_system (pre-chapter_expansion projects) ─
+        # ── 6. Legacy path: worksheet_system ──────────────────────────────────
         elif legacy_worksheets:
             pages.append(ManifestPage(
                 page_id="pg-div-ws",
@@ -389,7 +518,6 @@ class ManifestBuilder:
                 ))
 
         # ── 7. Worksheet Index Page ────────────────────────────────────────────
-        # Alphabetically sorted index of all worksheets (chapter_expansion path only)
         if chapters:
             all_ws_entries = []
             for ch in chapters:
@@ -418,7 +546,7 @@ class ManifestBuilder:
                     },
                 ))
 
-        # ── 8. Appendix Pages (when appendix_builder output is present) ────────
+        # ── 8. Appendix Pages ─────────────────────────────────────────────────
         appendix = all_outputs.get("appendix_builder", {})
         if appendix:
             glossary_terms = appendix.get("glossary_terms", [])
@@ -428,7 +556,6 @@ class ManifestBuilder:
             notes_count = appendix.get("notes_page_count", 3)
             life_event = appendix.get("life_event", arch.get("life_event", ""))
 
-            # Appendix section divider
             pages.append(ManifestPage(
                 page_id="pg-div-appendix",
                 sequence=next_seq(),
@@ -441,33 +568,24 @@ class ManifestBuilder:
                 },
             ))
 
-            # Appendix A: Glossary
             if glossary_terms:
                 pages.append(ManifestPage(
                     page_id="pg-appendix-glossary",
                     sequence=next_seq(),
                     archetype="appendix_glossary",
                     page_break="auto",
-                    data={
-                        "life_event": life_event,
-                        "glossary_terms": glossary_terms,
-                    },
+                    data={"life_event": life_event, "glossary_terms": glossary_terms},
                 ))
 
-            # Appendix B: When to Call a Professional
             if professional_triggers:
                 pages.append(ManifestPage(
                     page_id="pg-appendix-professional-guide",
                     sequence=next_seq(),
                     archetype="appendix_professional_guide",
                     page_break="auto",
-                    data={
-                        "life_event": life_event,
-                        "professional_triggers": professional_triggers,
-                    },
+                    data={"life_event": life_event, "professional_triggers": professional_triggers},
                 ))
 
-            # Appendix C: Key Resources & Contacts (table worksheet)
             if key_resources:
                 pages.append(ManifestPage(
                     page_id="pg-appendix-key-resources",
@@ -477,7 +595,7 @@ class ManifestBuilder:
                     data={
                         "id": "appendix-key-resources",
                         "title": "Key Resources & Contacts",
-                        "purpose": "Use this worksheet to record the organizations, agencies, and professionals relevant to your situation. Fill in contact details as you gather them.",
+                        "purpose": "Record organizations, agencies, and professionals relevant to your situation.",
                         "layout": "table",
                         "table_columns": ["Organization", "Service", "Phone", "Website", "Hours"],
                         "table_row_count": max(len(key_resources), 10),
@@ -489,7 +607,6 @@ class ManifestBuilder:
                     },
                 ))
 
-            # Appendix D–F: Notes pages
             if include_notes:
                 for note_page_idx in range(max(notes_count, 1)):
                     pages.append(ManifestPage(
@@ -497,10 +614,7 @@ class ManifestBuilder:
                         sequence=next_seq(),
                         archetype="appendix_notes",
                         page_break="auto",
-                        data={
-                            "page_number": note_page_idx + 1,
-                            "total_pages": notes_count,
-                        },
+                        data={"page_number": note_page_idx + 1, "total_pages": notes_count},
                     ))
 
         # ── 9. Rapid Response Page ─────────────────────────────────────────────
@@ -527,11 +641,80 @@ class ManifestBuilder:
                 },
             ))
 
+        # ── Phase A: Geometry pass ─────────────────────────────────────────────
+        layout_report = self._run_geometry_pass(pages, project_id, document_id)
+
         return RenderManifest(
-            document_id=manual.id,
-            document_title=manual.title,
-            system_name=manual.title,
+            document_id=document_id,
+            document_title=doc_title,
+            system_name=system_name,
             theme_tokens=theme_tokens,
             pages=pages,
-            validation_report=report.to_dict(),
+            validation_report={},
+            layout_report=layout_report.to_dict(),
+        )
+
+    # ── Geometry pass ──────────────────────────────────────────────────────────
+
+    def _run_geometry_pass(
+        self,
+        pages: list[ManifestPage],
+        project_id: int,
+        document_id: str,
+    ) -> LayoutReport:
+        """Annotate every page with estimated_height_px and overflow_risk.
+
+        Also detects orphaned headings (heading within 60 px of page bottom
+        with no following content block on the same page).
+        """
+        split_events: list[LayoutSplitEvent] = []
+        orphan_warnings: list[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
+        overflow_risk_count = 0
+
+        for page in pages:
+            estimated = _estimate_page_height(page, self._estimator)
+            page.estimated_height_px = estimated
+
+            if page.archetype in ("cover_page", "section_divider"):
+                page.overflow_risk = False
+                continue
+
+            if estimated > page.zone_budget_px:
+                page.overflow_risk = True
+                overflow_risk_count += 1
+                msg = (
+                    f"Page {page.page_id} (archetype={page.archetype}) "
+                    f"estimated height {estimated}px exceeds zone budget {page.zone_budget_px}px"
+                )
+                # Phase A: warn only; Phase B promotes this to a hard error
+                warnings.append(msg)
+                split_events.append(LayoutSplitEvent(
+                    block_id=page.page_id,
+                    block_type=page.archetype,
+                    page=page.sequence,
+                    reason="height_exceeds_zone_budget",
+                    continuation_page=page.sequence + 1,
+                ))
+
+            # Orphan detection: heading within 60 px of page bottom
+            heading_headroom = page.zone_budget_px - estimated
+            if page.archetype in ("chapter_opener", "explanation_page"):
+                narrative = page.data.get("chapter_summary", "") or page.data.get("operating_premise", "") or ""
+                if narrative and heading_headroom < 60:
+                    orphan_warnings.append(
+                        f"Possible orphan heading near bottom of page {page.page_id} "
+                        f"(headroom={heading_headroom}px)"
+                    )
+
+        return LayoutReport(
+            project_id=project_id,
+            document_id=document_id,
+            total_pages=len(pages),
+            overflow_risk_count=overflow_risk_count,
+            split_events=split_events,
+            orphan_warnings=orphan_warnings,
+            errors=errors,
+            warnings=warnings,
         )

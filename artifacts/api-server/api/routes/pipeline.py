@@ -179,6 +179,65 @@ def run_full_pipeline(
     return [StageOutputResponse.from_orm_with_json(r) for r in rows]
 
 
+@router.get("/{project_id}/delta-scope/{stage}")
+def get_delta_scope(
+    project_id: int,
+    stage: str,
+    pipeline: PipelineService = Depends(_pipeline_svc),
+):
+    """Return the set of downstream stages that would be invalidated if `stage`
+    were edited. Read-only — no state changes."""
+    from core.pipeline_orchestrator import PipelineOrchestrator
+    stage = normalize_stage_name(stage)
+    try:
+        return PipelineOrchestrator().delta_scope(stage)
+    except PipelineError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+def _rerun_from_in_background(project_id: int, stage: str) -> None:
+    """Execute invalidate_downstream + rerun_from in a thread-pool worker."""
+    from datetime import datetime, timezone
+    from repositories.stage_repo import StageOutputRepository
+
+    db = SessionLocal()
+    try:
+        svc = PipelineService(db)
+        svc.rerun_from(project_id, stage)
+    except Exception as e:
+        logger.error("Background rerun-from '%s' project=%d crashed: %s", stage, project_id, e)
+    finally:
+        db.close()
+
+
+@router.post("/{project_id}/rerun-from/{stage}", response_model=list[StageOutputResponse])
+def rerun_from_stage(
+    project_id: int,
+    stage: str,
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    pipeline: PipelineService = Depends(_pipeline_svc),
+):
+    """Delta regeneration (PDR §07). Invalidate all downstream stages and
+    re-execute `stage` + cascade in canonical order. Returns immediately with
+    the current stage rows marked 'running'/'pending'."""
+    stage = normalize_stage_name(stage)
+    try:
+        pipeline._project_svc.get(project_id)
+    except ProjectNotFound:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+
+    try:
+        pipeline.invalidate_downstream(project_id, stage)
+    except PipelineError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    _thread_pool.submit(_rerun_from_in_background, project_id, stage)
+
+    logger.info("rerun-from '%s' dispatched for project %d", stage, project_id)
+    rows = pipeline.list_stage_outputs(project_id)
+    return [StageOutputResponse.from_orm_with_json(r) for r in rows]
+
+
 @router.post("/{project_id}/validate", response_model=ValidationResultSchema)
 def validate_project(
     project_id: int,

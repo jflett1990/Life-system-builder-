@@ -41,6 +41,19 @@ def get_cached_render(project_id: int, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/{project_id}/layout")
+def get_layout_report(project_id: int, svc: RenderService = Depends(_render_svc)):
+    """Return the geometry layout report for the most recent manifest build.
+
+    Surfaces overflow_risk pages, orphan warnings, and split events without
+    triggering a full re-render. Suitable for the UI to display layout health.
+    """
+    try:
+        return svc.get_layout_report(project_id)
+    except RenderServiceError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.get("/{project_id}/manifest")
 def get_manifest(project_id: int, svc: RenderService = Depends(_render_svc)):
     """Return the render manifest — ordered page list with archetypes."""

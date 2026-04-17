@@ -47,7 +47,7 @@ from models_integration import (
     ModelOutputError,
 )
 from repositories.stage_repo import StageOutputRepository
-from schemas.stage import STAGE_NAMES
+from schemas.stage import STAGE_NAMES, ALL_STAGE_NAMES
 from services.project_service import ProjectService
 
 logger = get_logger(__name__)
@@ -90,8 +90,16 @@ class PipelineService:
     def run_stage(
         self, project_id: int, stage: str, force: bool = False
     ) -> StageOutput:
-        if stage not in STAGE_NAMES:
-            raise PipelineError(f"Unknown stage '{stage}'. Valid: {STAGE_NAMES}")
+        if stage not in ALL_STAGE_NAMES:
+            raise PipelineError(f"Unknown stage '{stage}'. Valid: {ALL_STAGE_NAMES}")
+
+        # v2 stages have dedicated handlers that bypass the standard LLM contract flow
+        if stage == "research_graph":
+            return self._run_research_graph_stage(project_id, force=force)
+        if stage == "content_plan":
+            return self._run_content_plan_stage(project_id, force=force)
+        if stage == "voice_profile":
+            return self._run_voice_profile_stage(project_id, force=force)
 
         project = self._project_svc.get(project_id)
         completed = self.completed_stages(project_id)
@@ -283,6 +291,9 @@ class PipelineService:
             logger.error("chapter_expansion aborted: document_outline has no chapters")
             return
 
+        # Phase C: load voice profile for genericity guard (optional — no-op if absent)
+        voice_profile_output = all_outputs.get("voice_profile", {})
+
         # For upstream context injection, the assembler needs system_architecture + document_outline
         upstream = orchestrator.collect_upstream_outputs(stage, all_outputs)
         assembler = _get_assembler()
@@ -305,6 +316,10 @@ class PipelineService:
             "(pass 1: narrative, pass 2: structure) max_workers=4",
             project_id, total,
         )
+
+        # Phase C: instantiate genericity guard once per stage run (shared across chapters)
+        from authoring.genericity_guard import GenericityGuard
+        _guard = GenericityGuard(project_id=project_id, voice_profile=voice_profile_output)
 
         # ── Per-chapter worker (pure, no DB access, thread-safe) ────────────────
         def _expand_one(chapter_plan: dict, idx: int) -> tuple[int, str, dict | None, str]:
@@ -372,6 +387,17 @@ class PipelineService:
                     "chapter_expansion | chapter %d | Pass 1 complete | ~%d words",
                     chapter_number, len(narrative.split()),
                 )
+
+                # ── Phase C: Genericity guard on Pass 1 narrative (retry budget=2) ──
+                guard_result, should_retry = _guard.check_with_retry_budget(narrative, max_retries=2)
+                if not guard_result.passed and should_retry:
+                    logger.info(
+                        "chapter_expansion | chapter %d | genericity guard FAIL — "
+                        "injecting retry context into Pass 2",
+                        chapter_number,
+                    )
+                    # Inject guard rejection context into the structure pass payload
+                    narrative_fix_instructions = guard_result.retry_context
 
                 # ── Pass 2: Structure (quick_reference_rules, cascade_triggers, scenario, metrics)
                 # Inject the narrative so every structural element is grounded in the chapter content.
@@ -572,6 +598,17 @@ class PipelineService:
         total_words = sum(
             len(c.get("narrative", "").split()) for c in expanded_chapters
         )
+
+        # Phase C: post-generation validators (non-blocking — results attached to validation_result)
+        validation_summary = self._run_post_chapter_validators(
+            project_id=project_id,
+            expanded_chapters=expanded_chapters,
+            voice_profile=voice_profile_output,
+            research_graph=all_outputs.get("research_graph", {}),
+        )
+        if validation_summary:
+            stage_row.set_validation(validation_summary)
+
         stage_row.preview_text = (
             f"{len(expanded_chapters)} chapters expanded | "
             f"~{total_words:,} words of narrative generated"
@@ -593,6 +630,79 @@ class PipelineService:
             "chapter_expansion COMPLETE | project=%d | chapters=%d/%d | ~%d total words",
             project_id, len(expanded_chapters), len(chapters_plan), total_words,
         )
+
+    def _run_post_chapter_validators(
+        self,
+        project_id: int,
+        expanded_chapters: list[dict[str, Any]],
+        voice_profile: dict[str, Any],
+        research_graph: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Run voice_compliance and research_integrity validators post chapter generation.
+        Attaches results to stage_row.validation_result. Non-blocking in Phase C —
+        surfaces violations for observability without rejecting the stage."""
+        if not expanded_chapters:
+            return None
+
+        chapter_packets = [
+            {
+                "chapter_id": str(c.get("chapter_number", i + 1)),
+                "blocks": [
+                    {
+                        "block_id": f"narrative_{c.get('chapter_number', i + 1)}",
+                        "block_type": "narrative",
+                        "content": c.get("narrative", ""),
+                        "fact_ids": c.get("fact_ids", []) or [],
+                    }
+                ],
+            }
+            for i, c in enumerate(expanded_chapters)
+        ]
+
+        summary: dict[str, Any] = {}
+
+        if voice_profile:
+            try:
+                from validators.voice_compliance import VoiceComplianceValidator
+                vcv = VoiceComplianceValidator(project_id=project_id, voice_profile=voice_profile)
+                vc_result = vcv.validate_chapters(chapter_packets)
+                summary["voice_compliance"] = vc_result.to_dict()
+                logger.info(
+                    "voice_compliance | project=%d | passed=%s | failed_chapters=%d",
+                    project_id, vc_result.passed, vc_result.to_dict().get("chapters_failed", 0),
+                )
+            except Exception as e:
+                logger.warning("voice_compliance validator error: %s", str(e)[:200])
+                summary["voice_compliance"] = {"error": str(e)[:200]}
+
+        if research_graph:
+            try:
+                from validators.research_integrity import ResearchIntegrityValidator
+                riv = ResearchIntegrityValidator(research_graph=research_graph)
+                per_chapter: list[dict[str, Any]] = []
+                total_coverage = 0.0
+                all_passed = True
+                for packet in chapter_packets:
+                    ri_result = riv.validate_chapter(packet)
+                    per_chapter.append(ri_result.to_dict())
+                    total_coverage += ri_result.citation_coverage
+                    if not ri_result.passed:
+                        all_passed = False
+                avg_coverage = total_coverage / max(len(chapter_packets), 1)
+                summary["research_integrity"] = {
+                    "passed": all_passed,
+                    "average_citation_coverage": round(avg_coverage, 3),
+                    "chapters": per_chapter,
+                }
+                logger.info(
+                    "research_integrity | project=%d | passed=%s | avg_coverage=%.0f%%",
+                    project_id, all_passed, avg_coverage * 100,
+                )
+            except Exception as e:
+                logger.warning("research_integrity validator error: %s", str(e)[:200])
+                summary["research_integrity"] = {"error": str(e)[:200]}
+
+        return summary or None
 
     @staticmethod
     def _chapter_narrative_defects(narrative: str) -> list[str]:
@@ -854,6 +964,214 @@ class PipelineService:
             "chapter_worksheets COMPLETE | project=%d | chapters=%d/%d | worksheets=%d",
             project_id, len(chapter_results), len(chapters_plan), total_worksheets,
         )
+
+    # ── v2 stage handlers ──────────────────────────────────────────────────────
+
+    def _make_v2_stage_row(
+        self,
+        project_id: int,
+        stage: str,
+        force: bool,
+    ) -> StageOutput | None:
+        """Upsert a stage row to 'running'. Returns None if stage is cached and force=False."""
+        completed = self.completed_stages(project_id)
+        if stage in completed and not force:
+            existing = self._repo.find_by_project_and_stage(project_id, stage)
+            if existing:
+                logger.info("Stage '%s' already complete for project %d — returning cached", stage, project_id)
+                return existing
+
+        orchestrator.check_upstream_complete(stage, completed)
+        row = self._repo.find_by_project_and_stage(project_id, stage)
+        if row:
+            row.status = "running"
+            row.error_message = None
+            row.revision_number += 1
+            row.updated_at = datetime.now(timezone.utc)
+        else:
+            row = StageOutput(project_id=project_id, stage_name=stage, status="running", revision_number=1)
+            self._repo.insert(row)
+        self._repo.save(row)
+        return row
+
+    def _run_research_graph_stage(self, project_id: int, *, force: bool = False) -> StageOutput:
+        """Stage 1 — Research Graph: deterministic retrieval + fact extraction."""
+        from research.graph_builder import build_research_graph
+
+        stage_row = self._make_v2_stage_row(project_id, "research_graph", force)
+        if stage_row and stage_row.status == "complete":
+            return stage_row
+
+        project = self._project_svc.get(project_id)
+        all_outputs = self.all_stage_outputs_as_dict(project_id)
+        arch = all_outputs.get("system_architecture", {})
+
+        brief = {
+            "life_event_type": project.life_event or arch.get("life_event", ""),
+            "life_event":      project.life_event or arch.get("life_event", ""),
+            "people":          arch.get("key_roles", []),
+            "systems":         [d.get("name", "") for d in arch.get("control_domains", [])],
+            "jurisdiction":    project.context or None,
+            "jurisdiction_tags": [],
+        }
+
+        try:
+            graph, followup_questions = build_research_graph(project_id, brief)
+            output = {
+                **graph.model_dump(),
+                "followup_questions": followup_questions,
+            }
+            stage_row.set_output(output)
+            stage_row.preview_text = (
+                f"{graph.total_facts} facts | coverage={'PASS' if graph.critical_coverage_met else 'FAIL'} "
+                f"| conflicts={graph.conflict_count} | low_conf={graph.low_confidence_count}"
+            )
+            stage_row.status = "complete"
+            logger.info(
+                "research_graph COMPLETE | project=%d | facts=%d | coverage_met=%s",
+                project_id, graph.total_facts, graph.critical_coverage_met,
+            )
+        except Exception as e:
+            stage_row.status = "failed"
+            stage_row.error_message = str(e)
+            logger.error("research_graph FAILED | project=%d | %s", project_id, str(e)[:200])
+        finally:
+            stage_row.updated_at = datetime.now(timezone.utc)
+            self._repo.save(stage_row)
+
+        return stage_row
+
+    def _run_content_plan_stage(self, project_id: int, *, force: bool = False) -> StageOutput:
+        """Stage 3 — Content Plan: deterministic chapter depth planning."""
+        from authoring.content_planner import ContentPlanner
+
+        stage_row = self._make_v2_stage_row(project_id, "content_plan", force)
+        if stage_row and stage_row.status == "complete":
+            return stage_row
+
+        project = self._project_svc.get(project_id)
+        all_outputs = self.all_stage_outputs_as_dict(project_id)
+        arch = all_outputs.get("system_architecture", {})
+        research_graph = all_outputs.get("research_graph", {})
+
+        brief = {"life_event": project.life_event or arch.get("life_event", ""), "audience": project.audience}
+        strategy_blueprint = {
+            "domains": [
+                {"domain_id": d.get("id", ""), "name": d.get("name", ""), "operating_principles": []}
+                for d in arch.get("control_domains", [])
+            ],
+            "risk_gates": [],
+        }
+
+        try:
+            planner = ContentPlanner()
+            plan = planner.build_content_plan(project_id, strategy_blueprint, research_graph, brief)
+            stage_row.set_output(plan.model_dump())
+            stage_row.preview_text = f"{len(plan.chapter_map)} chapters planned"
+            stage_row.status = "complete"
+            logger.info("content_plan COMPLETE | project=%d | chapters=%d", project_id, len(plan.chapter_map))
+        except Exception as e:
+            stage_row.status = "failed"
+            stage_row.error_message = str(e)
+            logger.error("content_plan FAILED | project=%d | %s", project_id, str(e)[:200])
+        finally:
+            stage_row.updated_at = datetime.now(timezone.utc)
+            self._repo.save(stage_row)
+
+        return stage_row
+
+    def _run_voice_profile_stage(self, project_id: int, *, force: bool = False) -> StageOutput:
+        """Stage 3b — Voice Profile: voice constraints and banned phrase list."""
+        from authoring.content_planner import ContentPlanner
+
+        stage_row = self._make_v2_stage_row(project_id, "voice_profile", force)
+        if stage_row and stage_row.status == "complete":
+            return stage_row
+
+        project = self._project_svc.get(project_id)
+        all_outputs = self.all_stage_outputs_as_dict(project_id)
+        arch = all_outputs.get("system_architecture", {})
+
+        brief = {
+            "life_event": project.life_event or arch.get("life_event", ""),
+            "audience": project.audience,
+            "tone": project.tone or "professional",
+        }
+        strategy_blueprint = {
+            "domains": [
+                {"domain_id": d.get("id", ""), "name": d.get("name", ""), "operating_principles": []}
+                for d in arch.get("control_domains", [])
+            ],
+        }
+
+        try:
+            planner = ContentPlanner()
+            vp = planner.build_voice_profile(project_id, brief, strategy_blueprint)
+            stage_row.set_output(vp.model_dump())
+            stage_row.preview_text = (
+                f"{len(vp.lexical_constraints)} constraints | "
+                f"{len(vp.generic_phrase_blocklist)} banned phrases"
+            )
+            stage_row.status = "complete"
+            logger.info(
+                "voice_profile COMPLETE | project=%d | constraints=%d",
+                project_id, len(vp.lexical_constraints),
+            )
+        except Exception as e:
+            stage_row.status = "failed"
+            stage_row.error_message = str(e)
+            logger.error("voice_profile FAILED | project=%d | %s", project_id, str(e)[:200])
+        finally:
+            stage_row.updated_at = datetime.now(timezone.utc)
+            self._repo.save(stage_row)
+
+        return stage_row
+
+    def invalidate_downstream(self, project_id: int, edited_stage: str) -> dict[str, Any]:
+        """Invalidate downstream stage cache for delta regeneration (PDR §07).
+
+        Marks every downstream stage as status='pending' (preserving stored JSON
+        for rollback but declaring it stale). The edited stage itself is NOT
+        deleted — callers should trigger a re-run explicitly via run_stage(force=True).
+        Returns the delta scope for inspection by the caller.
+        """
+        if edited_stage not in ALL_STAGE_NAMES:
+            raise PipelineError(f"Unknown stage '{edited_stage}'")
+
+        scope = orchestrator.delta_scope(edited_stage)
+        invalidated_now: list[str] = []
+        for s in scope["invalidated"]:
+            row = self._repo.find_by_project_and_stage(project_id, s)
+            if row and row.status == "complete":
+                row.status = "pending"
+                row.error_message = f"Invalidated by edit to upstream '{edited_stage}'"
+                row.updated_at = datetime.now(timezone.utc)
+                self._repo.save(row)
+                invalidated_now.append(s)
+        logger.info(
+            "delta_invalidate | project=%d | edited=%s | invalidated=%s",
+            project_id, edited_stage, invalidated_now,
+        )
+        return {
+            "edited": edited_stage,
+            "invalidated": invalidated_now,
+            "rerun_order": scope["rerun_order"],
+        }
+
+    def rerun_from(self, project_id: int, edited_stage: str) -> list[StageOutput]:
+        """Invalidate downstream stages and rerun the edited stage + all invalidated stages
+        in canonical order. Returns the resulting stage rows."""
+        scope = self.invalidate_downstream(project_id, edited_stage)
+        results: list[StageOutput] = []
+        for s in scope["rerun_order"]:
+            result = self.run_stage(project_id, s, force=True)
+            results.append(result)
+            if result.status in ("failed", "schema_failed"):
+                logger.warning(
+                    "Delta rerun halted at stage '%s' (status=%s)", s, result.status
+                )
+                break
+        return results
 
     def run_full_pipeline(self, project_id: int) -> list[StageOutput]:
         import time as _time

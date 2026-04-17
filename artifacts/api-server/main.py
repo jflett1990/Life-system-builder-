@@ -188,7 +188,7 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
 app.add_middleware(ApiKeyMiddleware)
 
 # ── Routers ──────────────────────────────────────────────────────────
-from api.routes import health, projects, pipeline, render, export, contracts
+from api.routes import health, projects, pipeline, render, export, contracts, telemetry
 
 app.include_router(health.router,     prefix="/api")
 app.include_router(projects.router,   prefix="/api")
@@ -196,6 +196,7 @@ app.include_router(pipeline.router,   prefix="/api")
 app.include_router(render.router,     prefix="/api")
 app.include_router(export.router,     prefix="/api")
 app.include_router(contracts.router,  prefix="/api")
+app.include_router(telemetry.router,  prefix="/api")
 
 
 if __name__ == "__main__":
