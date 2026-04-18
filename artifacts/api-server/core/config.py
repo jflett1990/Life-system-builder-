@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     # Number of parallel workers for the chapter_expansion stage.
     # Reduce if hitting rate limits; increase on high-concurrency OpenAI tiers.
     chapter_expansion_workers: int = 1   # serialize to avoid rate limits on session tokens
+    chapter_worksheets_workers: int = 1  # serialize worksheet calls; increase on paid API tiers
 
     # ── Server / CORS ─────────────────────────────────────────────────────────
     log_level: str = "INFO"

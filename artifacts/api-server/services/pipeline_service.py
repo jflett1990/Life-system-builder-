@@ -800,9 +800,10 @@ class PipelineService:
 
         total = len(chapters_plan)
 
+        _WS_WORKERS = getattr(settings, "chapter_worksheets_workers", 1)
         logger.info(
-            "chapter_worksheets | project=%d | starting parallel loop over %d chapters (max_workers=4)",
-            project_id, total,
+            "chapter_worksheets | project=%d | starting parallel loop over %d chapters (max_workers=%d)",
+            project_id, total, _WS_WORKERS,
         )
 
         # ── Per-chapter worker ────────────────────────────────────────────────
@@ -854,7 +855,7 @@ class PipelineService:
         raw_texts_by_number: dict[int, str] = {}
         completed_count = 0
 
-        _WORKERS = 4
+        _WORKERS = _WS_WORKERS
 
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=_WORKERS, thread_name_prefix="ws-worker"
