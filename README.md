@@ -106,6 +106,13 @@ pnpm --filter @workspace/life-system-builder run dev
 
 ---
 
+## Scenario test prompts
+
+- `docs/caregiver-marketing-test-prompt.md` — marketing-oriented caregiving system scenario.
+- `docs/columbia-restaurant-interview-test-prompt.md` — operations-heavy COO interview prep scenario for first-sommelier role.
+
+---
+
 ## API Reference
 
 All routes are prefixed with `/api`.
