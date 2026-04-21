@@ -67,6 +67,13 @@ The renderer is a pure structured-data → HTML transformation (no LLM):
 
 ---
 
+
+## Proposed v2 architecture
+
+A redesign proposal focused on reducing pipeline complexity, adding a dedicated research stage, and making PDF generation deterministic is documented in `docs/architecture-v2-proposal.md`.
+
+---
+
 ## Running Locally
 
 ### Prerequisites
@@ -96,6 +103,13 @@ pnpm --filter @workspace/life-system-builder run dev
 # Dev server starts on the port in $PORT (default 25676)
 # Vite proxies /api/* to localhost:8080 automatically
 ```
+
+---
+
+## Scenario test prompts
+
+- `docs/caregiver-marketing-test-prompt.md` — marketing-oriented caregiving system scenario.
+- `docs/columbia-restaurant-interview-test-prompt.md` — operations-heavy COO interview prep scenario for first-sommelier role.
 
 ---
 
