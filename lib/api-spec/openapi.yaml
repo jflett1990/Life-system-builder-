@@ -392,10 +392,14 @@ components:
       type: string
       enum:
         - system-architecture
-        - worksheet-system
+        - document-outline
+        - chapter-expansion
+        - chapter-worksheets
+        - appendix-builder
         - layout-mapping
         - render-blueprint
         - validation-audit
+        - product-launch-readiness
 
     StageStatus:
       type: string

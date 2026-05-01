@@ -18,34 +18,36 @@ class PipelineError(Exception):
 
 STAGE_CONTRACT_MAP: dict[str, str] = {
     # v1 stages
-    "system_architecture": "life_event_system_core",
-    "document_outline":    "document_outline",
-    "chapter_expansion":   "chapter_expansion",
-    "chapter_worksheets":  "chapter_worksheets",
-    "appendix_builder":    "appendix_builder",
-    "layout_mapping":      "layout_architecture_mapper",
-    "render_blueprint":    "pdf_render_blueprint",
-    "validation_audit":    "life_system_validation_agent",
+    "system_architecture":      "life_event_system_core",
+    "document_outline":         "document_outline",
+    "chapter_expansion":        "chapter_expansion",
+    "chapter_worksheets":       "chapter_worksheets",
+    "appendix_builder":         "appendix_builder",
+    "layout_mapping":           "layout_architecture_mapper",
+    "render_blueprint":         "pdf_render_blueprint",
+    "validation_audit":         "life_system_validation_agent",
+    "product_launch_readiness": "product_launch_readiness",
     # v2 stages (Phase C)
-    "research_graph":      "research_graph",
-    "content_plan":        "content_plan",
-    "voice_profile":       "voice_profile",
+    "research_graph":           "research_graph",
+    "content_plan":             "content_plan",
+    "voice_profile":            "voice_profile",
 }
 
 STAGE_UPSTREAM_MAP: dict[str, list[str]] = {
     # v1 stages
-    "system_architecture": [],
-    "document_outline":    ["system_architecture"],
-    "chapter_expansion":   ["system_architecture", "document_outline"],
-    "chapter_worksheets":  ["system_architecture", "document_outline", "chapter_expansion"],
-    "appendix_builder":    ["system_architecture", "document_outline", "chapter_expansion"],
-    "layout_mapping":      ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets"],
-    "render_blueprint":    ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "layout_mapping"],
-    "validation_audit":    ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "appendix_builder", "layout_mapping", "render_blueprint"],
+    "system_architecture":      [],
+    "document_outline":         ["system_architecture"],
+    "chapter_expansion":        ["system_architecture", "document_outline"],
+    "chapter_worksheets":       ["system_architecture", "document_outline", "chapter_expansion"],
+    "appendix_builder":         ["system_architecture", "document_outline", "chapter_expansion"],
+    "layout_mapping":           ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets"],
+    "render_blueprint":         ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "layout_mapping"],
+    "validation_audit":         ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "appendix_builder", "layout_mapping", "render_blueprint"],
+    "product_launch_readiness": ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "appendix_builder", "layout_mapping", "render_blueprint", "validation_audit"],
     # v2 stages — can run as soon as system_architecture is complete
-    "research_graph":      ["system_architecture"],
-    "content_plan":        ["system_architecture", "research_graph"],
-    "voice_profile":       ["system_architecture", "research_graph"],
+    "research_graph":           ["system_architecture"],
+    "content_plan":             ["system_architecture", "research_graph"],
+    "voice_profile":            ["system_architecture", "research_graph"],
 }
 
 

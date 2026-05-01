@@ -12,6 +12,7 @@ STAGE_NAMES = [
     "layout_mapping",
     "render_blueprint",
     "validation_audit",
+    "product_launch_readiness",
 ]
 
 # v2 stages — new pipeline additions (Phase C)

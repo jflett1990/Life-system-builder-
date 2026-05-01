@@ -10,6 +10,7 @@
     { "name": "pdf_render_blueprint",          "version": "1.0", "file": "v1/pdf_render_blueprint.json" },
     { "name": "life_system_validation_agent",  "version": "1.0", "file": "v1/life_system_validation_agent.json" },
     { "name": "render_system_builder",         "version": "1.0", "file": "v1/render_system_builder.json" },
-    { "name": "appendix_builder",              "version": "1.0", "file": "v1/appendix_builder.json" }
+    { "name": "appendix_builder",              "version": "1.0", "file": "v1/appendix_builder.json" },
+    { "name": "product_launch_readiness",      "version": "1.0", "file": "v1/product_launch_readiness.json" }
   ]
 }

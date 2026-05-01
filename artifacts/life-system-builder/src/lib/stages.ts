@@ -7,6 +7,7 @@ export const PIPELINE_STAGES = [
   "layout-mapping",
   "render-blueprint",
   "validation-audit",
+  "product-launch-readiness",
 ] as const;
 
 export type StageName = (typeof PIPELINE_STAGES)[number];
@@ -66,6 +67,12 @@ export const STAGE_META: Record<string, StageMeta> = {
     description: "Compiler-style structural audit — checks cross-stage references, field completeness, and render-readiness.",
     order: 8,
     modelRole: "executor",
+  },
+  "product-launch-readiness": {
+    label: "Product Launch Readiness",
+    description: "Go-to-market analysis — assesses commercial viability, delivers a launch verdict, pricing model, distribution channels, 30-day launch plan, and revenue estimate for bringing this guide to market.",
+    order: 9,
+    modelRole: "planner",
   },
 };
 
