@@ -1,7 +1,7 @@
 [project]
 name = "repl-nix-workspace"
 version = "0.1.0"
-description = "Add your description here"
+description = "Tutorial Builder — FastAPI backend for Vercel"
 requires-python = ">=3.11"
 dependencies = [
     "aiofiles>=25.1.0",
@@ -13,3 +13,7 @@ dependencies = [
     "sqlalchemy>=2.0.48",
     "uvicorn[standard]>=0.42.0",
 ]
+
+[tool.vercel]
+# Root main.py re-exports app; explicit entrypoint for Vercel's detector.
+entrypoint = "main:app"
