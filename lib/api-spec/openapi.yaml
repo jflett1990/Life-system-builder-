@@ -392,7 +392,10 @@ components:
       type: string
       enum:
         - system-architecture
-        - worksheet-system
+        - document-outline
+        - chapter-expansion
+        - chapter-worksheets
+        - appendix-builder
         - layout-mapping
         - render-blueprint
         - validation-audit
@@ -404,6 +407,7 @@ components:
         - running
         - complete
         - failed
+        - schema_failed
 
     Project:
       type: object
@@ -414,7 +418,16 @@ components:
           type: string
         lifeEvent:
           type: string
+          description: Tutorial request or walkthrough prompt.
+        audience:
+          type: string
+        tone:
+          type: string
         context:
+          type: string
+        formattingProfile:
+          type: string
+        artifactDensity:
           type: string
         status:
           type: string
@@ -441,7 +454,16 @@ components:
           type: string
         lifeEvent:
           type: string
+          description: Tutorial request or walkthrough prompt.
+        audience:
+          type: string
+        tone:
+          type: string
         context:
+          type: string
+        formattingProfile:
+          type: string
+        artifactDensity:
           type: string
         status:
           type: string
@@ -556,6 +578,7 @@ components:
           type: string
         lifeEvent:
           type: string
+          description: Tutorial request or walkthrough prompt.
         totalStages:
           type: integer
         completedStages:
@@ -655,7 +678,16 @@ components:
           type: string
         lifeEvent:
           type: string
+          description: Tutorial request or walkthrough prompt.
+        audience:
+          type: string
+        tone:
+          type: string
         context:
+          type: string
+        formattingProfile:
+          type: string
+        artifactDensity:
           type: string
       required:
         - title
@@ -668,7 +700,15 @@ components:
           type: string
         lifeEvent:
           type: string
+        audience:
+          type: string
+        tone:
+          type: string
         context:
+          type: string
+        formattingProfile:
+          type: string
+        artifactDensity:
           type: string
 
     ErrorResponse:

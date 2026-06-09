@@ -53,7 +53,7 @@ export default function ValidationPage() {
 
   // Load persisted validation result on mount
   const { data: persistedResult } = useGetValidationResult(projectId, {
-    query: { retry: false, staleTime: 30_000 },
+    query: { queryKey: ["validation", projectId], retry: false, staleTime: 30_000 },
   });
 
   const { mutate: validate, isPending } = useValidateProject({
