@@ -52,6 +52,7 @@ STAGE_ROUTING: dict[str, ModelTier] = {
 
     # v1 legacy stages — mapped to mid tier (existing behaviour unchanged)
     "system_architecture":  ModelTier.MID,
+    "tutorial_research":    ModelTier.MID,
     "document_outline":     ModelTier.MID,
     "chapter_expansion":    ModelTier.PREMIUM,   # narrative synthesis
     "chapter_worksheets":   ModelTier.MID,

@@ -64,15 +64,18 @@ Every generated tutorial follows a consistent structure:
 
 ## The Tutorial Pipeline
 
-Conceptually the pipeline has five phases; internally it runs as eight upstream-gated stages (internal stage names in parentheses):
+Conceptually the pipeline has six phases; internally it runs as nine upstream-gated stages (internal stage names in parentheses):
 
 | Phase | Stage(s) | Purpose |
 |-------|----------|---------|
 | 1. **Tutorial Framing** | `system-architecture` | Interprets the request — goal, audience, prerequisites, stack, modules, milestones, verifiable success criteria |
-| 2. **Tutorial Outline** | `document-outline` | Full blueprint — every step title, every checkpoint/exercise sheet, the dependency chain, ground rules |
-| 3. **Tutorial Detail Mapping** | `chapter-expansion`, `chapter-worksheets`, `appendix-builder` | Per-step walkthroughs (substeps, code, expected outputs, debugging notes), verification checklists & exercises, and a reference appendix (glossary, getting help, key resources) |
-| 4. **Render Blueprint** | `layout-mapping`, `render-blueprint` | Document layout architecture and the render instruction set (CSS tokens, directives, print spec) |
-| 5. **Validation Audit** | `validation-audit` | Compiler-style audit — section completeness, cross-stage references, prerequisite ordering, render-readiness |
+| 2. **Stack Research** | `tutorial-research` | Grounds the tutorial in verifiable facts — version baselines, key commands with expected outputs, common errors with fixes, canonical references; every downstream stage consumes this research |
+| 3. **Tutorial Outline** | `document-outline` | Full blueprint — every step title, every checkpoint/exercise sheet, the dependency chain, ground rules |
+| 4. **Tutorial Detail Mapping** | `chapter-expansion`, `chapter-worksheets`, `appendix-builder` | Per-step walkthroughs (substeps, code, expected outputs, debugging notes), verification checklists & exercises, and a reference appendix (glossary, getting help, key resources) |
+| 5. **Render Blueprint** | `layout-mapping`, `render-blueprint` | Document layout architecture and the render instruction set (CSS tokens, directives, print spec) |
+| 6. **Validation Audit** | `validation-audit` | Compiler-style audit — section completeness, cross-stage references, prerequisite ordering, research grounding, render-readiness |
+
+The research stage marks every fact with a confidence level; low-confidence facts surface as `open_questions` so step writers know exactly what to verify rather than inventing precision.
 
 Pipeline execution is sequential and upstream-gated. Each stage is independently re-runnable (`force=true`); results are persisted between runs. A deterministic (non-LLM) validation engine can also be run at any time via `POST /api/pipeline/{id}/validate`.
 

@@ -45,6 +45,7 @@ class TestContractRegistry:
         names = {c.name for c in registry.list_all()}
         assert "tutorial_orchestrator" in names
         assert "tutorial_framing_core" in names
+        assert "tutorial_research" in names
         assert "tutorial_validation_agent" in names
         assert "life_system_orchestrator" not in names
         assert "life_event_system_core" not in names
@@ -88,11 +89,55 @@ class TestPromptAssembly:
                 "system_name": "Build a SaaS Landing Page with Next.js and Tailwind",
                 "topic": SAMPLE_PAYLOAD["topic"],
                 "control_domains": [{"id": "domain-01", "name": "Project Scaffold"}],
-            }
+            },
+            "tutorial_research": {
+                "research_summary": "Next.js 14 App Router is stable.",
+                "facts": [{"fact_id": "fact-01", "claim": "Tailwind requires content globs", "confidence": "high"}],
+            },
         }
         prompt = assembler.assemble(contract, SAMPLE_PAYLOAD, upstream_outputs=upstream)
         assert "Tutorial Request: Build a SaaS landing page" in prompt.user_message
         assert "Project Scaffold" in prompt.user_message
+        assert "Tailwind requires content globs" in prompt.user_message
+
+    def test_research_prompt_includes_framing_and_fields(self, registry) -> None:
+        assembler = self._assembler(registry)
+        contract = registry.resolve("tutorial_research")
+        upstream = {
+            "system_architecture": {
+                "system_name": "Build a SaaS Landing Page with Next.js and Tailwind",
+                "control_domains": [{"id": "domain-01", "name": "Project Scaffold"}],
+            }
+        }
+        prompt = assembler.assemble(contract, SAMPLE_PAYLOAD, upstream_outputs=upstream)
+        assert "Stack: Next.js 14, Tailwind CSS" in prompt.user_message
+        assert "Project Scaffold" in prompt.user_message
+        assert "open_questions" in prompt.user_message
+
+    def test_research_stage_position_and_gating(self) -> None:
+        from schemas.stage import STAGE_NAMES
+        from core.pipeline_orchestrator import PipelineOrchestrator
+        assert STAGE_NAMES.index("tutorial_research") == STAGE_NAMES.index("system_architecture") + 1
+        orch = PipelineOrchestrator()
+        assert orch.upstream_stages("tutorial_research") == ["system_architecture"]
+        assert "tutorial_research" in orch.upstream_stages("document_outline")
+        assert "tutorial_research" in orch.upstream_stages("chapter_expansion")
+        # editing the research invalidates all downstream content stages
+        scope = orch.delta_scope("tutorial_research")
+        assert "document_outline" in scope["invalidated"]
+        assert "validation_audit" in scope["invalidated"]
+
+    def test_research_output_schema_registered(self) -> None:
+        from schemas.stage_outputs import get_schema
+        schema = get_schema("tutorial_research")
+        assert schema is not None
+        parsed = schema.model_validate({
+            "research_summary": "Stack is stable.",
+            "facts": [{"fact_id": "fact-01", "claim": "Node 18.17+ required", "confidence": "high"}],
+            "common_errors": [{"symptom": "useState is not defined", "cause": "missing use client", "fix": "add directive"}],
+            "key_commands": [{"command": "npm run dev", "expected_output": "ready on localhost:3000"}],
+        })
+        assert parsed.facts[0].claim == "Node 18.17+ required"
 
     def test_all_stage_contracts_assemble_without_error(self, registry) -> None:
         from core.pipeline_orchestrator import PipelineOrchestrator, STAGE_CONTRACT_MAP

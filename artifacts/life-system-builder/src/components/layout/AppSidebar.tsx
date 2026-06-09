@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { getListProjectsQueryOptions, getListProjectStagesQueryOptions } from "@workspace/api-client-react";
 import { Layers, Plus, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PIPELINE_STAGES } from "@/lib/stages";
 import type { Project } from "@workspace/api-client-react";
 
 function ProjectItem({ project }: { project: Project }) {
@@ -16,7 +17,7 @@ function ProjectItem({ project }: { project: Project }) {
   });
 
   const completedCount = stages?.filter((s) => s.status === "complete").length ?? 0;
-  const totalStages = 8;
+  const totalStages = PIPELINE_STAGES.length;
 
   return (
     <Link href={href}>

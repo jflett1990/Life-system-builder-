@@ -244,8 +244,12 @@
   {% elif page.archetype == "table_page" %}{% include 'templates/pages/table_page.html' %}
   {% elif page.archetype == "chapter_body" %}{% include 'templates/pages/chapter_body.html' %}
   {% elif page.archetype == "quick_index_page" %}{% include 'templates/pages/quick_index_page.html' %}
+  {% elif page.archetype == "quick_start_page" %}{% include 'templates/pages/quick_start_page.html' %}
   {% elif page.archetype == "reference_card_page" %}{% include 'templates/pages/reference_card_page.html' %}
   {% elif page.archetype == "worksheet_index_page" %}{% include 'templates/pages/worksheet_index_page.html' %}
+  {% elif page.archetype == "appendix_glossary" %}{% include 'templates/pages/appendix_glossary.html' %}
+  {% elif page.archetype == "appendix_professional_guide" %}{% include 'templates/pages/appendix_professional_guide.html' %}
+  {% elif page.archetype == "appendix_notes" %}{% include 'templates/pages/appendix_notes.html' %}
   {% endif %}
 </div>
 {% endfor %}

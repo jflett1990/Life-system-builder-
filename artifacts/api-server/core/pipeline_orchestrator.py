@@ -23,6 +23,7 @@ STAGE_CONTRACT_MAP: dict[str, str] = {
     # chapter_worksheets = checkpoints & exercises, appendix_builder =
     # reference appendix)
     "system_architecture": "tutorial_framing_core",
+    "tutorial_research":   "tutorial_research",
     "document_outline":    "document_outline",
     "chapter_expansion":   "chapter_expansion",
     "chapter_worksheets":  "chapter_worksheets",
@@ -39,13 +40,14 @@ STAGE_CONTRACT_MAP: dict[str, str] = {
 STAGE_UPSTREAM_MAP: dict[str, list[str]] = {
     # v1 stages
     "system_architecture": [],
-    "document_outline":    ["system_architecture"],
-    "chapter_expansion":   ["system_architecture", "document_outline"],
-    "chapter_worksheets":  ["system_architecture", "document_outline", "chapter_expansion"],
-    "appendix_builder":    ["system_architecture", "document_outline", "chapter_expansion"],
+    "tutorial_research":   ["system_architecture"],
+    "document_outline":    ["system_architecture", "tutorial_research"],
+    "chapter_expansion":   ["system_architecture", "tutorial_research", "document_outline"],
+    "chapter_worksheets":  ["system_architecture", "tutorial_research", "document_outline", "chapter_expansion"],
+    "appendix_builder":    ["system_architecture", "tutorial_research", "document_outline", "chapter_expansion"],
     "layout_mapping":      ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets"],
     "render_blueprint":    ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "layout_mapping"],
-    "validation_audit":    ["system_architecture", "document_outline", "chapter_expansion", "chapter_worksheets", "appendix_builder", "layout_mapping", "render_blueprint"],
+    "validation_audit":    ["system_architecture", "tutorial_research", "document_outline", "chapter_expansion", "chapter_worksheets", "appendix_builder", "layout_mapping", "render_blueprint"],
     # v2 stages — can run as soon as system_architecture is complete
     "research_graph":      ["system_architecture"],
     "content_plan":        ["system_architecture", "research_graph"],

@@ -393,11 +393,13 @@ components:
       description: >
         Pipeline stages. Internal stage names are kept stable across the
         tutorial pivot — system-architecture is the Tutorial Framing stage,
+        tutorial-research grounds the tutorial in verified stack facts,
         document-outline is the Tutorial Outline, chapter-expansion writes
         step detail, chapter-worksheets generates checkpoints & exercises,
         and appendix-builder produces the reference appendix.
       enum:
         - system-architecture
+        - tutorial-research
         - document-outline
         - chapter-expansion
         - chapter-worksheets

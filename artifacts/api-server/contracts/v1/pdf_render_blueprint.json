@@ -2,7 +2,7 @@
   "name": "pdf_render_blueprint",
   "version": "1.0",
   "stage": "render_blueprint",
-  "description": "Stage 4b — Render Blueprint. Converts the layout map into a full render blueprint — a complete instruction set for the HTML/CSS rendering engine, including CSS tokens, component directives, and print specifications.",
+  "description": "Stage 5b — Render Blueprint. Converts the layout map into a full render blueprint — a complete instruction set for the HTML/CSS rendering engine, including CSS tokens, component directives, and print specifications.",
   "output_mode": "json",
   "upstream_dependencies": [
     "system_architecture",

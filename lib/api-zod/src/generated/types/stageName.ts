@@ -7,13 +7,14 @@
  */
 
 /**
- * Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.
+ * Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, tutorial-research grounds the tutorial in verified stack facts, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.
 
  */
 export type StageName = (typeof StageName)[keyof typeof StageName];
 
 export const StageName = {
   "system-architecture": "system-architecture",
+  "tutorial-research": "tutorial-research",
   "document-outline": "document-outline",
   "chapter-expansion": "chapter-expansion",
   "chapter-worksheets": "chapter-worksheets",

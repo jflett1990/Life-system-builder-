@@ -116,6 +116,7 @@ export const GetProjectResponse = zod.object({
       stage: zod
         .enum([
           "system-architecture",
+          "tutorial-research",
           "document-outline",
           "chapter-expansion",
           "chapter-worksheets",
@@ -125,7 +126,7 @@ export const GetProjectResponse = zod.object({
           "validation-audit",
         ])
         .describe(
-          "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
+          "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, tutorial-research grounds the tutorial in verified stack facts, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
         ),
       status: zod.enum([
         "pending",
@@ -304,6 +305,7 @@ export const ListProjectStagesResponseItem = zod.object({
   stage: zod
     .enum([
       "system-architecture",
+      "tutorial-research",
       "document-outline",
       "chapter-expansion",
       "chapter-worksheets",
@@ -313,7 +315,7 @@ export const ListProjectStagesResponseItem = zod.object({
       "validation-audit",
     ])
     .describe(
-      "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
+      "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, tutorial-research grounds the tutorial in verified stack facts, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
     ),
   status: zod.enum([
     "pending",
@@ -360,6 +362,7 @@ export const GetStageOutputParams = zod.object({
   id: zod.coerce.number(),
   stage: zod.enum([
     "system-architecture",
+    "tutorial-research",
     "document-outline",
     "chapter-expansion",
     "chapter-worksheets",
@@ -376,6 +379,7 @@ export const GetStageOutputResponse = zod.object({
   stage: zod
     .enum([
       "system-architecture",
+      "tutorial-research",
       "document-outline",
       "chapter-expansion",
       "chapter-worksheets",
@@ -385,7 +389,7 @@ export const GetStageOutputResponse = zod.object({
       "validation-audit",
     ])
     .describe(
-      "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
+      "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, tutorial-research grounds the tutorial in verified stack facts, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
     ),
   status: zod.enum([
     "pending",
@@ -440,6 +444,7 @@ export const GetProjectSummaryResponse = zod.object({
       stage: zod
         .enum([
           "system-architecture",
+          "tutorial-research",
           "document-outline",
           "chapter-expansion",
           "chapter-worksheets",
@@ -449,7 +454,7 @@ export const GetProjectSummaryResponse = zod.object({
           "validation-audit",
         ])
         .describe(
-          "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
+          "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, tutorial-research grounds the tutorial in verified stack facts, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
         ),
       status: zod.enum([
         "pending",
@@ -470,6 +475,7 @@ export const RunStageParams = zod.object({
   id: zod.coerce.number(),
   stage: zod.enum([
     "system-architecture",
+    "tutorial-research",
     "document-outline",
     "chapter-expansion",
     "chapter-worksheets",
@@ -493,6 +499,7 @@ export const RunStageResponse = zod.object({
   stage: zod
     .enum([
       "system-architecture",
+      "tutorial-research",
       "document-outline",
       "chapter-expansion",
       "chapter-worksheets",
@@ -502,7 +509,7 @@ export const RunStageResponse = zod.object({
       "validation-audit",
     ])
     .describe(
-      "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
+      "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, tutorial-research grounds the tutorial in verified stack facts, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
     ),
   status: zod.enum([
     "pending",
@@ -555,6 +562,7 @@ export const GetValidationResultResponse = zod.object({
       stage: zod
         .enum([
           "system-architecture",
+          "tutorial-research",
           "document-outline",
           "chapter-expansion",
           "chapter-worksheets",
@@ -564,7 +572,7 @@ export const GetValidationResultResponse = zod.object({
           "validation-audit",
         ])
         .describe(
-          "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
+          "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, tutorial-research grounds the tutorial in verified stack facts, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
         ),
       field: zod.string(),
       severity: zod.enum(["error", "warning", "info"]),
@@ -590,6 +598,7 @@ export const ValidateProjectResponse = zod.object({
       stage: zod
         .enum([
           "system-architecture",
+          "tutorial-research",
           "document-outline",
           "chapter-expansion",
           "chapter-worksheets",
@@ -599,7 +608,7 @@ export const ValidateProjectResponse = zod.object({
           "validation-audit",
         ])
         .describe(
-          "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
+          "Pipeline stages. Internal stage names are kept stable across the tutorial pivot — system-architecture is the Tutorial Framing stage, tutorial-research grounds the tutorial in verified stack facts, document-outline is the Tutorial Outline, chapter-expansion writes step detail, chapter-worksheets generates checkpoints & exercises, and appendix-builder produces the reference appendix.\n",
         ),
       field: zod.string(),
       severity: zod.enum(["error", "warning", "info"]),

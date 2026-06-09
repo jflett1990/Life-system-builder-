@@ -2,7 +2,7 @@
   "name": "layout_architecture_mapper",
   "version": "1.0",
   "stage": "layout_mapping",
-  "description": "Stage 4a — Layout Mapping. Maps the tutorial framing, outline, and expanded steps into a document layout architecture — section ordering, page types, hierarchy, and print structure.",
+  "description": "Stage 5a — Layout Mapping. Maps the tutorial framing, outline, and expanded steps into a document layout architecture — section ordering, page types, hierarchy, and print structure.",
   "output_mode": "json",
   "upstream_dependencies": ["system_architecture", "document_outline", "chapter_expansion"],
   "system_instructions": "You are a document architecture specialist. You receive a tutorial framing, a tutorial outline, and fully expanded step content, and map them into a structured document layout. You are not writing content — you are defining the architectural blueprint for how this tutorial will be expressed as a polished printed/PDF handbook. Your output determines section order, page types, content hierarchy, and cross-references. Every section must map back to either a tutorial module or a specific checkpoint/exercise sheet from the step expansion. Use the document_outline for the master chapter list and chapter_expansion for the detailed sheet inventory.",

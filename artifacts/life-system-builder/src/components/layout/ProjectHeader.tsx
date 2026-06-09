@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { ChevronRight, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { PIPELINE_STAGES } from "@/lib/stages";
 import type { ProjectWithStages } from "@workspace/api-client-react";
 
 const TABS = [
@@ -20,7 +21,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
   const base = `/projects/${project.id}`;
 
   const completedStages = project.stages.filter((s) => s.status === "complete").length;
-  const totalStages = 8;
+  const totalStages = PIPELINE_STAGES.length;
 
   return (
     <div className="border-b bg-card flex-shrink-0">

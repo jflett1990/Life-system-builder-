@@ -2,13 +2,14 @@ from datetime import datetime
 from typing import Any
 from pydantic import BaseModel
 
-# v1 stages — existing pipeline (unchanged)
+# v1 stages — the main tutorial pipeline, in execution order
 STAGE_NAMES = [
-    "system_architecture",
-    "document_outline",
-    "chapter_expansion",
-    "chapter_worksheets",
-    "appendix_builder",
+    "system_architecture",   # Tutorial Framing
+    "tutorial_research",     # Stack Research — grounds the tutorial in verifiable facts
+    "document_outline",      # Tutorial Outline
+    "chapter_expansion",     # Step Detail Writing
+    "chapter_worksheets",    # Checkpoints & Exercises
+    "appendix_builder",      # Reference Appendix
     "layout_mapping",
     "render_blueprint",
     "validation_audit",
