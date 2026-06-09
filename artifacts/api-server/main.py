@@ -86,37 +86,38 @@ async def lifespan(app: FastAPI):
         logger.error("FATAL: Contract registry failed to load: %s", e)
         raise
 
-    # 2. Ensure Playwright Chromium binary is installed.
-    #    Runs `playwright install chromium` once at startup if the binary is missing.
-    #    This is a no-op when the binary already exists — safe to run every time.
+    # 2. Ensure Playwright Chromium binary is installed (skip on Vercel serverless).
     #    Failure is logged as a warning only — PDF export degrades gracefully to HTML.
-    try:
-        import shutil
-        import subprocess
-        _has_system_chromium = shutil.which("chromium") or shutil.which("chromium-browser")
-        if not _has_system_chromium:
-            logger.info("Playwright Chromium not found on PATH — running 'playwright install chromium'…")
-            result = subprocess.run(
-                [sys.executable, "-m", "playwright", "install", "chromium"],
-                capture_output=True, text=True, timeout=120,
-            )
-            if result.returncode == 0:
-                logger.info("Playwright Chromium installed successfully")
-            else:
-                logger.warning(
-                    "playwright install chromium exited with code %d — PDF export may not work. "
-                    "stderr: %s",
-                    result.returncode,
-                    result.stderr[:500] if result.stderr else "",
+    if os.environ.get("VERCEL"):
+        logger.info("Skipping Playwright install on Vercel")
+    else:
+        try:
+            import shutil
+            import subprocess
+            _has_system_chromium = shutil.which("chromium") or shutil.which("chromium-browser")
+            if not _has_system_chromium:
+                logger.info("Playwright Chromium not found on PATH — running 'playwright install chromium'…")
+                result = subprocess.run(
+                    [sys.executable, "-m", "playwright", "install", "chromium"],
+                    capture_output=True, text=True, timeout=120,
                 )
-        else:
-            logger.info("System Chromium found at %s — Playwright will use it for PDF export", _has_system_chromium)
-    except Exception as _pw_err:
-        logger.warning(
-            "Playwright startup check failed (%s) — PDF export may be unavailable. "
-            "HTML export remains fully functional.",
-            _pw_err,
-        )
+                if result.returncode == 0:
+                    logger.info("Playwright Chromium installed successfully")
+                else:
+                    logger.warning(
+                        "playwright install chromium exited with code %d — PDF export may not work. "
+                        "stderr: %s",
+                        result.returncode,
+                        result.stderr[:500] if result.stderr else "",
+                    )
+            else:
+                logger.info("System Chromium found at %s — Playwright will use it for PDF export", _has_system_chromium)
+        except Exception as _pw_err:
+            logger.warning(
+                "Playwright startup check failed (%s) — PDF export may be unavailable. "
+                "HTML export remains fully functional.",
+                _pw_err,
+            )
 
     # 3. Start DB initialisation in background so server comes up immediately
     db_thread = threading.Thread(target=_db_init_worker, daemon=True, name="db-init")
@@ -197,6 +198,11 @@ app.include_router(render.router,     prefix="/api")
 app.include_router(export.router,     prefix="/api")
 app.include_router(contracts.router,  prefix="/api")
 app.include_router(telemetry.router,  prefix="/api")
+
+# ── Frontend (SPA) — must be registered after /api routes ────────────
+from static_frontend import mount_frontend
+
+mount_frontend(app)
 
 
 if __name__ == "__main__":
