@@ -1,8 +1,8 @@
 """
-DocxBuilder — Generates a Word (.docx) document from Life System Builder pipeline data.
+DocxBuilder — Generates a Word (.docx) document from Tutorial Builder pipeline data.
 
 Document structure:
-  Cover metadata block       — system identity, life event, time horizon, audience
+  Cover metadata block       — tutorial identity, request, duration, audience
   Table of Contents          — Word TOC field (right-click → Update Field in Word)
   For each chapter (H1):
     Chapter narrative        — plain paragraph
@@ -125,12 +125,12 @@ class DocxBuilder:
         chapter_exp = all_outputs.get("chapter_expansion", {})
         ws_system = all_outputs.get("worksheet_system", {})
 
-        system_name = _safe_text(arch.get("system_name"), "Operational Control System")
+        system_name = _safe_text(arch.get("system_name"), "Tutorial Walkthrough")
         life_event = _safe_text(arch.get("life_event"), "")
         system_objective = _safe_text(arch.get("system_objective"), "")
         time_horizon = _safe_text(arch.get("time_horizon"), "")
         audience = _safe_text(arch.get("audience"), "")
-        document_id = f"LSB-{project_id:05d}"
+        document_id = f"TUT-{project_id:05d}"
         generated_date = date.today().strftime("%B %d, %Y")
 
         chapters: list[dict] = chapter_exp.get("chapters", [])
@@ -141,13 +141,13 @@ class DocxBuilder:
 
         cover_para = doc.add_paragraph()
         if life_event:
-            cover_para.add_run(f"Life Event: {life_event}\n")
+            cover_para.add_run(f"Tutorial Request: {life_event}\n")
         if system_objective:
-            cover_para.add_run(f"{system_objective}\n")
+            cover_para.add_run(f"Goal: {system_objective}\n")
         if time_horizon:
-            cover_para.add_run(f"Time Horizon: {time_horizon}\n")
+            cover_para.add_run(f"Estimated Duration: {time_horizon}\n")
         if audience:
-            cover_para.add_run(f"Prepared For: {audience}\n")
+            cover_para.add_run(f"Target Learner: {audience}\n")
         cover_para.add_run(f"Generated: {generated_date}  ·  Document ID: {document_id}")
         for run in cover_para.runs:
             run.font.size = Pt(10)
@@ -155,7 +155,7 @@ class DocxBuilder:
         doc.add_paragraph()
 
         # ── TOC field ────────────────────────────────────────────────────────────
-        doc.add_heading("Table of Contents", level=1)
+        doc.add_heading("Tutorial Table of Contents", level=1)
         _add_toc_field(doc)
         _add_page_break(doc)
 
@@ -172,7 +172,7 @@ class DocxBuilder:
                 narrative = _safe_text(ch.get("narrative"), "")
                 worksheets = ch.get("worksheets", [])
 
-                doc.add_heading(f"Chapter {ch_num}: {ch_title}", level=1)
+                doc.add_heading(f"Module {ch_num}: {ch_title}", level=1)
 
                 if narrative:
                     doc.add_paragraph(narrative)
@@ -210,8 +210,8 @@ class DocxBuilder:
 
         else:
             doc.add_paragraph(
-                "No chapter content has been generated yet. "
-                "Complete the Chapter Expansion pipeline stage to populate this document."
+                "No tutorial module content has been generated yet. "
+                "Complete the chapter expansion stage to populate this document."
             )
 
         # ── Serialize to bytes ────────────────────────────────────────────────

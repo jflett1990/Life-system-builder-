@@ -1,34 +1,34 @@
 {% set arch = section.data %}
 <div class="doc-section">
   <div class="section-header">
-    <div class="section-header__label">Stage 1 — System Architecture</div>
-    <div class="section-header__title">{{ arch.system_name | default('Operational System') }}</div>
-    <div class="section-header__subtitle">Time Horizon: {{ arch.time_horizon | default('—') }}</div>
+    <div class="section-header__label">Stage 1 — Tutorial Framing</div>
+    <div class="section-header__title">{{ arch.system_name | default('Tutorial Walkthrough') }}</div>
+    <div class="section-header__subtitle">Estimated Duration: {{ arch.time_horizon | default('—') }}</div>
   </div>
 
   <div class="callout-block">
-    <div class="callout-block__label">Operating Premise</div>
+    <div class="callout-block__label">Tutorial Context</div>
     <div class="callout-block__text">{{ arch.operating_premise | default('') }}</div>
   </div>
 
   <div class="callout-block">
-    <div class="callout-block__label">System Objective</div>
+    <div class="callout-block__label">Learning Objective</div>
     <div class="callout-block__text">{{ arch.system_objective | default('') }}</div>
   </div>
 
   <hr class="section-divider">
 
-  <!-- Control Domains -->
+  <!-- Tutorial Modules -->
   {% if arch.control_domains %}
   <div class="worksheet-section">
-    <div class="worksheet-section__title">Control Domains</div>
+    <div class="worksheet-section__title">Tutorial Modules</div>
     {% for domain in arch.control_domains %}
     <div class="callout-block" style="margin-bottom:12px">
       <div class="callout-block__label">{{ domain.id | default('') }} — {{ domain.name }}</div>
       <div class="body-text">{{ domain.purpose }}</div>
       {% if domain.primary_outputs %}
       <div style="margin-top:8px">
-        <span style="font-size:11px;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:1px">Outputs: </span>
+        <span style="font-size:11px;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:1px">Deliverables: </span>
         {{ domain.primary_outputs | join(' · ') }}
       </div>
       {% endif %}
@@ -37,16 +37,16 @@
   </div>
   {% endif %}
 
-  <!-- Key Roles -->
+  <!-- Target Roles -->
   {% if arch.key_roles %}
   <div class="worksheet-section">
-    <div class="worksheet-section__title">Key Roles</div>
+    <div class="worksheet-section__title">Target Roles</div>
     <table class="data-table">
       <thead>
         <tr>
           <th>Role</th>
           <th>Responsibility</th>
-          <th>Authority</th>
+          <th>Focus</th>
         </tr>
       </thead>
       <tbody>
@@ -54,7 +54,7 @@
         <tr>
           <td><strong>{{ role.role }}</strong></td>
           <td>{{ role.responsibility }}</td>
-          <td><span class="badge badge--authority">{{ role.authority_level | default('executor') }}</span></td>
+          <td><span class="badge badge--authority">{{ role.authority_level | default('implementation') }}</span></td>
         </tr>
         {% endfor %}
       </tbody>
@@ -62,10 +62,10 @@
   </div>
   {% endif %}
 
-  <!-- Success Criteria -->
+  <!-- Progress Checkpoints -->
   {% if arch.success_criteria %}
   <div class="worksheet-section">
-    <div class="worksheet-section__title">Success Criteria</div>
+    <div class="worksheet-section__title">Progress Checkpoints</div>
     <ul class="checklist">
       {% for item in arch.success_criteria %}
       <li><div class="checklist__box"></div>{{ item }}</li>
@@ -74,10 +74,10 @@
   </div>
   {% endif %}
 
-  <!-- Operating Constraints -->
+  <!-- Constraints -->
   {% if arch.operating_constraints %}
   <div class="worksheet-section">
-    <div class="worksheet-section__title">Operating Constraints</div>
+    <div class="worksheet-section__title">Constraints</div>
     <ul class="checklist">
       {% for item in arch.operating_constraints %}
       <li><div class="checklist__box"></div>{{ item }}</li>

@@ -1,5 +1,5 @@
 """
-Structured migration runner for Life System Builder.
+Structured migration runner for Tutorial Builder.
 
 Runs migrations in order at startup, skipping any that have already been applied.
 Supports both SQLite (local dev) and PostgreSQL (production/Replit).

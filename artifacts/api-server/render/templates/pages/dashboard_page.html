@@ -8,12 +8,12 @@
 {#            system_name, time_horizon, domain_count, worksheet_count        #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 {% from 'templates/components/callout_block.html' import callout %}
-{{ section_header(label=data.page_label | default("System Dashboard"), title=data.page_title | default("Operational Overview")) }}
+{{ section_header(label=data.page_label | default("Tutorial Dashboard"), title=data.page_title | default("Walkthrough Overview")) }}
 
 <!-- System Objective Callout -->
 {% if data.system_objective %}
 <div style="margin-bottom:var(--space-10)">
-  {{ callout(label="System Objective", text=data.system_objective) }}
+  {{ callout(label="Tutorial Goal", text=data.system_objective) }}
 </div>
 {% endif %}
 
@@ -23,19 +23,19 @@
   {% if data.domain_count %}
   <div class="stat-box">
     <div class="stat-box__value">{{ data.domain_count }}</div>
-    <div class="stat-box__label">Control Domains</div>
+    <div class="stat-box__label">Modules</div>
   </div>
   {% endif %}
   {% if data.worksheet_count %}
   <div class="stat-box">
     <div class="stat-box__value">{{ data.worksheet_count }}</div>
-    <div class="stat-box__label">Worksheets</div>
+    <div class="stat-box__label">Assets</div>
   </div>
   {% endif %}
   {% if data.time_horizon %}
   <div class="stat-box">
     <div class="stat-box__value" style="font-size:var(--text-xl)">{{ data.time_horizon }}</div>
-    <div class="stat-box__label">Time Horizon</div>
+    <div class="stat-box__label">Depth / Duration</div>
   </div>
   {% endif %}
   {% for kpi in data.kpis | default([]) %}
@@ -77,7 +77,7 @@
   align-items:center;
 ">
   <div>
-    <div class="eyebrow" style="margin-bottom:var(--space-1)">System</div>
+    <div class="eyebrow" style="margin-bottom:var(--space-1)">Tutorial</div>
     <div style="font-family:var(--font-heading);font-size:var(--text-md)">{{ data.system_name }}</div>
   </div>
   {% if data.generated_date %}

@@ -15,7 +15,7 @@
       <span class="toc__chapter-num">{{ "%02d" | format(ch.chapter_number | int) }}</span>
       <span class="toc__chapter-title">{{ ch.chapter_title }}</span>
       <span class="toc__chapter-count">
-        {{ ch.worksheet_count }} worksheet{{ "s" if ch.worksheet_count != 1 else "" }}
+        {{ ch.worksheet_count }} asset{{ "s" if ch.worksheet_count != 1 else "" }}
       </span>
     </div>
     {% if ch.worksheets %}
@@ -36,7 +36,7 @@
 <div class="toc__summary">
   <span class="eyebrow">{{ data.chapters | length }} chapter{{ "s" if data.chapters | length != 1 else "" }}</span>
   <span class="toc__summary-sep">·</span>
-  <span class="eyebrow">{{ data.total_worksheets }} worksheet{{ "s" if data.total_worksheets != 1 else "" }}</span>
+  <span class="eyebrow">{{ data.total_worksheets }} asset{{ "s" if data.total_worksheets != 1 else "" }}</span>
 </div>
 {% endif %}
 {% endif %}

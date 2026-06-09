@@ -93,7 +93,7 @@ export default function ValidationPage() {
                 Validation Audit
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Runs compiler-style checks across all stage outputs. No LLM calls.
+                Runs compiler-style checks across all tutorial stage outputs. No LLM calls.
               </p>
             </div>
             <Button
@@ -128,7 +128,7 @@ export default function ValidationPage() {
               <div className="space-y-1">
                 <p className="text-sm font-medium text-foreground">No validation run yet</p>
                 <p className="text-xs text-muted-foreground">
-                  Run validation to check all stage outputs for completeness and coherence.
+                  Run validation to check tutorial structure completeness and cross-stage coherence.
                 </p>
               </div>
             </div>

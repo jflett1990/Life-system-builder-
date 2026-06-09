@@ -13,7 +13,7 @@
     <span class="ref-card__chapter-label">Chapter {{ data.chapter_number }}</span>
     <span class="ref-card__sep">·</span>
     {% endif %}
-    <span class="ref-card__type-label">Quick Reference</span>
+    <span class="ref-card__type-label">Module Reference</span>
   </div>
   {% if data.domain_name %}
   <span class="ref-card__domain">{{ data.domain_name }}</span>
@@ -31,7 +31,7 @@
   <div class="ref-card__col">
     {% if data.quick_reference_rules %}
     <div class="ref-card__section">
-      <span class="heading-component">Operating Rules</span>
+      <span class="heading-component">Implementation Rules</span>
       <div class="ref-card__rules">
         {% for rule in data.quick_reference_rules %}
         <div class="ref-card__rule-row">
@@ -45,7 +45,7 @@
 
     {% if data.primary_outputs %}
     <div class="ref-card__section mt-8">
-      <span class="heading-component">Worksheets</span>
+      <span class="heading-component">Module Assets</span>
       <div class="mt-4">
         {% for ws in data.primary_outputs %}
         <div class="ref-card__ws-row">

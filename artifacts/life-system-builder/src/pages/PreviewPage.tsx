@@ -62,10 +62,10 @@ export default function PreviewPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Document Preview
+                Tutorial Preview
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Renders the operational system as a print-ready HTML document.
+                Renders the tutorial walkthrough as a print-ready HTML document.
                 {hasExistingRender && !renderResult && cachedInfo && (
                   <span className="ml-1 text-muted-foreground/60">
                     · Last rendered {new Date(cachedInfo.updatedAt).toLocaleDateString()}
@@ -103,7 +103,7 @@ export default function PreviewPage() {
                 ) : (
                   <>
                     <FileText className="w-3.5 h-3.5" />
-                    Render Document
+                    Render Tutorial
                   </>
                 )}
               </Button>
@@ -125,8 +125,8 @@ export default function PreviewPage() {
                 </p>
                 <p className="text-xs text-muted-foreground max-w-sm">
                   {hasExistingRender
-                    ? `A render exists from ${new Date((cachedInfo as any).updatedAt).toLocaleDateString()}. Click Render Document to generate a fresh preview.`
-                    : "Complete the pipeline stages first, then render the document to see the preview."}
+                    ? `A render exists from ${new Date((cachedInfo as any).updatedAt).toLocaleDateString()}. Click Render Tutorial to generate a fresh preview.`
+                    : "Complete the pipeline stages first, then render the tutorial to see the preview."}
                 </p>
               </div>
               {hasExistingRender && (

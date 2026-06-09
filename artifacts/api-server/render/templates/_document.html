@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ manifest.document_title | default("Life System Document") }}</title>
+  <title>{{ manifest.document_title | default("Tutorial Builder Document") }}</title>
   <style>
 /* ── Tokens ───────────────────────────────────────────────────────── */
 {% include 'styles/tokens.css' %}
@@ -207,11 +207,11 @@
     <line x1="5" y1="9" x2="15" y2="9" stroke="#433F34" stroke-width="1"/>
     <line x1="5" y1="12" x2="12" y2="12" stroke="#433F34" stroke-width="1"/>
   </svg>
-  <span>Paginating document…</span>
+  <span>Paginating tutorial…</span>
 </div>
 
 <!-- Hidden string capture for Pagedjs running header (@top-left margin box) -->
-<span class="lsb-doc-title-string" aria-hidden="true">{{ manifest.document_title | default("Life System Document") }}</span>
+<span class="lsb-doc-title-string" aria-hidden="true">{{ manifest.document_title | default("Tutorial Builder Document") }}</span>
 
 {% for page in manifest.pages %}
 {#

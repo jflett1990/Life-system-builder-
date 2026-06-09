@@ -120,8 +120,13 @@ class PipelineService:
         upstream = orchestrator.collect_upstream_outputs(stage, all_outputs)
         payload = {
             "life_event": project.life_event,
+            "tutorial_request": project.life_event,
             "audience": project.audience or "general adult",
+            "skill_level": project.audience or "intermediate",
             "tone": project.tone or "professional",
+            "output_style": project.tone or "project-based",
+            "tutorial_type": project.formatting_profile or "hands-on build",
+            "tutorial_depth": project.artifact_density or "medium",
             "context": project.context or "",
         }
 
@@ -303,8 +308,13 @@ class PipelineService:
 
         base_payload = {
             "life_event": project.life_event,
+            "tutorial_request": project.life_event,
             "audience": project.audience or "general adult",
+            "skill_level": project.audience or "intermediate",
             "tone": project.tone or "professional",
+            "output_style": project.tone or "project-based",
+            "tutorial_type": project.formatting_profile or "hands-on build",
+            "tutorial_depth": project.artifact_density or "medium",
             "context": project.context or "",
             "document_title": outline_data.get("document_title", project.life_event),
         }
@@ -792,8 +802,13 @@ class PipelineService:
 
         base_payload = {
             "life_event": project.life_event,
+            "tutorial_request": project.life_event,
             "audience": project.audience or "general adult",
+            "skill_level": project.audience or "intermediate",
             "tone": project.tone or "professional",
+            "output_style": project.tone or "project-based",
+            "tutorial_type": project.formatting_profile or "hands-on build",
+            "tutorial_depth": project.artifact_density or "medium",
             "context": project.context or "",
             "document_title": outline_data.get("document_title", project.life_event),
         }

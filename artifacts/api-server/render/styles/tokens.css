@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DESIGN TOKENS — Life System Builder
+   DESIGN TOKENS — Tutorial Builder
    Version: 2.0
 
    Architecture: three-layer custom property cascade
@@ -249,17 +249,17 @@
    causes --color-cover-bg, --color-divider-bg, and --color-chapter-bar to
    all cascade to the new value automatically (they alias --color-primary).
 
-   Reference palette by life-event category (injected by render_service):
+   Reference palette by tutorial category (injected by render_service):
 
-     Legal / estate:
+     Web / product:
        --color-primary:     #1e2d40;   (deep slate)
        --color-accent:      #c9a84c;   (gold)
 
-     Caregiving / eldercare:
+     Backend / API:
        --color-primary:     #1a3a2a;   (forest green)
        --color-accent:      #7aab8a;   (sage)
 
-     Medical / health:
+     DevOps / infrastructure:
        --color-primary:     #242424;   (warm charcoal)
        --color-accent:      #4a9e8e;   (teal)
 

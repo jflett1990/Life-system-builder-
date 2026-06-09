@@ -6,11 +6,11 @@
 {# data keys: page_title, page_label, failure_modes, escalation_paths,       #}
 {#            emergency_contacts, operating_constraints, checklists            #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
-{{ section_header(label=data.page_label | default("Contingency Protocol"), title=data.page_title | default("Rapid Response Reference")) }}
+{{ section_header(label=data.page_label | default("Debugging Protocol"), title=data.page_title | default("Rapid Debugging Reference")) }}
 
 {% if data.failure_modes %}
 <div style="margin-bottom:var(--space-10)">
-  <span class="heading-component">Failure Modes &amp; Response Actions</span>
+  <span class="heading-component">Common Failure Modes &amp; Recovery Actions</span>
   <div class="mt-4">
     {% for mode in data.failure_modes %}
     <div style="
@@ -47,7 +47,7 @@
 
 {% if data.operating_constraints %}
 <div style="margin-bottom:var(--space-10)">
-  <span class="heading-component">Operating Constraints</span>
+  <span class="heading-component">Constraints &amp; Guardrails</span>
   <div class="mt-4">
     {% for c in data.operating_constraints %}
     <div style="display:flex;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:var(--border-rule);break-inside:avoid">

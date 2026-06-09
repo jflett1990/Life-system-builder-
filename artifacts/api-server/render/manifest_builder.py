@@ -226,9 +226,9 @@ class ManifestBuilder:
         ws_system = all_outputs.get("worksheet_system", {})
 
         generated_date = date.today().strftime("%B %d, %Y")
-        system_name = arch.get("system_name", "Operational Control System")
+        system_name = arch.get("system_name", "Tutorial Walkthrough")
         doc_title = system_name
-        document_id = f"LSB-{project_id:05d}"
+        document_id = f"TUT-{project_id:05d}"
 
         domains = arch.get("control_domains", [])
         domain_map: dict[str, dict] = {d.get("id", ""): d for d in domains}
@@ -324,8 +324,8 @@ class ManifestBuilder:
             sequence=next_seq(),
             archetype="dashboard_page",
             data={
-                "page_label": "System Overview",
-                "page_title": "Operational Dashboard",
+                "page_label": "Tutorial Overview",
+                "page_title": "Walkthrough Dashboard",
                 "system_name": system_name,
                 "system_objective": arch.get("system_objective", ""),
                 "time_horizon": arch.get("time_horizon", ""),
@@ -360,7 +360,7 @@ class ManifestBuilder:
             archetype="section_divider",
             data={
                 "section_number": "01",
-                "section_title": "System Architecture",
+                "section_title": "Tutorial Framing",
                 "section_subtitle": arch.get("operating_premise", "")[:140] if arch.get("operating_premise") else "",
                 "domain_count": len(domains),
             },
@@ -374,7 +374,7 @@ class ManifestBuilder:
                 archetype="explanation_page",
                 page_break="auto",
                 data={
-                    "page_label": "System Architecture",
+                    "page_label": "Tutorial Framing",
                     "page_title": system_name,
                     "operating_premise": arch.get("operating_premise", ""),
                     "system_objective": arch.get("system_objective", ""),
@@ -406,7 +406,7 @@ class ManifestBuilder:
                     sequence=next_seq(),
                     archetype="section_divider",
                     data={
-                        "label_prefix": "Chapter",
+                        "label_prefix": "Module",
                         "section_number": ch_num_str,
                         "section_title": domain_name or ch_title,
                         "section_subtitle": ch_title if (domain_name and domain_name != ch_title) else "",
@@ -484,7 +484,7 @@ class ManifestBuilder:
                 archetype="section_divider",
                 data={
                     "section_number": "02",
-                    "section_title": "Operational Worksheets",
+                    "section_title": "Tutorial Worksheets",
                     "section_subtitle": ws_system.get("worksheet_system_name", ""),
                     "domain_count": len(legacy_worksheets),
                 },
@@ -563,7 +563,7 @@ class ManifestBuilder:
                 data={
                     "section_number": "A",
                     "section_title": "Appendix",
-                    "section_subtitle": "Reference materials, glossary, and professional guidance",
+                    "section_subtitle": "Reference materials, debugging guidance, and learning resources",
                     "domain_count": None,
                 },
             ))
@@ -594,10 +594,10 @@ class ManifestBuilder:
                     page_break="auto",
                     data={
                         "id": "appendix-key-resources",
-                        "title": "Key Resources & Contacts",
-                        "purpose": "Record organizations, agencies, and professionals relevant to your situation.",
+                        "title": "Key Resources & References",
+                        "purpose": "Record docs, communities, and tools relevant to this tutorial journey.",
                         "layout": "table",
-                        "table_columns": ["Organization", "Service", "Phone", "Website", "Hours"],
+                        "table_columns": ["Resource", "How it helps", "Notes", "URL", "Priority"],
                         "table_row_count": max(len(key_resources), 10),
                         "system_name": system_name,
                         "domain_name": "Reference",
@@ -633,7 +633,8 @@ class ManifestBuilder:
                 archetype="rapid_response",
                 data={
                     "page_label": "Contingency Protocol",
-                    "page_title": "Rapid Response Reference",
+                    "page_label": "Debugging Protocol",
+                    "page_title": "Rapid Debugging Reference",
                     "failure_modes": structured_modes,
                     "operating_constraints": arch.get("operating_constraints", []),
                     "escalation_paths": arch.get("escalation_paths", []),

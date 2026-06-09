@@ -57,14 +57,14 @@ export default function ExportPage() {
 
   function handleDownloadHtml() {
     if (!exportBundle) return;
-    downloadBlob(exportBundle.html, `${slug}-operational-system.html`, "text/html");
+    downloadBlob(exportBundle.html, `${slug}-tutorial-walkthrough.html`, "text/html");
   }
 
   function handleDownloadJson() {
     if (!exportBundle) return;
     downloadBlob(
       JSON.stringify(exportBundle.stagesJson, null, 2),
-      `${slug}-stages.json`,
+      `${slug}-tutorial-stages.json`,
       "application/json",
     );
   }
@@ -91,7 +91,7 @@ export default function ExportPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `LSB-${String(projectId).padStart(5, "0")}-document.pdf`;
+      a.download = `TUT-${String(projectId).padStart(5, "0")}-tutorial.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: unknown) {
@@ -114,7 +114,7 @@ export default function ExportPage() {
       const blob = await response.blob();
       const disposition = response.headers.get("Content-Disposition") ?? "";
       const filenameMatch = disposition.match(/filename="([^"]+)"/);
-      const filename = filenameMatch ? filenameMatch[1] : `${slug}-operational-system.docx`;
+      const filename = filenameMatch ? filenameMatch[1] : `${slug}-tutorial-walkthrough.docx`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -140,7 +140,7 @@ export default function ExportPage() {
               Export Bundle
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Download the complete operational system as self-contained files.
+              Download the complete tutorial walkthrough as self-contained files.
             </p>
           </div>
 
@@ -151,8 +151,7 @@ export default function ExportPage() {
               <div className="border border-amber-200 bg-amber-50 rounded-sm p-3">
                 <p className="text-xs text-amber-800 font-medium mb-0.5">Export unavailable</p>
                 <p className="text-xs text-amber-700">
-                  Complete all pipeline stages before exporting. At least the system architecture
-                  stage must be complete.
+                  Complete pipeline stages before exporting. At least tutorial framing must be complete.
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5 text-xs h-8">
@@ -195,7 +194,7 @@ export default function ExportPage() {
                   <div>
                     <div className="text-xs font-semibold text-foreground">PDF Document</div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
-                      Server-rendered via headless Chromium · US Letter · background graphics
+                      Server-rendered via headless Chromium · US Letter · tutorial-friendly print layout
                     </div>
                   </div>
                 </div>
@@ -231,7 +230,7 @@ export default function ExportPage() {
                   <div>
                     <div className="text-xs font-semibold text-foreground">Word Document (.docx)</div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
-                      Editable · Heading styles for Word TOC · Fill-in worksheets
+                      Editable · Heading styles for Word TOC · walkthrough sections + worksheets
                     </div>
                   </div>
                 </div>
@@ -288,7 +287,7 @@ export default function ExportPage() {
                       <FileText className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <div className="text-xs font-semibold text-foreground">HTML Document</div>
-                        <div className="text-[10px] text-muted-foreground">Self-contained, print-ready</div>
+                        <div className="text-[10px] text-muted-foreground">Self-contained tutorial artifact</div>
                       </div>
                     </div>
                     <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs h-8" onClick={handleDownloadHtml}>
@@ -302,7 +301,7 @@ export default function ExportPage() {
                       <FileCode className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <div className="text-xs font-semibold text-foreground">All Stage Outputs</div>
-                        <div className="text-[10px] text-muted-foreground">Combined JSON</div>
+                        <div className="text-[10px] text-muted-foreground">Combined tutorial JSON</div>
                       </div>
                     </div>
                     <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs h-8" onClick={handleDownloadJson}>

@@ -31,7 +31,9 @@ function ProjectCard({ project, onDuplicate }: { project: Project; onDuplicate: 
       >
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-foreground truncate">{project.title}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">{project.lifeEvent}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            Prompt: {project.lifeEvent}
+          </p>
         </div>
         <StatusBadge status={project.status} size="xs" />
       </div>
@@ -105,17 +107,17 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-8 py-5 border-b bg-card flex-shrink-0">
         <div>
-          <h1 className="text-base font-semibold text-foreground">Projects</h1>
+          <h1 className="text-base font-semibold text-foreground">Tutorial Projects</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             {projects
               ? `${projects.length} project${projects.length !== 1 ? "s" : ""}`
-              : "Life event operational systems"}
+              : "Coding-first tutorial walkthrough projects"}
           </p>
         </div>
         <Link href="/projects/new">
           <Button size="sm" className="gap-1.5 text-xs h-8">
             <Plus className="w-3.5 h-3.5" />
-            New Project
+            New Tutorial
           </Button>
         </Link>
       </div>
@@ -146,13 +148,13 @@ export default function ProjectsPage() {
             <div className="space-y-1.5">
               <h3 className="text-sm font-medium text-foreground">No projects yet</h3>
               <p className="text-xs text-muted-foreground max-w-sm">
-                Create a project to convert a life event into a structured operational system.
+                Create a tutorial project to generate a build-ready walkthrough from your prompt.
               </p>
             </div>
             <Link href="/projects/new">
               <Button size="sm" className="gap-1.5">
                 <Plus className="w-3.5 h-3.5" />
-                Create first project
+                Create first tutorial
               </Button>
             </Link>
           </div>
@@ -166,7 +168,7 @@ export default function ProjectsPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search projects…"
+                placeholder="Search tutorial projects…"
                 className="pl-8 h-8 text-xs"
               />
               {search && (

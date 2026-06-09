@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Life System Builder"
+title = "Tutorial Builder"
 version = "1.0.0"
 id = "artifacts/life-system-builder"
 router = "path"

@@ -51,7 +51,7 @@ class RenderService:
         if not all_outputs:
             raise RenderServiceError(
                 f"No completed stages found for project {project_id}. "
-                "Run at least the system_architecture stage before rendering."
+                "Run at least Stage 1 (Tutorial Framing / system_architecture) before rendering."
             )
 
         theme_tokens = self._extract_theme_tokens(all_outputs)
