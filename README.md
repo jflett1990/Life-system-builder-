@@ -1,6 +1,6 @@
-# Life System Builder
+# Tutorial Builder
 
-Converts life events — estate administration, caregiving, divorce, disability, disaster recovery — into structured operational control systems with a full LLM pipeline, Pydantic schema validation, and print-ready HTML document rendering.
+Creates structured tutorials, coding walkthroughs, project build guides, debugging flows, architecture walkthroughs, and deployment guides from a user prompt. The default product bias is software: vibe coding, implementation tutorials, “teach me how to build X” flows, project walkthroughs, and practical engineering runbooks.
 
 ---
 
@@ -39,17 +39,20 @@ Converts life events — estate administration, caregiving, divorce, disability,
 
 ---
 
-## Five-Stage LLM Pipeline
+## Tutorial Generation Pipeline
 
 Each stage consumes the outputs of all previous stages as structured context.
 
 | # | Stage | Purpose |
 |---|-------|---------|
-| 1 | **System Architecture** | Maps the life event into domains, roles, and structural framework |
-| 2 | **Worksheet System** | Generates task worksheets, trackers, and checklists per domain |
-| 3 | **Layout Mapping** | Assigns document archetypes and page layout structures |
-| 4 | **Render Blueprint** | Produces the final page manifest with content and formatting |
-| 5 | **Validation Audit** | Compiler-style consistency checks (no LLM — pure structural) |
+| 1 | **Tutorial Framing** | Interprets the request, goal, audience, prerequisites, stack, constraints, and success criteria |
+| 2 | **Tutorial Outline** | Generates modules, setup flow, milestones, exercises, and learning sequence |
+| 3 | **Tutorial Detail Mapping** | Expands each module with implementation steps, examples, checkpoints, and debugging notes |
+| 4 | **Exercises & Checklists** | Produces labs, verification checklists, code-review prompts, and deployment/debugging rubrics |
+| 5 | **Reference Builder** | Adds glossary, tools/resources, common blockers, and next-step extension material |
+| 6 | **Delivery Layout** | Maps tutorial content into a printable/renderable document structure |
+| 7 | **Render Blueprint** | Produces theme tokens, component directives, and print specifications |
+| 8 | **Validation Audit** | Checks structural completeness, prerequisite coherence, tutorial flow, checkpoints, and render readiness |
 
 Pipeline execution: sequential, upstream-gated. Each stage is independently re-runnable (`force=true`). Results are persisted to the database between runs.
 
@@ -68,12 +71,6 @@ The renderer is a pure structured-data → HTML transformation (no LLM):
 ---
 
 
-## Proposed v2 architecture
-
-A redesign proposal focused on reducing pipeline complexity, adding a dedicated research stage, and making PDF generation deterministic is documented in `docs/architecture-v2-proposal.md`.
-
----
-
 ## Running Locally
 
 ### Prerequisites
@@ -81,7 +78,7 @@ A redesign proposal focused on reducing pipeline complexity, adding a dedicated 
 - Python 3.11+
 - Node.js 18+
 - pnpm 9+
-- PostgreSQL (or set `DATABASE_URL` to a SQLite path for local dev: `sqlite:///./life_system.db`)
+- PostgreSQL, or set `DATABASE_URL` to a SQLite path for local dev such as `sqlite:///./life_system.db`
 
 ### Backend
 
@@ -99,6 +96,7 @@ python main.py
 
 ```bash
 pnpm install
+export PORT=25676 BASE_PATH=/
 pnpm --filter @workspace/life-system-builder run dev
 # Dev server starts on the port in $PORT (default 25676)
 # Vite proxies /api/* to localhost:8080 automatically
@@ -106,10 +104,16 @@ pnpm --filter @workspace/life-system-builder run dev
 
 ---
 
-## Scenario test prompts
+## Primary Use Cases
 
-- `docs/caregiver-marketing-test-prompt.md` — marketing-oriented caregiving system scenario.
-- `docs/columbia-restaurant-interview-test-prompt.md` — operations-heavy COO interview prep scenario for first-sommelier role.
+- Build a SaaS landing page with Next.js and Tailwind
+- Create a Discord bot with Python
+- Build a CRUD app with Supabase
+- Walk through deploying a FastAPI app
+- Build a Chrome extension for tab management
+- Create an AI chat app with streaming responses
+- Debug a failing deployment, flaky test, or broken API integration
+- Explain a project architecture and how to extend it safely
 
 ---
 
@@ -121,7 +125,7 @@ All routes are prefixed with `/api`.
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/projects` | List all projects |
-| `POST` | `/projects` | Create a project |
+| `POST` | `/projects` | Create a tutorial project |
 | `GET` | `/projects/{id}` | Get project |
 | `PATCH` | `/projects/{id}` | Update project |
 | `DELETE` | `/projects/{id}` | Delete project |
@@ -168,6 +172,6 @@ MIGRATIONS: list[tuple[int, str, MigrationFn]] = [
 
 ## PDF Export
 
-Server-side PDF rendering is not yet implemented. The HTML output is fully print-ready — open it in any browser and use **File → Print → Save as PDF**. The export zip bundle includes `pdf/PENDING.txt` with instructions.
+Server-side PDF rendering uses the export service when Playwright/Chromium is available. The HTML output is also print-ready, so the fallback path is to open the exported HTML in a browser and use **File -> Print -> Save as PDF**.
 
-When implementing PDF in the future, the correct hook is `ExportService.export_pdf()` in `services/export_service.py`, which currently raises `NotImplementedError`. Recommended approach: headless Chrome via Playwright.
+When improving PDF behavior in the future, the hook is `ExportService.export_pdf()` in `services/export_service.py`.

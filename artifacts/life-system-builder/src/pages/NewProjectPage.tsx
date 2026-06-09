@@ -9,22 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-const LIFE_EVENT_EXAMPLES = [
-  "Estate administration after parent's death",
-  "Caring for an aging parent with dementia",
-  "Managing divorce and asset division",
-  "Transitioning a family business to next generation",
-  "Navigating a sudden disability or medical crisis",
-  "Coordinating post-disaster recovery",
+const TUTORIAL_EXAMPLES = [
+  "Build a SaaS landing page with Next.js and Tailwind",
+  "Create a Discord bot with Python",
+  "Build a CRUD app with Supabase",
+  "Walk me through deploying a FastAPI app",
+  "Build a Chrome extension for tab management",
+  "Show me how to make an AI chat app with streaming responses",
 ];
 
 export default function NewProjectPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
-  const [lifeEvent, setLifeEvent] = useState("");
+  const [tutorialPrompt, setTutorialPrompt] = useState("");
+  const [skillLevel, setSkillLevel] = useState("beginner");
+  const [tutorialType, setTutorialType] = useState("hands-on build");
+  const [stack, setStack] = useState("");
+  const [platform, setPlatform] = useState("");
+  const [desiredDepth, setDesiredDepth] = useState("detailed");
+  const [includeCode, setIncludeCode] = useState(true);
+  const [outputStyle, setOutputStyle] = useState("project-based");
+  const [constraints, setConstraints] = useState("");
   const [context, setContext] = useState("");
-  const [errors, setErrors] = useState<{ title?: string; lifeEvent?: string }>({});
+  const [errors, setErrors] = useState<{ tutorialPrompt?: string }>({});
 
   const { mutate: createProject, isPending, error: apiError } = useCreateProject({
     mutation: {
@@ -37,9 +45,19 @@ export default function NewProjectPage() {
 
   function validate() {
     const errs: typeof errors = {};
-    if (!title.trim()) errs.title = "Title is required.";
-    if (!lifeEvent.trim()) errs.lifeEvent = "Life event description is required.";
+    if (!tutorialPrompt.trim()) errs.tutorialPrompt = "Tutorial request is required.";
     return errs;
+  }
+
+  function buildContext() {
+    const details = [
+      stack.trim() && `Language / framework / stack: ${stack.trim()}`,
+      platform.trim() && `Platform / environment: ${platform.trim()}`,
+      `Include code snippets: ${includeCode ? "yes" : "no"}`,
+      constraints.trim() && `Constraints: ${constraints.trim()}`,
+      context.trim() && `Additional context: ${context.trim()}`,
+    ].filter(Boolean);
+    return details.join("\n");
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -50,7 +68,18 @@ export default function NewProjectPage() {
       return;
     }
     setErrors({});
-    createProject({ data: { title: title.trim(), lifeEvent: lifeEvent.trim(), context: context.trim() || undefined } });
+    const fallbackTitle = tutorialPrompt.trim().slice(0, 90);
+    createProject({
+      data: {
+        title: title.trim() || fallbackTitle,
+        lifeEvent: tutorialPrompt.trim(),
+        audience: skillLevel,
+        tone: outputStyle,
+        context: buildContext() || undefined,
+        formattingProfile: tutorialType,
+        artifactDensity: `${desiredDepth}${includeCode ? " + code snippets" : " + no code snippets"}`,
+      },
+    });
   }
 
   return (
@@ -59,54 +88,54 @@ export default function NewProjectPage() {
       <div className="px-8 py-5 border-b bg-card flex-shrink-0">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
           <Link href="/projects">
-            <span className="hover:text-foreground transition-colors cursor-pointer">Projects</span>
+            <span className="hover:text-foreground transition-colors cursor-pointer">Tutorials</span>
           </Link>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-foreground">New Project</span>
+          <span className="text-foreground">New Tutorial</span>
         </div>
-        <h1 className="text-base font-semibold text-foreground">Create a New Project</h1>
+        <h1 className="text-base font-semibold text-foreground">Create a New Tutorial</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Define the life event and context to generate a structured operational system.
+          Describe what you want to learn or build, then tune the walkthrough for your stack and skill level.
         </p>
       </div>
 
       {/* Form */}
       <div className="flex-1 overflow-y-auto p-8">
-        <form onSubmit={handleSubmit} className="max-w-xl space-y-6">
+        <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
           {/* Title */}
           <div className="space-y-1.5">
             <Label htmlFor="title" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Project Title *
+              Tutorial Title <span className="font-normal normal-case">(optional)</span>
             </Label>
             <Input
               id="title"
               value={title}
-              onChange={(e) => { setTitle(e.target.value); setErrors((p) => ({ ...p, title: undefined })); }}
-              placeholder="e.g. Dad's Estate Administration — Spring 2026"
-              className={`text-sm ${errors.title ? "border-destructive" : ""}`}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Streaming AI Chat App Walkthrough"
+              className="text-sm"
             />
-            {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
           </div>
 
-          {/* Life Event */}
+          {/* Tutorial Prompt */}
           <div className="space-y-1.5">
-            <Label htmlFor="lifeEvent" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Life Event *
+            <Label htmlFor="tutorialPrompt" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              What tutorial do you want? *
             </Label>
-            <Input
-              id="lifeEvent"
-              value={lifeEvent}
-              onChange={(e) => { setLifeEvent(e.target.value); setErrors((p) => ({ ...p, lifeEvent: undefined })); }}
-              placeholder="Describe the life event in a phrase"
-              className={`text-sm ${errors.lifeEvent ? "border-destructive" : ""}`}
+            <Textarea
+              id="tutorialPrompt"
+              value={tutorialPrompt}
+              onChange={(e) => { setTutorialPrompt(e.target.value); setErrors((p) => ({ ...p, tutorialPrompt: undefined })); }}
+              placeholder="Describe the project, coding workflow, bug, architecture, or deployment flow you want explained."
+              rows={4}
+              className={`text-sm resize-none ${errors.tutorialPrompt ? "border-destructive" : ""}`}
             />
-            {errors.lifeEvent && <p className="text-xs text-destructive">{errors.lifeEvent}</p>}
+            {errors.tutorialPrompt && <p className="text-xs text-destructive">{errors.tutorialPrompt}</p>}
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {LIFE_EVENT_EXAMPLES.map((ex) => (
+              {TUTORIAL_EXAMPLES.map((ex) => (
                 <button
                   key={ex}
                   type="button"
-                  onClick={() => { setLifeEvent(ex); setErrors((p) => ({ ...p, lifeEvent: undefined })); }}
+                  onClick={() => { setTutorialPrompt(ex); setErrors((p) => ({ ...p, tutorialPrompt: undefined })); }}
                   className="text-[10px] px-2 py-1 rounded-sm border bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 >
                   {ex}
@@ -115,21 +144,98 @@ export default function NewProjectPage() {
             </div>
           </div>
 
+          {/* Structured tutorial controls */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="skillLevel" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Skill Level
+              </Label>
+              <select id="skillLevel" value={skillLevel} onChange={(e) => setSkillLevel(e.target.value)} className="h-9 w-full rounded-sm border bg-background px-3 text-sm">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tutorialType" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Tutorial Type
+              </Label>
+              <select id="tutorialType" value={tutorialType} onChange={(e) => setTutorialType(e.target.value)} className="h-9 w-full rounded-sm border bg-background px-3 text-sm">
+                <option value="overview">Overview</option>
+                <option value="hands-on build">Hands-on build</option>
+                <option value="debugging walkthrough">Debugging walkthrough</option>
+                <option value="architecture walkthrough">Architecture walkthrough</option>
+                <option value="deployment guide">Deployment guide</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="stack" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Language / Framework / Stack
+              </Label>
+              <Input id="stack" value={stack} onChange={(e) => setStack(e.target.value)} placeholder="e.g. React, FastAPI, Supabase" className="text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="platform" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Platform / Environment
+              </Label>
+              <Input id="platform" value={platform} onChange={(e) => setPlatform(e.target.value)} placeholder="e.g. Vercel, Docker, macOS, GitHub Actions" className="text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="desiredDepth" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Desired Depth
+              </Label>
+              <select id="desiredDepth" value={desiredDepth} onChange={(e) => setDesiredDepth(e.target.value)} className="h-9 w-full rounded-sm border bg-background px-3 text-sm">
+                <option value="concise">Concise</option>
+                <option value="detailed">Detailed</option>
+                <option value="deep-dive">Deep dive</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="outputStyle" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Output Style
+              </Label>
+              <select id="outputStyle" value={outputStyle} onChange={(e) => setOutputStyle(e.target.value)} className="h-9 w-full rounded-sm border bg-background px-3 text-sm">
+                <option value="concise">Concise</option>
+                <option value="detailed">Detailed</option>
+                <option value="checklist-driven">Checklist-driven</option>
+                <option value="project-based">Project-based</option>
+              </select>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={includeCode}
+              onChange={(e) => setIncludeCode(e.target.checked)}
+              className="h-4 w-4 rounded border"
+            />
+            Include code snippets and implementation examples where useful
+          </label>
+
           {/* Context */}
           <div className="space-y-1.5">
             <Label htmlFor="context" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Context <span className="font-normal normal-case">(optional)</span>
+              Constraints and extra context <span className="font-normal normal-case">(optional)</span>
             </Label>
+            <Textarea
+              id="constraints"
+              value={constraints}
+              onChange={(e) => setConstraints(e.target.value)}
+              placeholder="Time budget, preferred tools, things to avoid, existing codebase assumptions, deployment limits…"
+              rows={3}
+              className="text-sm resize-none"
+            />
             <Textarea
               id="context"
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              placeholder="Provide any additional context: family structure, jurisdiction, key stakeholders, urgency, known complications…"
-              rows={5}
+              placeholder="Add any background the tutorial should account for."
+              rows={3}
               className="text-sm resize-none"
             />
             <p className="text-[10px] text-muted-foreground">
-              More context produces more accurate and specific operational systems.
+              More context produces a more specific tutorial plan, setup path, checkpoints, and debugging guidance.
             </p>
           </div>
 
@@ -145,7 +251,7 @@ export default function NewProjectPage() {
           {/* Submit */}
           <div className="flex items-center gap-3 pt-2">
             <Button type="submit" disabled={isPending} className="gap-1.5">
-              {isPending ? "Creating…" : "Create Project"}
+              {isPending ? "Creating…" : "Create Tutorial"}
               {!isPending && <ChevronRight className="w-3.5 h-3.5" />}
             </Button>
             <Link href="/projects">

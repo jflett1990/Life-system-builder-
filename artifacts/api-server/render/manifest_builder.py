@@ -226,9 +226,9 @@ class ManifestBuilder:
         ws_system = all_outputs.get("worksheet_system", {})
 
         generated_date = date.today().strftime("%B %d, %Y")
-        system_name = arch.get("system_name", "Operational Control System")
+        system_name = arch.get("system_name", "Tutorial Walkthrough")
         doc_title = system_name
-        document_id = f"LSB-{project_id:05d}"
+        document_id = f"TUT-{project_id:05d}"
 
         domains = arch.get("control_domains", [])
         domain_map: dict[str, dict] = {d.get("id", ""): d for d in domains}
@@ -324,8 +324,8 @@ class ManifestBuilder:
             sequence=next_seq(),
             archetype="dashboard_page",
             data={
-                "page_label": "System Overview",
-                "page_title": "Operational Dashboard",
+                "page_label": "Tutorial Overview",
+                "page_title": "Learning Dashboard",
                 "system_name": system_name,
                 "system_objective": arch.get("system_objective", ""),
                 "time_horizon": arch.get("time_horizon", ""),
@@ -360,7 +360,7 @@ class ManifestBuilder:
             archetype="section_divider",
             data={
                 "section_number": "01",
-                "section_title": "System Architecture",
+                "section_title": "Tutorial Framing",
                 "section_subtitle": arch.get("operating_premise", "")[:140] if arch.get("operating_premise") else "",
                 "domain_count": len(domains),
             },
@@ -374,7 +374,7 @@ class ManifestBuilder:
                 archetype="explanation_page",
                 page_break="auto",
                 data={
-                    "page_label": "System Architecture",
+                    "page_label": "Tutorial Framing",
                     "page_title": system_name,
                     "operating_premise": arch.get("operating_premise", ""),
                     "system_objective": arch.get("system_objective", ""),
@@ -484,7 +484,7 @@ class ManifestBuilder:
                 archetype="section_divider",
                 data={
                     "section_number": "02",
-                    "section_title": "Operational Worksheets",
+                    "section_title": "Tutorial Exercises",
                     "section_subtitle": ws_system.get("worksheet_system_name", ""),
                     "domain_count": len(legacy_worksheets),
                 },
@@ -563,7 +563,7 @@ class ManifestBuilder:
                 data={
                     "section_number": "A",
                     "section_title": "Appendix",
-                    "section_subtitle": "Reference materials, glossary, and professional guidance",
+                    "section_subtitle": "Reference materials, glossary, debugging help, and next steps",
                     "domain_count": None,
                 },
             ))
@@ -594,8 +594,8 @@ class ManifestBuilder:
                     page_break="auto",
                     data={
                         "id": "appendix-key-resources",
-                        "title": "Key Resources & Contacts",
-                        "purpose": "Record organizations, agencies, and professionals relevant to your situation.",
+                        "title": "Key Tools & Resources",
+                        "purpose": "Record tools, documentation, packages, services, and references relevant to this tutorial.",
                         "layout": "table",
                         "table_columns": ["Organization", "Service", "Phone", "Website", "Hours"],
                         "table_row_count": max(len(key_resources), 10),
@@ -617,7 +617,7 @@ class ManifestBuilder:
                         data={"page_number": note_page_idx + 1, "total_pages": notes_count},
                     ))
 
-        # ── 9. Rapid Response Page ─────────────────────────────────────────────
+        # ── 9. Debugging Reference Page ────────────────────────────────────────
         failure_modes = arch.get("failure_modes", [])
         if failure_modes or arch.get("operating_constraints"):
             structured_modes = []
@@ -632,8 +632,8 @@ class ManifestBuilder:
                 sequence=next_seq(),
                 archetype="rapid_response",
                 data={
-                    "page_label": "Contingency Protocol",
-                    "page_title": "Rapid Response Reference",
+                    "page_label": "Debugging Reference",
+                    "page_title": "Common Mistakes and Recovery",
                     "failure_modes": structured_modes,
                     "operating_constraints": arch.get("operating_constraints", []),
                     "escalation_paths": arch.get("escalation_paths", []),

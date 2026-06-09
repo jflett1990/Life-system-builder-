@@ -87,7 +87,7 @@ class PromptAssembler:
     Assembles final OpenAI messages from contracts + runtime data.
 
     Args:
-        orchestrator: The life_system_orchestrator contract (always injected).
+        orchestrator: The tutorial-builder orchestrator contract (always injected).
     """
 
     def __init__(self, orchestrator: "ContractDefinition") -> None:
@@ -105,7 +105,7 @@ class PromptAssembler:
 
         Args:
             contract:             The stage contract to use.
-            payload:              Project-level fields (life_event, audience, tone, context, etc.).
+            payload:              Project-level fields (life_event tutorial prompt, audience, tone, context, etc.).
             upstream_outputs:     Dict of stage_name -> parsed JSON output from upstream stages.
             output_mode_override: If set, overrides the contract's output_mode.
         """
@@ -230,7 +230,7 @@ class PromptAssembler:
     ) -> str:
         """
         Render the user_prompt_template. Supports two sets of substitution keys:
-        - Top-level payload fields (life_event, audience, tone, context, ...)
+        - Top-level payload fields (life_event tutorial prompt, audience, tone, context, ...)
         - Upstream stage outputs via key 'upstream_{stage_name}' (serialised as JSON)
         """
         context: dict[str, Any] = {

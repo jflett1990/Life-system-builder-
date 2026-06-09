@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ manifest.document_title | default("Life System Document") }}</title>
+  <title>{{ manifest.document_title | default("Tutorial Walkthrough") }}</title>
   <style>
 /* ── Tokens ───────────────────────────────────────────────────────── */
 {% include 'styles/tokens.css' %}
@@ -211,7 +211,7 @@
 </div>
 
 <!-- Hidden string capture for Pagedjs running header (@top-left margin box) -->
-<span class="lsb-doc-title-string" aria-hidden="true">{{ manifest.document_title | default("Life System Document") }}</span>
+<span class="lsb-doc-title-string" aria-hidden="true">{{ manifest.document_title | default("Tutorial Walkthrough") }}</span>
 
 {% for page in manifest.pages %}
 {#

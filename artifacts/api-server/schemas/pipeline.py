@@ -1,5 +1,5 @@
 from typing import Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RunStageRequest(BaseModel):
@@ -30,7 +30,7 @@ class PipelineStageSummary(BaseModel):
 class ProjectSummary(BaseModel):
     project_id: int
     title: str
-    life_event: str
+    life_event: str = Field(description="Tutorial request or walkthrough prompt.")
     total_stages: int
     completed_stages: int
     stages: list[PipelineStageSummary]

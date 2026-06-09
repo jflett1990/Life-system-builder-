@@ -1,7 +1,7 @@
 {% from 'templates/components/page_footer.html' import page_footer %}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 {# COVER PAGE                                                                  #}
-{# data keys: system_name, life_event, system_objective, time_horizon,        #}
+{# data keys: system_name, life_event/tutorial request, objective, horizon,   #}
 {#            audience, generated_date, document_id                           #}
 {#                                                                             #}
 {# Background lives on .page--cover_page (base.css) — no negative-margin     #}
@@ -20,7 +20,7 @@
   <div>
     <!-- Eyebrow -->
     <div style="margin-bottom: var(--space-8)">
-      <span class="eyebrow eyebrow--inverse">{{ data.life_event | default("Life Operations System") }}</span>
+      <span class="eyebrow eyebrow--inverse">{{ data.life_event | default("Tutorial Walkthrough") }}</span>
     </div>
 
     <!-- System Name -->
@@ -33,7 +33,7 @@
       color: #fff;
       max-width: 140mm;
       margin-bottom: var(--space-10);
-    ">{{ data.system_name | default("Operational Control System") }}</h1>
+    ">{{ data.system_name | default("Tutorial Walkthrough") }}</h1>
 
     <!-- Horizontal rule — accent gold -->
     <div style="
@@ -71,7 +71,7 @@
     {% endif %}
     {% if data.audience %}
     <div>
-      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Prepared For</div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Audience</div>
       <div style="font-size:var(--text-sm);color:rgba(255,255,255,.85)">{{ data.audience }}</div>
     </div>
     {% endif %}

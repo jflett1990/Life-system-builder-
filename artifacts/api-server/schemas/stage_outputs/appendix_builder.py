@@ -1,6 +1,6 @@
 """Pydantic schemas for the appendix_builder pipeline stage.
 
-Generates 3–5 appendix pages specific to the life event:
+Generates appendix/reference pages specific to the tutorial request:
   - Glossary (15–25 domain terms with definitions)
   - When to Call a Professional (8–12 triggering situations)
   - Key Resources & Contacts (table of organizations/services)

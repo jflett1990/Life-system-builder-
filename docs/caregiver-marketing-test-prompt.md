@@ -1,52 +1,55 @@
-# Caregiver Control Manual — Marketing Test Run Prompt
+# Streaming AI Chat App — Tutorial Builder Test Prompt
 
-Use this prompt when creating a Life System Builder project to market **The Caregiver Control Manual**.
+Use this prompt when creating a Tutorial Builder project for a coding-heavy, hands-on build walkthrough.
 
 ## Core prompt
 
 ```text
-Create a marketing-focused caregiving control system manual for adult children coordinating care for an aging parent.
+Show me how to build an AI chat app with streaming responses using FastAPI, React, and Server-Sent Events.
 
-Positioning:
-- This is not a passive reading experience. It is a working control system.
-- Emphasize practical, legal, financial, and logistical decision support.
-- Stress crisis prevention and operational readiness over inspiration-only messaging.
+Tutorial goals:
+- Explain the end-to-end architecture before coding.
+- Build a FastAPI streaming endpoint.
+- Build a React chat UI that renders streamed tokens incrementally.
+- Include environment variable setup, local run commands, and basic tests.
+- Show how to debug common streaming failures.
 
-Structural context to include:
-- 8 operational domains: cognitive awareness, legal authority, financial control, benefits/funding, home & safety, care operations, family governance, end-of-life system.
-- Cascade chain logic: a change in one domain triggers required review/actions in connected domains.
-- Master operating rules: documents before decisions; worksheets are required outputs; complete before crisis; one owner per function; log decisions contemporaneously; perform cascade reviews; maintain recurring review cadence.
-- Command center model: documentation hub, master contact list, communication protocol, review calendar, emergency packet.
+Structured context to include:
+- Beginner-to-intermediate audience.
+- Local development on macOS or Linux.
+- Prefer minimal dependencies.
+- Include code snippets.
+- Use verification checkpoints after backend, frontend, integration, and deployment readiness steps.
 
-Marketing facts to call out explicitly:
-- 13 chapters
-- 50+ worksheets
+Constraints:
+- Avoid using a full auth system.
+- Keep the first version deployable later but local-first.
+- Explain where an OpenAI-compatible provider or mock streaming adapter would plug in.
 
 Audience and tone:
-- Primary: family caregivers and adult children.
-- Secondary: care managers and elder-law referral partners.
-- Tone: authoritative, practical, compassionate, and execution-oriented.
+- Primary: vibe coders and junior full-stack developers.
+- Tone: project-based, practical, and debugging-friendly.
 
 Output goal:
-Produce messaging architecture suitable for landing pages, sales one-pagers, webinar copy, and referral-partner outreach.
+Produce a polished tutorial with prerequisites, setup, step-by-step implementation, code examples, checkpoints, common mistakes, final outcome, and next improvements.
 ```
 
 ## API test payload (example)
 
 ```json
 {
-  "title": "Caregiver Control Manual Marketing Test",
-  "lifeEvent": "Create a marketing-focused caregiving control system manual for adult children coordinating care for an aging parent.",
-  "audience": "Family caregivers, care managers, elder-law referral partners",
-  "tone": "authoritative, practical, crisis-prevention focused",
-  "context": "Manual positioning from source pages: not a passive read, but a working control system. Core framework uses 8 operational domains with cascade triggers across domains. Domain set includes cognitive awareness, legal authority, financial control, benefits/funding, home safety, care operations, family governance, and end-of-life. Includes master operating rules: documents before decisions; worksheets required outputs; complete before crisis; one owner per function; log decisions contemporaneously; cascade reviews; regular review cadence. Includes command center concept with documentation hub, master contacts, communication protocol, review calendar, emergency packet. Orientation sequence highlights early legal/financial setup, funding runway, role assignment, and crisis quick-index. Product facts to emphasize: 13 chapters and 50+ worksheets.",
-  "formattingProfile": "professional_print",
-  "artifactDensity": "high"
+  "title": "Streaming AI Chat App Walkthrough",
+  "lifeEvent": "Show me how to build an AI chat app with streaming responses using FastAPI, React, and Server-Sent Events.",
+  "audience": "intermediate",
+  "tone": "project-based",
+  "context": "Language / framework / stack: FastAPI, React, Server-Sent Events. Platform / environment: local macOS or Linux dev environment. Include code snippets: yes. Constraints: no auth in v1, minimal dependencies, local-first, explain where an OpenAI-compatible provider or mock streaming adapter plugs in.",
+  "formattingProfile": "hands-on build",
+  "artifactDensity": "detailed + code snippets"
 }
 ```
 
 ## Observed test-run status in this environment
 
-- Project creation succeeded.
-- Pipeline stage `system_architecture` starts successfully with the prompt and enters `running` state in this environment.
-- If your environment still uses legacy Chat Completions wiring, ensure the provider and base URL are aligned to one API format.
+- Project creation should succeed.
+- Stage `system_architecture` should frame a tutorial, not a life-event system.
+- The rendered output should include prerequisites, tools/setup, implementation steps, checkpoints, debugging notes, final outcome, and next improvements.

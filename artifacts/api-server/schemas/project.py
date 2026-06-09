@@ -6,13 +6,13 @@ from pydantic.alias_generators import to_camel
 class ProjectCreate(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    title: str = Field(..., max_length=200)
-    life_event: str = Field(..., max_length=2000)
-    audience: str | None = Field(default=None, max_length=500)
-    tone: str | None = Field(default=None, max_length=200)
-    context: str | None = Field(default=None, max_length=5000)
-    formatting_profile: str | None = Field(default=None, max_length=100)
-    artifact_density: str | None = Field(default=None, max_length=100)
+    title: str = Field(..., max_length=200, description="Tutorial title.")
+    life_event: str = Field(..., max_length=2000, description="Tutorial request or walkthrough prompt.")
+    audience: str | None = Field(default=None, max_length=500, description="Skill level or target learner.")
+    tone: str | None = Field(default=None, max_length=200, description="Output style, such as concise, detailed, checklist-driven, or project-based.")
+    context: str | None = Field(default=None, max_length=5000, description="Stack, platform, constraints, code preference, and additional tutorial context.")
+    formatting_profile: str | None = Field(default=None, max_length=100, description="Tutorial type, such as overview, hands-on build, debugging walkthrough, architecture walkthrough, or deployment guide.")
+    artifact_density: str | None = Field(default=None, max_length=100, description="Desired depth and code-snippet preference.")
 
     @field_validator("title", "life_event")
     @classmethod

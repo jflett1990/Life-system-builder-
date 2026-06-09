@@ -5,6 +5,8 @@ import { Layers, Plus, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Project } from "@workspace/api-client-react";
 
+const TOTAL_STAGES = 8;
+
 function ProjectItem({ project }: { project: Project }) {
   const [location] = useLocation();
   const href = `/projects/${project.id}`;
@@ -16,7 +18,7 @@ function ProjectItem({ project }: { project: Project }) {
   });
 
   const completedCount = stages?.filter((s) => s.status === "complete").length ?? 0;
-  const totalStages = 5;
+  const totalStages = TOTAL_STAGES;
 
   return (
     <Link href={href}>
@@ -62,7 +64,7 @@ export default function AppSidebar() {
           </div>
           <div>
             <div className="text-[11px] font-semibold tracking-wider uppercase text-sidebar-foreground/90 leading-tight">
-              Life System
+              Tutorial
             </div>
             <div className="text-[9px] tracking-widest uppercase text-sidebar-foreground/35 leading-tight">
               Builder
@@ -84,14 +86,14 @@ export default function AppSidebar() {
               )}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Dashboard</span>
+              <span>Tutorials</span>
             </div>
           </Link>
         </div>
 
         <div className="px-3 mb-1">
           <div className="text-[9px] font-semibold tracking-widest uppercase text-sidebar-foreground/25 px-3 mb-1">
-            Projects
+            Tutorials
           </div>
         </div>
 
@@ -100,7 +102,7 @@ export default function AppSidebar() {
             <div className="px-3 py-2 text-[10px] text-sidebar-foreground/30">Loading…</div>
           )}
           {!isLoading && (!projects || projects.length === 0) && (
-            <div className="px-3 py-2 text-[10px] text-sidebar-foreground/30">No projects yet</div>
+            <div className="px-3 py-2 text-[10px] text-sidebar-foreground/30">No tutorials yet</div>
           )}
           {projects?.map((project) => (
             <ProjectItem key={project.id} project={project} />
@@ -113,7 +115,7 @@ export default function AppSidebar() {
         <Link href="/projects/new">
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-sm cursor-pointer border border-sidebar-primary/30 bg-sidebar-primary/10 hover:bg-sidebar-primary/20 text-sidebar-primary transition-colors">
             <Plus className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">New Project</span>
+            <span className="text-xs font-medium">New Tutorial</span>
           </div>
         </Link>
       </div>

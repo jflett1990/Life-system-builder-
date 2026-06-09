@@ -65,7 +65,7 @@ export default function PreviewPage() {
                 Document Preview
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Renders the operational system as a print-ready HTML document.
+                Renders the tutorial as a print-ready HTML walkthrough.
                 {hasExistingRender && !renderResult && cachedInfo && (
                   <span className="ml-1 text-muted-foreground/60">
                     · Last rendered {new Date(cachedInfo.updatedAt).toLocaleDateString()}
@@ -126,7 +126,7 @@ export default function PreviewPage() {
                 <p className="text-xs text-muted-foreground max-w-sm">
                   {hasExistingRender
                     ? `A render exists from ${new Date((cachedInfo as any).updatedAt).toLocaleDateString()}. Click Render Document to generate a fresh preview.`
-                    : "Complete the pipeline stages first, then render the document to see the preview."}
+                    : "Complete the tutorial pipeline first, then render the walkthrough to preview it."}
                 </p>
               </div>
               {hasExistingRender && (
@@ -138,7 +138,7 @@ export default function PreviewPage() {
             </div>
           )}
 
-          {isPending && <LoadingState message="Generating document…" />}
+          {isPending && <LoadingState message="Generating tutorial preview…" />}
 
           {renderResult && !isPending && (
             <DocumentFrame

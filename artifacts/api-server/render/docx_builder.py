@@ -1,8 +1,8 @@
 """
-DocxBuilder — Generates a Word (.docx) document from Life System Builder pipeline data.
+DocxBuilder — Generates a Word (.docx) document from Tutorial Builder pipeline data.
 
 Document structure:
-  Cover metadata block       — system identity, life event, time horizon, audience
+  Cover metadata block       — tutorial identity, request, expected length, audience
   Table of Contents          — Word TOC field (right-click → Update Field in Word)
   For each chapter (H1):
     Chapter narrative        — plain paragraph
@@ -130,7 +130,7 @@ class DocxBuilder:
         system_objective = _safe_text(arch.get("system_objective"), "")
         time_horizon = _safe_text(arch.get("time_horizon"), "")
         audience = _safe_text(arch.get("audience"), "")
-        document_id = f"LSB-{project_id:05d}"
+        document_id = f"TUT-{project_id:05d}"
         generated_date = date.today().strftime("%B %d, %Y")
 
         chapters: list[dict] = chapter_exp.get("chapters", [])

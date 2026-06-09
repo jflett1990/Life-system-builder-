@@ -105,17 +105,17 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-8 py-5 border-b bg-card flex-shrink-0">
         <div>
-          <h1 className="text-base font-semibold text-foreground">Projects</h1>
+            <h1 className="text-base font-semibold text-foreground">Tutorials</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             {projects
-              ? `${projects.length} project${projects.length !== 1 ? "s" : ""}`
-              : "Life event operational systems"}
+              ? `${projects.length} tutorial${projects.length !== 1 ? "s" : ""}`
+              : "Coding-heavy walkthroughs and project guides"}
           </p>
         </div>
         <Link href="/projects/new">
           <Button size="sm" className="gap-1.5 text-xs h-8">
             <Plus className="w-3.5 h-3.5" />
-            New Project
+            New Tutorial
           </Button>
         </Link>
       </div>
@@ -144,15 +144,15 @@ export default function ProjectsPage() {
               <Layers className="w-6 h-6 text-muted-foreground/50" />
             </div>
             <div className="space-y-1.5">
-              <h3 className="text-sm font-medium text-foreground">No projects yet</h3>
+              <h3 className="text-sm font-medium text-foreground">No tutorials yet</h3>
               <p className="text-xs text-muted-foreground max-w-sm">
-                Create a project to convert a life event into a structured operational system.
+                Create a tutorial to turn a coding goal, debugging flow, architecture topic, or deployment task into a structured walkthrough.
               </p>
             </div>
             <Link href="/projects/new">
               <Button size="sm" className="gap-1.5">
                 <Plus className="w-3.5 h-3.5" />
-                Create first project
+                Create first tutorial
               </Button>
             </Link>
           </div>
@@ -182,7 +182,7 @@ export default function ProjectsPage() {
             {filtered && filtered.length === 0 && (
               <div className="text-center py-16">
                 <p className="text-sm text-muted-foreground">
-                  No projects match <span className="font-mono">"{search}"</span>
+                  No tutorials match <span className="font-mono">"{search}"</span>
                 </p>
               </div>
             )}

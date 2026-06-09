@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import type { ProjectWithStages } from "@workspace/api-client-react";
 
+const TOTAL_STAGES = 8;
+
 const TABS = [
   { label: "Pipeline", path: "" },
   { label: "Validation", path: "/validation" },
@@ -20,7 +22,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
   const base = `/projects/${project.id}`;
 
   const completedStages = project.stages.filter((s) => s.status === "complete").length;
-  const totalStages = 5;
+  const totalStages = TOTAL_STAGES;
 
   return (
     <div className="border-b bg-card flex-shrink-0">
@@ -29,7 +31,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
         <Link href="/projects">
           <span className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1">
             <Layers className="w-3 h-3" />
-            Projects
+            Tutorials
           </span>
         </Link>
         <ChevronRight className="w-3 h-3 text-muted-foreground/50" />

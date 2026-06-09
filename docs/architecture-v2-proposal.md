@@ -1,4 +1,4 @@
-# Life System Builder — Architecture v2 Proposal
+# Tutorial Builder — Architecture v2 Proposal
 
 ## Why this redesign
 
@@ -6,10 +6,10 @@ Current pain points are real and recurring:
 
 1. **Pipeline feels bloated**: too many generation stages, too many cross-stage dependencies, and unclear ownership boundaries.
 2. **PDF output is brittle**: content generation and page geometry decisions are mixed, so formatting problems are hard to isolate.
-3. **Output sounds templated/generic**: prompts optimize for schema completion more than source-grounded specificity.
-4. **Missing explicit research step**: domain facts are generated without a dedicated evidence model.
+3. **Output can sound templated/generic**: prompts optimize for schema completion more than tutorial-specific implementation detail.
+4. **Missing explicit research/source step**: technical claims, API details, and tool guidance are generated without a dedicated evidence model.
 
-This proposal reduces orchestration complexity, introduces a research-first content strategy, and makes PDF production deterministic.
+This proposal reduces orchestration complexity, introduces a research-first tutorial strategy, and makes HTML/PDF production deterministic.
 
 ---
 
@@ -31,11 +31,11 @@ This proposal reduces orchestration complexity, introduces a research-first cont
 **Input**
 - user intake fields
 - audience + constraints
-- locale/jurisdiction hints
+- stack/platform hints
 
 **Output**
 - `project_brief.json`
-- normalized entities (people, places, deadlines, systems)
+- normalized entities (tools, frameworks, files, commands, platforms, constraints)
 - unresolved questions list
 
 ---
@@ -61,7 +61,7 @@ This proposal reduces orchestration complexity, introduces a research-first cont
 ---
 
 ### Stage 2 — Strategy Blueprint (replaces multiple upstream planning stages)
-**Goal**: convert evidence into a domain strategy model.
+**Goal**: convert evidence into a tutorial strategy model.
 
 **Input**
 - `project_brief.json`
@@ -69,11 +69,11 @@ This proposal reduces orchestration complexity, introduces a research-first cont
 
 **Output**
 - `strategy_blueprint.json`
-  - domains
-  - goals
-  - operating principles
-  - role responsibilities
-  - milestones and risk gates
+  - modules
+  - learning/build goals
+  - tutorial principles
+  - learner assumptions
+  - milestones, checkpoints, and debugging gates
 
 ---
 

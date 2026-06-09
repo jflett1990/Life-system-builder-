@@ -1,8 +1,8 @@
-# Life System Builder
+# Tutorial Builder
 
 ## Overview
 
-Full-stack web application that converts life events (caregiving, estate administration, divorce, etc.) into structured operational control systems. Produces structured JSON per pipeline stage, validation reports, and print-ready HTML/CSS documents.
+Full-stack web application that converts tutorial requests into structured coding walkthroughs, project build guides, debugging flows, architecture walkthroughs, and deployment guides. Produces structured JSON per pipeline stage, validation reports, and print-ready HTML/CSS tutorial documents.
 
 ## Architecture
 
@@ -71,7 +71,7 @@ Produces downloadable file packages from rendered pipeline outputs. All zip oper
 ### Bundle Structure
 
 ```
-LSB-{id:05d}-export.zip
+TUT-{id:05d}-export.zip
 ├── manifest.json          — bundle metadata + file index (bundle_id, document_id, stages, pdf_status)
 ├── html/
 │   └── document.html      — self-contained, print-ready HTML (styles embedded)
@@ -102,7 +102,7 @@ LSB-{id:05d}-export.zip
 
 The `DocumentFrame.tsx` preview iframe uses a Blob URL (not a `data:` URI) with `sandbox="allow-same-origin allow-scripts"` to allow Pagedjs to execute. A Print button in the toolbar calls `window.print()` inside the iframe.
 
-`ExportService.export_pdf()` raises `NotImplementedError` with a clear message. For PDF: open the downloaded HTML in Chrome/Edge, wait for Pagedjs to paginate, then File → Print → Save as PDF.
+`ExportService.export_pdf()` is the server-side PDF hook. If Chromium/Playwright is unavailable, open the downloaded HTML in Chrome/Edge, wait for Pagedjs to paginate, then File -> Print -> Save as PDF.
 
 ### Key Classes
 

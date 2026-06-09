@@ -123,7 +123,7 @@ def download_pdf(
             detail=f"PDF generation failed: {e}. Try downloading the HTML and printing to PDF from your browser.",
         )
 
-    filename = f"LSB-{project_id:05d}-document.pdf"
+    filename = f"TUT-{project_id:05d}-tutorial.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
@@ -235,7 +235,7 @@ def download_docx(
     Generate and download the project as an editable Word document (.docx).
 
     Document structure:
-      - Cover block (system name, life event, objective, audience, date)
+      - Cover block (tutorial title, request, goal, audience, date)
       - TOC field (right-click → "Update Field" in Word to populate)
       - For each chapter: H1 heading, narrative, quick-reference rules,
         then each worksheet as an H2 section rendered by its layout type:

@@ -6,7 +6,7 @@
 {# data keys: page_title, page_label, failure_modes, escalation_paths,       #}
 {#            emergency_contacts, operating_constraints, checklists            #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
-{{ section_header(label=data.page_label | default("Contingency Protocol"), title=data.page_title | default("Rapid Response Reference")) }}
+{{ section_header(label=data.page_label | default("Debugging Reference"), title=data.page_title | default("Common Mistakes and Recovery")) }}
 
 {% if data.failure_modes %}
 <div style="margin-bottom:var(--space-10)">

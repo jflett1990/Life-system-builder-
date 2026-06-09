@@ -50,7 +50,7 @@ class WorksheetDomainRefRule(BaseRule):
     rule_id  = "CROSS_WORKSHEET_DOMAIN_REF"
     severity = Severity.error
     code     = "CROSS_WORKSHEET_DOMAIN_REF"
-    title    = "Worksheet References Domain ID Not in System Architecture"
+    title    = "Exercise References Module ID Not in Tutorial Framing"
     blocked_handoff = True
 
     def check(self, stage_output: dict[str, Any], context: dict[str, Any]) -> list[Defect]:

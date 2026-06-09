@@ -96,7 +96,7 @@ export default function PipelinePage() {
                 Pipeline Stages
               </h2>
               <p className="text-xs text-muted-foreground">
-                Run stages sequentially to generate the operational system.
+                Run stages sequentially to generate the tutorial, exercises, references, and render blueprint.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export default function PipelinePage() {
           {project.context && (
             <div className="mt-6 border rounded-sm p-4 bg-muted/20">
               <div className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
-                Project Context
+                Tutorial Context
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">{project.context}</p>
             </div>

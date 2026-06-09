@@ -46,7 +46,7 @@ export function DocumentFrame({ html, pageCount, className }: DocumentFrameProps
       {/* Toolbar */}
       <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/20 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Document Preview</span>
+          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Tutorial Preview</span>
           {pageCount !== undefined && (
             <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
               {pageCount} page{pageCount !== 1 ? "s" : ""}
@@ -88,7 +88,7 @@ export function DocumentFrame({ html, pageCount, className }: DocumentFrameProps
           src={blobUrl}
           className="w-full h-full border-0 bg-white"
           sandbox="allow-same-origin allow-scripts"
-          title="Document Preview"
+          title="Tutorial Preview"
         />
       </div>
     </div>
