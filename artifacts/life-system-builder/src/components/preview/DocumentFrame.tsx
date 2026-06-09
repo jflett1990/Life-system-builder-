@@ -80,8 +80,11 @@ export function DocumentFrame({ html, pageCount, className }: DocumentFrameProps
         </div>
       </div>
 
-      {/* Frame */}
-      <div className={cn("flex-1 overflow-hidden", fullscreen ? "min-h-0" : "h-[700px]")}>
+      {/* Frame.
+          In normal mode the height must come from h-[700px]; flex-1 would set
+          flex-basis:0% which overrides the height inside the column flex parent
+          and collapses the iframe to a few pixels. Only flex-grow in fullscreen. */}
+      <div className={cn("overflow-hidden", fullscreen ? "flex-1 min-h-0" : "h-[700px]")}>
         <iframe
           key={key}
           ref={iframeRef}
