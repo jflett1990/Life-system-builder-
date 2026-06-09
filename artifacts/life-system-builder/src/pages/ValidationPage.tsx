@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import {
   useValidateProject,
-  useGetValidationResult,
+  getGetValidationResultQueryOptions,
 } from "@workspace/api-client-react";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -52,8 +52,10 @@ export default function ValidationPage() {
   const { projectWithStages, isLoading: projectLoading } = useProjectWithStages(projectId);
 
   // Load persisted validation result on mount
-  const { data: persistedResult } = useGetValidationResult(projectId, {
-    query: { retry: false, staleTime: 30_000 },
+  const { data: persistedResult } = useQuery({
+    ...getGetValidationResultQueryOptions(projectId),
+    retry: false,
+    staleTime: 30_000,
   });
 
   const { mutate: validate, isPending } = useValidateProject({

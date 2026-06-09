@@ -61,6 +61,18 @@ def _get_assembler() -> PromptAssembler:
     return PromptAssembler(orch_contract)
 
 
+def _project_payload(project) -> dict[str, Any]:
+    """Build the template payload for LLM prompts from project tutorial metadata."""
+    return {
+        "life_event": project.life_event,
+        "audience": project.audience or "beginner",
+        "tone": project.tone or "project-based",
+        "context": project.context or "",
+        "formatting_profile": project.formatting_profile or "hands-on build",
+        "artifact_density": project.artifact_density or "standard",
+    }
+
+
 class PipelineService:
     def __init__(self, db: Session) -> None:
         self._repo = StageOutputRepository(db)
@@ -118,12 +130,7 @@ class PipelineService:
         # Assemble context
         all_outputs = self.all_stage_outputs_as_dict(project_id)
         upstream = orchestrator.collect_upstream_outputs(stage, all_outputs)
-        payload = {
-            "life_event": project.life_event,
-            "audience": project.audience or "general adult",
-            "tone": project.tone or "professional",
-            "context": project.context or "",
-        }
+        payload = _project_payload(project)
 
         registry = get_registry()
         contract_name = orchestrator.resolve_contract_name(stage)
@@ -302,10 +309,7 @@ class PipelineService:
         narrative_contract = get_registry().resolve("chapter_narrative_writer")
 
         base_payload = {
-            "life_event": project.life_event,
-            "audience": project.audience or "general adult",
-            "tone": project.tone or "professional",
-            "context": project.context or "",
+            **_project_payload(project),
             "document_title": outline_data.get("document_title", project.life_event),
         }
 
@@ -791,10 +795,7 @@ class PipelineService:
         assembler = _get_assembler()
 
         base_payload = {
-            "life_event": project.life_event,
-            "audience": project.audience or "general adult",
-            "tone": project.tone or "professional",
-            "context": project.context or "",
+            **_project_payload(project),
             "document_title": outline_data.get("document_title", project.life_event),
         }
 

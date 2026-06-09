@@ -96,7 +96,7 @@ export default function PipelinePage() {
                 Pipeline Stages
               </h2>
               <p className="text-xs text-muted-foreground">
-                Run stages sequentially to generate the operational system.
+                Run stages sequentially to generate the structured tutorial.
               </p>
             </div>
             <div className="flex items-center gap-2">

@@ -20,7 +20,7 @@
   <div>
     <!-- Eyebrow -->
     <div style="margin-bottom: var(--space-8)">
-      <span class="eyebrow eyebrow--inverse">{{ data.life_event | default("Life Operations System") }}</span>
+      <span class="eyebrow eyebrow--inverse">{{ data.life_event | default("Tutorial Walkthrough") }}</span>
     </div>
 
     <!-- System Name -->
@@ -33,7 +33,7 @@
       color: #fff;
       max-width: 140mm;
       margin-bottom: var(--space-10);
-    ">{{ data.system_name | default("Operational Control System") }}</h1>
+    ">{{ data.system_name | default("Tutorial Guide") }}</h1>
 
     <!-- Horizontal rule — accent gold -->
     <div style="
@@ -65,13 +65,13 @@
   ">
     {% if data.time_horizon %}
     <div>
-      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Time Horizon</div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Estimated Duration</div>
       <div style="font-size:var(--text-sm);color:rgba(255,255,255,.85)">{{ data.time_horizon }}</div>
     </div>
     {% endif %}
     {% if data.audience %}
     <div>
-      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Prepared For</div>
+      <div style="font-size:var(--text-xs);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:var(--space-1)">Skill Level</div>
       <div style="font-size:var(--text-sm);color:rgba(255,255,255,.85)">{{ data.audience }}</div>
     </div>
     {% endif %}
