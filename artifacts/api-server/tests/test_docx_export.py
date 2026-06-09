@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 MINIMAL_OUTPUTS: dict = {
     "system_architecture": {
-        "system_name": "Test Operational System",
-        "life_event": "Starting a Business",
+        "system_name": "Test Tutorial Walkthrough",
+        "life_event": "Build a startup launch plan",
         "system_objective": "Keep everything running smoothly.",
         "time_horizon": "6 months",
         "audience": "Founder",
@@ -142,7 +142,7 @@ class TestDocxBuilderStructure:
         h2 = [p.text for p in paragraphs if p.style.name == "Heading 2"]
         h3 = [p.text for p in paragraphs if p.style.name == "Heading 3"]
 
-        assert any("Chapter 1" in t for t in h1), f"Expected chapter H1, got: {h1}"
+        assert any("Module 1" in t for t in h1), f"Expected module H1, got: {h1}"
         assert any("Business Identity Worksheet" in t for t in h2), f"H2 missing worksheet: {h2}"
         assert any("Business Name" in t for t in h3), f"H3 field label missing: {h3}"
 
@@ -183,8 +183,8 @@ class TestDocxBuilderStructure:
     def test_cover_content(self) -> None:
         doc = self._parse()
         full_text = " ".join(p.text for p in doc.paragraphs)
-        assert "Test Operational System" in full_text
-        assert "Starting a Business" in full_text
+        assert "Test Tutorial Walkthrough" in full_text
+        assert "Build a startup launch plan" in full_text
 
     def test_fallback_no_chapters(self) -> None:
         outputs = {

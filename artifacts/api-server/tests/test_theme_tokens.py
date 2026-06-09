@@ -168,25 +168,27 @@ class TestRenderBlueprintPrompt:
 
     def test_contains_all_five_categories(self) -> None:
         prompt = self._prompt()
-        assert "Legal" in prompt
-        assert "Caregiving" in prompt
-        assert "Medical" in prompt
-        assert "Financial" in prompt
+        assert "Web / product build" in prompt
+        assert "Backend / API systems" in prompt
+        assert "DevOps / deployment" in prompt
+        assert "AI / LLM applications" in prompt
         assert "Default" in prompt
 
     def test_contains_category_hex_values(self) -> None:
         prompt = self._prompt()
-        assert "#1e2d40" in prompt   # legal deep slate
-        assert "#c9a84c" in prompt   # legal gold
-        assert "#1a3a2a" in prompt   # caregiving forest
-        assert "#7aab8a" in prompt   # caregiving sage
-        assert "#242424" in prompt   # medical charcoal
-        assert "#4a9e8e" in prompt   # medical teal
-        assert "#1a2340" in prompt   # financial navy
-        assert "#d4a017" in prompt   # financial amber
+        assert "#1e2d40" in prompt   # web/product deep slate
+        assert "#66c2ff" in prompt   # web/product sky
+        assert "#1a2340" in prompt   # backend deep navy
+        assert "#7cc7a3" in prompt   # backend mint
+        assert "#242424" in prompt   # devops charcoal
+        assert "#e4b86a" in prompt   # devops amber
+        assert "#2a1f47" in prompt   # AI deep violet
+        assert "#8fd0ff" in prompt   # AI cyan
 
-    def test_references_life_event(self) -> None:
-        assert "life_event" in self._prompt()
+    def test_references_tutorial_context(self) -> None:
+        prompt = self._prompt()
+        assert "UPSTREAM TUTORIAL FRAMING" in prompt
+        assert "Tutorial category" in prompt
 
     def test_version_still_1_0(self) -> None:
         with open(CONTRACT_PATH) as f:
