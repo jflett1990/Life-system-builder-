@@ -392,6 +392,7 @@ components:
       type: string
       enum:
         - system-architecture
+        - research-graph
         - document-outline
         - chapter-expansion
         - chapter-worksheets

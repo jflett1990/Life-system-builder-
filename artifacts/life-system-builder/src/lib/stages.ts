@@ -1,5 +1,6 @@
 export const PIPELINE_STAGES = [
   "system-architecture",
+  "research-graph",
   "document-outline",
   "chapter-expansion",
   "chapter-worksheets",
@@ -28,53 +29,60 @@ export const STAGE_META: Record<string, StageMeta> = {
     order: 1,
     modelRole: "planner",
   },
+  "research-graph": {
+    label: "Web Research",
+    description:
+      "Searches and scrapes current documentation, tutorials, and guides via Firecrawl to ground the walkthrough in real sources.",
+    order: 2,
+    modelRole: "planner",
+  },
   "document-outline": {
     label: "Tutorial Outline",
     description:
       "Generates the major modules and steps — setup, milestones, learning flow, and checkpoint structure.",
-    order: 2,
+    order: 3,
     modelRole: "planner",
   },
   "chapter-expansion": {
     label: "Step Detail Mapping",
     description:
       "Expands each module with implementation details, substeps, code examples, and verification checkpoints.",
-    order: 3,
+    order: 4,
     modelRole: "executor",
   },
   "chapter-worksheets": {
     label: "Implementation Examples",
     description:
       "Produces hands-on exercises, code snippets, command references, and fill-in worksheets per module.",
-    order: 4,
+    order: 5,
     modelRole: "executor",
   },
   "appendix-builder": {
     label: "Reference & Troubleshooting",
     description:
       "Builds glossary, common mistakes, debugging notes, and resource references specific to the tutorial topic.",
-    order: 5,
+    order: 6,
     modelRole: "executor",
   },
   "layout-mapping": {
     label: "Delivery Layout",
     description:
       "Maps tutorial sections into a structured document layout optimized for reading and printing.",
-    order: 6,
+    order: 7,
     modelRole: "executor",
   },
   "render-blueprint": {
     label: "Render Blueprint",
     description:
       "Produces the final render manifest — typography, code block styling, and page structure for export.",
-    order: 7,
+    order: 8,
     modelRole: "executor",
   },
   "validation-audit": {
     label: "Validation Audit",
     description:
       "Checks structural completeness — prerequisites, step dependencies, code coverage, and render-readiness.",
-    order: 8,
+    order: 9,
     modelRole: "executor",
   },
 };

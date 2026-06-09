@@ -91,6 +91,7 @@ export const GetProjectResponse = zod.object({
       projectId: zod.number(),
       stage: zod.enum([
         "system-architecture",
+        "research-graph",
         "document-outline",
         "chapter-expansion",
         "chapter-worksheets",
@@ -199,6 +200,7 @@ export const ListProjectStagesResponseItem = zod.object({
   projectId: zod.number(),
   stage: zod.enum([
     "system-architecture",
+    "research-graph",
     "document-outline",
     "chapter-expansion",
     "chapter-worksheets",
@@ -252,6 +254,7 @@ export const GetStageOutputParams = zod.object({
   id: zod.coerce.number(),
   stage: zod.enum([
     "system-architecture",
+    "research-graph",
     "document-outline",
     "chapter-expansion",
     "chapter-worksheets",
@@ -267,6 +270,7 @@ export const GetStageOutputResponse = zod.object({
   projectId: zod.number(),
   stage: zod.enum([
     "system-architecture",
+    "research-graph",
     "document-outline",
     "chapter-expansion",
     "chapter-worksheets",
@@ -327,6 +331,7 @@ export const GetProjectSummaryResponse = zod.object({
     zod.object({
       stage: zod.enum([
         "system-architecture",
+        "research-graph",
         "document-outline",
         "chapter-expansion",
         "chapter-worksheets",
@@ -354,6 +359,7 @@ export const RunStageParams = zod.object({
   id: zod.coerce.number(),
   stage: zod.enum([
     "system-architecture",
+    "research-graph",
     "document-outline",
     "chapter-expansion",
     "chapter-worksheets",
@@ -376,6 +382,7 @@ export const RunStageResponse = zod.object({
   projectId: zod.number(),
   stage: zod.enum([
     "system-architecture",
+    "research-graph",
     "document-outline",
     "chapter-expansion",
     "chapter-worksheets",
@@ -434,6 +441,7 @@ export const GetValidationResultResponse = zod.object({
     zod.object({
       stage: zod.enum([
         "system-architecture",
+        "research-graph",
         "document-outline",
         "chapter-expansion",
         "chapter-worksheets",
@@ -465,6 +473,7 @@ export const ValidateProjectResponse = zod.object({
     zod.object({
       stage: zod.enum([
         "system-architecture",
+        "research-graph",
         "document-outline",
         "chapter-expansion",
         "chapter-worksheets",

@@ -13,6 +13,7 @@ export type StageName = (typeof StageName)[keyof typeof StageName];
 
 export const StageName = {
   "system-architecture": "system-architecture",
+  "research-graph": "research-graph",
   "document-outline": "document-outline",
   "chapter-expansion": "chapter-expansion",
   "chapter-worksheets": "chapter-worksheets",

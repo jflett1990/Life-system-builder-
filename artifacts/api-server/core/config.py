@@ -97,5 +97,14 @@ class Settings(BaseSettings):
     def get_api_key(self) -> str:
         return os.environ.get("API_KEY", self.api_key).strip()
 
+    # ── Firecrawl (tutorial web research) ─────────────────────────────────────
+    firecrawl_api_key: str = ""
+
+    def get_firecrawl_api_key(self) -> str:
+        return (
+            os.environ.get("FIRECRAWL_API_KEY")
+            or self.firecrawl_api_key
+        ).strip()
+
 
 settings = Settings()

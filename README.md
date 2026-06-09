@@ -38,20 +38,21 @@ Turns tutorial requests — coding projects, implementation walkthroughs, deploy
 
 ---
 
-## Eight-Stage Tutorial Pipeline
+## Nine-Stage Tutorial Pipeline
 
 Each stage consumes the outputs of all previous stages as structured context. Internal stage keys are unchanged for compatibility; user-facing labels map to tutorial semantics.
 
 | # | Stage (internal) | User-facing label | Purpose |
 |---|------------------|-------------------|---------|
 | 1 | `system_architecture` | **Tutorial Framing** | Goal, audience, prerequisites, stack, constraints |
-| 2 | `document_outline` | **Tutorial Outline** | Major modules, setup, milestones, learning flow |
-| 3 | `chapter_expansion` | **Step Detail Mapping** | Substeps, code examples, checkpoints per module |
-| 4 | `chapter_worksheets` | **Implementation Examples** | Hands-on exercises, command refs, code worksheets |
-| 5 | `appendix_builder` | **Reference & Troubleshooting** | Glossary, common mistakes, resources |
-| 6 | `layout_mapping` | **Delivery Layout** | Section ordering and print architecture |
-| 7 | `render_blueprint` | **Render Blueprint** | Typography, code styling, page manifest |
-| 8 | `validation_audit` | **Validation Audit** | Structural completeness and consistency checks |
+| 2 | `research_graph` | **Web Research** | Firecrawl search + scrape of docs, tutorials, and guides |
+| 3 | `document_outline` | **Tutorial Outline** | Major modules, setup, milestones, learning flow |
+| 4 | `chapter_expansion` | **Step Detail Mapping** | Substeps, code examples, checkpoints per module |
+| 5 | `chapter_worksheets` | **Implementation Examples** | Hands-on exercises, command refs, code worksheets |
+| 6 | `appendix_builder` | **Reference & Troubleshooting** | Glossary, common mistakes, resources |
+| 7 | `layout_mapping` | **Delivery Layout** | Section ordering and print architecture |
+| 8 | `render_blueprint` | **Render Blueprint** | Typography, code styling, page manifest |
+| 9 | `validation_audit` | **Validation Audit** | Structural completeness and consistency checks |
 
 Pipeline execution is sequential and upstream-gated. Each stage is independently re-runnable (`force=true`). Results persist to the database between runs.
 
@@ -88,13 +89,21 @@ Generated tutorials follow a consistent shape:
 
 ```bash
 cd artifacts/api-server
+cp .env.example .env   # then fill in API keys
 pip install -r requirements.txt
-DATABASE_URL=sqlite:///./tutorial_builder.db \
-AI_INTEGRATIONS_OPENAI_API_KEY=your_key \
-AI_INTEGRATIONS_OPENAI_BASE_URL=https://api.openai.com/v1 \
 python main.py
 # Server starts on port 8080
 ```
+
+**Environment variables** (see `artifacts/api-server/.env.example`):
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `AI_INTEGRATIONS_OPENAI_API_KEY` | Yes (for LLM stages) | Model API key |
+| `FIRECRAWL_API_KEY` | Recommended | Powers the **Web Research** stage via [Firecrawl](https://firecrawl.dev) |
+| `DATABASE_URL` | No | Defaults to SQLite |
+
+Without `FIRECRAWL_API_KEY`, the research stage falls back to a minimal built-in snippet library. For coding tutorials, configure Firecrawl so the pipeline can scrape current documentation and tutorials from the web.
 
 ### Frontend
 

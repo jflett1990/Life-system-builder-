@@ -73,6 +73,35 @@ def _project_payload(project) -> dict[str, Any]:
     }
 
 
+def _tutorial_research_brief(project, arch: dict[str, Any]) -> dict[str, Any]:
+    """Assemble the brief dict used by Firecrawl research retrieval."""
+    context = project.context or ""
+    stack = ""
+    platform = ""
+    for line in context.splitlines():
+        lower = line.lower()
+        if "stack" in lower or "framework" in lower or "language" in lower:
+            _, _, stack = line.partition(":")
+            stack = stack.strip()
+        if "platform" in lower or "environment" in lower:
+            _, _, platform = line.partition(":")
+            platform = platform.strip()
+
+    return {
+        "life_event_type": project.life_event or arch.get("life_event", ""),
+        "life_event": project.life_event or arch.get("life_event", ""),
+        "people": arch.get("key_roles", []),
+        "systems": [d.get("name", "") for d in arch.get("control_domains", [])],
+        "jurisdiction": context or None,
+        "jurisdiction_tags": ["tutorial", "coding"],
+        "context": context,
+        "stack": stack,
+        "platform": platform,
+        "tutorial_type": project.formatting_profile or "hands-on build",
+        "audience": project.audience or "beginner",
+    }
+
+
 class PipelineService:
     def __init__(self, db: Session) -> None:
         self._repo = StageOutputRepository(db)
@@ -1007,14 +1036,7 @@ class PipelineService:
         all_outputs = self.all_stage_outputs_as_dict(project_id)
         arch = all_outputs.get("system_architecture", {})
 
-        brief = {
-            "life_event_type": project.life_event or arch.get("life_event", ""),
-            "life_event":      project.life_event or arch.get("life_event", ""),
-            "people":          arch.get("key_roles", []),
-            "systems":         [d.get("name", "") for d in arch.get("control_domains", [])],
-            "jurisdiction":    project.context or None,
-            "jurisdiction_tags": [],
-        }
+        brief = _tutorial_research_brief(project, arch)
 
         try:
             graph, followup_questions = build_research_graph(project_id, brief)

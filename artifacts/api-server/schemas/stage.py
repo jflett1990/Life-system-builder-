@@ -2,9 +2,10 @@ from datetime import datetime
 from typing import Any
 from pydantic import BaseModel
 
-# v1 stages — existing pipeline (unchanged)
+# Main tutorial pipeline stages
 STAGE_NAMES = [
     "system_architecture",
+    "research_graph",      # Web research via Firecrawl — grounds downstream stages
     "document_outline",
     "chapter_expansion",
     "chapter_worksheets",
@@ -14,13 +15,10 @@ STAGE_NAMES = [
     "validation_audit",
 ]
 
-# v2 stages — new pipeline additions (Phase C)
-# These run as optional enhancement stages alongside the v1 pipeline.
-# They enrich chapter_expansion with grounded research and voice enforcement.
+# Optional enhancement stages (not in default run-all sequence)
 V2_STAGE_NAMES = [
-    "research_graph",    # Stage 1: fact retrieval + research graph build
-    "content_plan",      # Stage 3: chapter depth plan + component choices
-    "voice_profile",     # Stage 3b: voice constraints + banned phrase list
+    "content_plan",      # Chapter depth plan + component choices
+    "voice_profile",     # Voice constraints + banned phrase list
 ]
 
 ALL_STAGE_NAMES = STAGE_NAMES + V2_STAGE_NAMES
