@@ -57,8 +57,26 @@ orchestrator = PipelineOrchestrator()
 
 def _get_assembler() -> PromptAssembler:
     registry = get_registry()
-    orch_contract = registry.resolve("life_system_orchestrator")
+    orch_contract = registry.resolve("tutorial_orchestrator")
     return PromptAssembler(orch_contract)
+
+
+def _project_payload(project) -> dict[str, Any]:
+    """Build the prompt payload from the tutorial request fields on a project."""
+    return {
+        "topic": project.topic,
+        "audience": project.audience or "self-directed learners and developers",
+        "tone": project.tone or "clear, practical, encouraging",
+        "context": project.context or "",
+        "skill_level": project.skill_level or "intermediate",
+        "tutorial_type": project.tutorial_type or "hands-on build",
+        "stack": project.stack or "best-fit stack inferred from the topic",
+        "platform": project.platform or "",
+        "depth": project.depth or "standard",
+        "include_code": "yes" if getattr(project, "include_code", True) else "no",
+        "output_style": project.output_style or "project-based",
+        "constraints": project.constraints or "",
+    }
 
 
 class PipelineService:
@@ -118,12 +136,7 @@ class PipelineService:
         # Assemble context
         all_outputs = self.all_stage_outputs_as_dict(project_id)
         upstream = orchestrator.collect_upstream_outputs(stage, all_outputs)
-        payload = {
-            "life_event": project.life_event,
-            "audience": project.audience or "general adult",
-            "tone": project.tone or "professional",
-            "context": project.context or "",
-        }
+        payload = _project_payload(project)
 
         registry = get_registry()
         contract_name = orchestrator.resolve_contract_name(stage)
@@ -302,11 +315,8 @@ class PipelineService:
         narrative_contract = get_registry().resolve("chapter_narrative_writer")
 
         base_payload = {
-            "life_event": project.life_event,
-            "audience": project.audience or "general adult",
-            "tone": project.tone or "professional",
-            "context": project.context or "",
-            "document_title": outline_data.get("document_title", project.life_event),
+            **_project_payload(project),
+            "document_title": outline_data.get("document_title", project.topic),
         }
 
         total = len(chapters_plan)
@@ -708,17 +718,20 @@ class PipelineService:
     def _chapter_narrative_defects(narrative: str) -> list[str]:
         defects: list[str] = []
         required_headings = [
-            "## Orientation Snapshot",
-            "## Immediate Execution Path",
-            "## Deep Operational Guidance",
-            "## Failure Dynamics and Recovery",
-            "## Cross-Domain Handoffs",
+            "## What You're Building",
+            "## Step-by-Step Implementation",
+            "## How It Works",
+            "## Common Mistakes and Debugging",
+            "## Checkpoint and Hand-off",
         ]
         for heading in required_headings:
             if heading not in narrative:
                 defects.append(f"Missing heading: {heading}")
 
-        paragraphs = [p.strip() for p in re.split(r"\n{2,}", narrative) if p.strip() and not p.strip().startswith("## ")]
+        # Exclude fenced code blocks from the paragraph-density check — tutorial
+        # narratives legitimately contain long code snippets.
+        prose_only = re.sub(r"```.*?```", "", narrative, flags=re.DOTALL)
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}", prose_only) if p.strip() and not p.strip().startswith("## ")]
         oversized = [p for p in paragraphs if len(p.split()) > 140]
         if oversized:
             defects.append(f"{len(oversized)} paragraph(s) exceed 140 words")
@@ -791,11 +804,8 @@ class PipelineService:
         assembler = _get_assembler()
 
         base_payload = {
-            "life_event": project.life_event,
-            "audience": project.audience or "general adult",
-            "tone": project.tone or "professional",
-            "context": project.context or "",
-            "document_title": outline_data.get("document_title", project.life_event),
+            **_project_payload(project),
+            "document_title": outline_data.get("document_title", project.topic),
         }
 
         total = len(chapters_plan)
@@ -1007,10 +1017,10 @@ class PipelineService:
         arch = all_outputs.get("system_architecture", {})
 
         brief = {
-            "life_event_type": project.life_event or arch.get("life_event", ""),
-            "life_event":      project.life_event or arch.get("life_event", ""),
-            "people":          arch.get("key_roles", []),
-            "systems":         [d.get("name", "") for d in arch.get("control_domains", [])],
+            "topic_type": project.topic or arch.get("topic", ""),
+            "topic":      project.topic or arch.get("topic", ""),
+            "people":     arch.get("key_roles", []),
+            "systems":    [d.get("name", "") for d in arch.get("control_domains", [])],
             "jurisdiction":    project.context or None,
             "jurisdiction_tags": [],
         }
@@ -1054,7 +1064,7 @@ class PipelineService:
         arch = all_outputs.get("system_architecture", {})
         research_graph = all_outputs.get("research_graph", {})
 
-        brief = {"life_event": project.life_event or arch.get("life_event", ""), "audience": project.audience}
+        brief = {"topic": project.topic or arch.get("topic", ""), "audience": project.audience}
         strategy_blueprint = {
             "domains": [
                 {"domain_id": d.get("id", ""), "name": d.get("name", ""), "operating_principles": []}
@@ -1093,7 +1103,7 @@ class PipelineService:
         arch = all_outputs.get("system_architecture", {})
 
         brief = {
-            "life_event": project.life_event or arch.get("life_event", ""),
+            "topic": project.topic or arch.get("topic", ""),
             "audience": project.audience,
             "tone": project.tone or "professional",
         }

@@ -21,30 +21,29 @@ import time
 import json
 
 # ── Stress prompt ─────────────────────────────────────────────────────────────
-# A demanding multi-domain scenario: eldercare crisis + concurrent estate
-# planning + property transfer, with a blended audience.
+# A demanding multi-module tutorial request: full-stack build + auth + payments
+# + streaming + deployment, with a mixed-skill audience.
 
-STRESS_LIFE_EVENT = (
-    "Parent diagnosed with mid-stage Alzheimer's: simultaneous Medicaid spend-down, "
-    "durable power of attorney establishment, contested will, nursing home selection "
-    "and contract review, Medicare Part A/B/D coordination, caregiver employment "
-    "compliance, and inter-state property transfer from Florida to Texas"
+STRESS_TOPIC = (
+    "Build and deploy a full-stack SaaS app with Next.js 14, Tailwind, Supabase auth "
+    "and Postgres, Stripe subscription billing with webhooks, an AI chat feature with "
+    "streaming responses, background jobs, and production deployment to Vercel with "
+    "preview environments and monitoring"
 )
 
 STRESS_AUDIENCE = (
-    "Adult child (45–60) with limited legal and financial literacy, acting as primary "
-    "caregiver and soon-to-be legal guardian; may have siblings with conflicting interests"
+    "Self-taught developer comfortable with basic React but new to backend, payments, "
+    "and deployment; building their first production app solo on nights and weekends"
 )
 
-STRESS_TONE = "clinical precision with compassionate framing"
+STRESS_TONE = "precise and practical, with encouraging checkpoints"
 
 STRESS_CONTEXT = (
-    "Family has significant assets but limited cash liquidity. Parent owns a Florida "
-    "homestead and a Texas investment property. Three adult children; one is estranged. "
-    "Existing estate documents (will + healthcare proxy) are 20 years old and may not "
-    "be valid under current law. Medicaid eligibility is borderline — spend-down may "
-    "require structured spend or trust vehicle. Timeline pressure: parent may lose "
-    "decision-making capacity within 6–12 months."
+    "Developer is on a Mac with Node 20 installed, has a GitHub account, and free-tier "
+    "accounts on Vercel and Supabase but has never configured Stripe. Time budget is "
+    "two weekends. Prefers TypeScript. Wants to avoid Docker and self-hosted infra. "
+    "Has previously been burned by tutorials that skip environment variable setup and "
+    "webhook testing."
 )
 
 
@@ -59,8 +58,8 @@ def _section(label: str) -> None:
 
 
 def run() -> None:
-    _divider("LIFE SYSTEM BUILDER  v2  —  STRESS TEST")
-    print(f"  Event : {STRESS_LIFE_EVENT[:80]}...")
+    _divider("TUTORIAL BUILDER  v2  —  STRESS TEST")
+    print(f"  Topic : {STRESS_TOPIC[:80]}...")
     print(f"  Model : claude-sonnet-4-6 (executor) / claude-opus-4-6 (planner)")
 
     # ── 1. Init DB ────────────────────────────────────────────────────────────
@@ -87,13 +86,20 @@ def run() -> None:
         print(f"  Resumed project_id={project.id}")
     else:
         project = psvc.create(ProjectCreate(
-            title="Alzheimer's Family System — Stress Test",
-            life_event=STRESS_LIFE_EVENT,
+            title="Full-Stack SaaS Build — Stress Test",
+            topic=STRESS_TOPIC,
             audience=STRESS_AUDIENCE,
             tone=STRESS_TONE,
             context=STRESS_CONTEXT,
+            skill_level="intermediate",
+            tutorial_type="hands-on build",
+            stack="Next.js 14, TypeScript, Tailwind, Supabase, Stripe, Vercel",
+            depth="deep-dive",
+            include_code=True,
+            output_style="project-based",
+            constraints="Two weekends; no Docker; TypeScript only",
         ))
-    print(f"  project_id={project.id}  life_event={project.life_event[:60]}...")
+    print(f"  project_id={project.id}  topic={project.topic[:60]}...")
 
     # ── 3. Run stages ─────────────────────────────────────────────────────────
     from services.pipeline_service import PipelineService

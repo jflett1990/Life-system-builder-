@@ -1,8 +1,10 @@
-# Life System Builder
+# Tutorial Builder
 
 ## Overview
 
-Full-stack web application that converts life events (caregiving, estate administration, divorce, etc.) into structured operational control systems. Produces structured JSON per pipeline stage, validation reports, and print-ready HTML/CSS documents.
+Full-stack web application that converts tutorial requests ("Build a SaaS landing page with Next.js and Tailwind", "Create a Discord bot with Python", "Walk me through deploying a FastAPI app") into structured, step-by-step tutorials and project walkthroughs. Produces structured JSON per pipeline stage, validation reports, and print-ready HTML/CSS handbooks. Optimized for coding/vibe-coding tutorials but usable for any topic.
+
+> Note: this document predates the tutorial pivot in places — internal pipeline stage names (`system_architecture`, `chapter_expansion`, `chapter_worksheets`, …) were intentionally kept stable, but their semantics are now tutorial-oriented (framing, step detail, checkpoints & exercises). The primary intake field is `topic` (formerly `life_event`).
 
 ## Architecture
 

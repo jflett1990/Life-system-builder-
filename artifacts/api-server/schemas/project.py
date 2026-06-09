@@ -7,14 +7,26 @@ class ProjectCreate(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     title: str = Field(..., max_length=200)
-    life_event: str = Field(..., max_length=2000)
+    # The tutorial request — what the user wants a tutorial/walkthrough on.
+    topic: str = Field(..., max_length=2000)
     audience: str | None = Field(default=None, max_length=500)
     tone: str | None = Field(default=None, max_length=200)
     context: str | None = Field(default=None, max_length=5000)
+
+    # Tutorial request controls
+    skill_level: str | None = Field(default=None, max_length=50)
+    tutorial_type: str | None = Field(default=None, max_length=100)
+    stack: str | None = Field(default=None, max_length=500)
+    platform: str | None = Field(default=None, max_length=200)
+    depth: str | None = Field(default=None, max_length=50)
+    include_code: bool = True
+    output_style: str | None = Field(default=None, max_length=100)
+    constraints: str | None = Field(default=None, max_length=2000)
+
     formatting_profile: str | None = Field(default=None, max_length=100)
     artifact_density: str | None = Field(default=None, max_length=100)
 
-    @field_validator("title", "life_event")
+    @field_validator("title", "topic")
     @classmethod
     def not_empty(cls, v: str) -> str:
         if not v.strip():
@@ -26,10 +38,18 @@ class ProjectUpdate(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     title: str | None = None
-    life_event: str | None = None
+    topic: str | None = None
     audience: str | None = None
     tone: str | None = None
     context: str | None = None
+    skill_level: str | None = None
+    tutorial_type: str | None = None
+    stack: str | None = None
+    platform: str | None = None
+    depth: str | None = None
+    include_code: bool | None = None
+    output_style: str | None = None
+    constraints: str | None = None
     status: str | None = None
     formatting_profile: str | None = None
     artifact_density: str | None = None
@@ -38,10 +58,18 @@ class ProjectUpdate(BaseModel):
 class ProjectResponse(BaseModel):
     id: int
     title: str
-    life_event: str
+    topic: str
     audience: str | None
     tone: str | None
     context: str | None
+    skill_level: str | None = None
+    tutorial_type: str | None = None
+    stack: str | None = None
+    platform: str | None = None
+    depth: str | None = None
+    include_code: bool = True
+    output_style: str | None = None
+    constraints: str | None = None
     formatting_profile: str | None = None
     artifact_density: str | None = None
     status: str

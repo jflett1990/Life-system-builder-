@@ -106,7 +106,7 @@ def project_summary(
     return ProjectSummary(
         project_id=project_id,
         title=project.title,
-        life_event=project.life_event,
+        topic=project.topic,
         total_stages=len(STAGE_NAMES),
         completed_stages=completed,
         stages=stage_summaries,

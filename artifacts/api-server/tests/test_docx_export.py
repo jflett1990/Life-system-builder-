@@ -19,37 +19,37 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 MINIMAL_OUTPUTS: dict = {
     "system_architecture": {
-        "system_name": "Test Operational System",
-        "life_event": "Starting a Business",
-        "system_objective": "Keep everything running smoothly.",
-        "time_horizon": "6 months",
-        "audience": "Founder",
+        "system_name": "Build a CRUD App with Supabase",
+        "topic": "Build a CRUD app with Supabase",
+        "system_objective": "Finish with a working CRUD app talking to a Supabase Postgres table.",
+        "time_horizon": "3 hours hands-on",
+        "audience": "Self-taught developer",
     },
     "chapter_expansion": {
         "chapters": [
             {
                 "chapter_number": 1,
-                "chapter_title": "Foundation",
-                "narrative": "This chapter covers the foundational elements.",
+                "chapter_title": "Project Setup",
+                "narrative": "This chapter scaffolds the project and verifies the toolchain.",
                 "quick_reference_rules": ["Rule one.", "Rule two."],
                 "worksheets": [
                     {
                         "id": "ws-form",
-                        "title": "Business Identity Worksheet",
-                        "purpose": "Define who you are as a business.",
+                        "title": "Project Config Record",
+                        "purpose": "Record the project's configuration values for later steps.",
                         "layout": "form",
-                        "estimated_completion_time": "30 minutes",
+                        "estimated_completion_time": "10 minutes",
                         "sections": [
                             {
-                                "section_title": "Core Identity",
-                                "instructions": "Fill in all fields.",
+                                "section_title": "Core Settings",
+                                "instructions": "Fill in all fields from your terminal output.",
                                 "fields": [
-                                    {"label": "Business Name", "type": "text", "placeholder": "e.g. Acme Inc."},
-                                    {"label": "Primary Service", "type": "text"},
+                                    {"label": "Project Name", "type": "text", "placeholder": "e.g. supabase-crud-app"},
+                                    {"label": "Primary Framework", "type": "text"},
                                     {
-                                        "label": "Business Stage",
+                                        "label": "Project Stage",
                                         "type": "select",
-                                        "options": ["Idea", "Early", "Growth"],
+                                        "options": ["Scaffold", "CRUD Working", "Deployed"],
                                     },
                                 ],
                             }
@@ -57,46 +57,46 @@ MINIMAL_OUTPUTS: dict = {
                         "decision_gates": [
                             {
                                 "gate_id": "gate-1",
-                                "condition": "Is the business name legally registered?",
-                                "pass_action": "Proceed to branding.",
-                                "fail_action": "Register with authorities first.",
+                                "condition": "Does `npm run dev` start without errors?",
+                                "pass_action": "Proceed to database setup.",
+                                "fail_action": "Fix install errors before continuing.",
                             }
                         ],
                     },
                     {
                         "id": "ws-checklist",
-                        "title": "Launch Checklist",
-                        "purpose": "Verify all launch tasks are complete.",
+                        "title": "Setup Verification Checklist",
+                        "purpose": "Verify the environment is ready before building.",
                         "layout": "checklist",
                         "checklist_items": [
-                            "Register business name",
-                            "Open business bank account",
-                            "Set up accounting software",
+                            "Verify node --version is 18.17 or newer",
+                            "Create a Supabase project in the dashboard",
+                            "Copy the API URL and anon key into .env.local",
                         ],
                         "decision_gates": [],
                     },
                     {
                         "id": "ws-table",
-                        "title": "Competitor Tracker",
-                        "purpose": "Track competitors and their offerings.",
+                        "title": "Command Reference",
+                        "purpose": "Track the commands used in this step and their expected output.",
                         "layout": "table",
-                        "table_columns": ["Competitor", "Price Point", "Strengths", "Weaknesses"],
+                        "table_columns": ["Command", "Run From", "Expected Output", "Common Failure"],
                         "table_row_count": 8,
                         "decision_gates": [],
                     },
                     {
                         "id": "ws-two-col",
-                        "title": "Current vs Target State",
-                        "purpose": "Map where you are vs where you want to be.",
+                        "title": "Local vs Production Config",
+                        "purpose": "Map local configuration to its production equivalent.",
                         "layout": "two-column",
-                        "left_column_label": "Current State",
-                        "right_column_label": "Target State",
+                        "left_column_label": "Local",
+                        "right_column_label": "Production",
                         "sections": [
                             {
-                                "section_title": "Revenue",
+                                "section_title": "Environment",
                                 "fields": [
-                                    {"label": "Monthly Revenue", "type": "text"},
-                                    {"label": "Revenue Source", "type": "text"},
+                                    {"label": "API URL", "type": "text"},
+                                    {"label": "Anon Key Source", "type": "text"},
                                 ],
                             }
                         ],
@@ -143,8 +143,8 @@ class TestDocxBuilderStructure:
         h3 = [p.text for p in paragraphs if p.style.name == "Heading 3"]
 
         assert any("Chapter 1" in t for t in h1), f"Expected chapter H1, got: {h1}"
-        assert any("Business Identity Worksheet" in t for t in h2), f"H2 missing worksheet: {h2}"
-        assert any("Business Name" in t for t in h3), f"H3 field label missing: {h3}"
+        assert any("Project Config Record" in t for t in h2), f"H2 missing worksheet: {h2}"
+        assert any("Project Name" in t for t in h3), f"H3 field label missing: {h3}"
 
     def test_form_layout_fill_lines(self) -> None:
         doc = self._parse()
@@ -165,15 +165,15 @@ class TestDocxBuilderStructure:
         doc = self._parse()
         assert len(doc.tables) >= 1, "Expected at least one Word table for 'table' layout"
         headers = [c.text for c in doc.tables[0].rows[0].cells]
-        assert "Competitor" in headers, f"Expected 'Competitor' column, got: {headers}"
+        assert "Command" in headers, f"Expected 'Command' column, got: {headers}"
 
     def test_two_column_word_table(self) -> None:
         doc = self._parse()
         two_col_tables = [t for t in doc.tables if len(t.columns) == 3]
         assert len(two_col_tables) >= 1, "Expected a 3-column Word table for 'two-column' layout"
         headers = [c.text for c in two_col_tables[0].rows[0].cells]
-        assert "Current State" in headers, f"Expected 'Current State' header, got: {headers}"
-        assert "Target State" in headers, f"Expected 'Target State' header, got: {headers}"
+        assert "Local" in headers, f"Expected 'Local' header, got: {headers}"
+        assert "Production" in headers, f"Expected 'Production' header, got: {headers}"
 
     def test_decision_gates_present(self) -> None:
         doc = self._parse()
@@ -183,8 +183,8 @@ class TestDocxBuilderStructure:
     def test_cover_content(self) -> None:
         doc = self._parse()
         full_text = " ".join(p.text for p in doc.paragraphs)
-        assert "Test Operational System" in full_text
-        assert "Starting a Business" in full_text
+        assert "Build a CRUD App with Supabase" in full_text
+        assert "Build a CRUD app with Supabase" in full_text
 
     def test_fallback_no_chapters(self) -> None:
         outputs = {

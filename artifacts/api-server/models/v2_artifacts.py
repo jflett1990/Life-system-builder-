@@ -58,8 +58,8 @@ class DeadlineEntity(BaseModel):
 class ProjectBrief(BaseModel):
     schema_version: str = "1.0"
     project_id: int
-    life_event_type: str
-    life_event_subtype: str | None = None
+    topic_type: str
+    topic_subtype: str | None = None
     people: list[PersonEntity] = Field(default_factory=list)
     deadlines: list[DeadlineEntity] = Field(default_factory=list)
     systems: list[str] = Field(default_factory=list)

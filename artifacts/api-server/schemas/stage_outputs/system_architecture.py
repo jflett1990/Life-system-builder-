@@ -1,9 +1,10 @@
 """
-Pydantic schema for the system_architecture stage output.
+Pydantic schema for the system_architecture stage output (Tutorial Framing).
 
-Contract: system_architecture.json
-Required fields: system_name, life_event, operating_premise,
-                 system_objective, control_domains, key_roles, success_criteria
+Contract: tutorial_framing_core.json
+Required fields: system_name (tutorial title), topic, operating_premise,
+                 system_objective, control_domains (tutorial modules),
+                 key_roles (tools/stack), success_criteria
 """
 from __future__ import annotations
 
@@ -30,7 +31,7 @@ class SystemArchitectureOutput(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     system_name: str = Field(..., min_length=1)
-    life_event: str = Field(..., min_length=1)
+    topic: str = Field(..., min_length=1)
     operating_premise: str = Field(..., min_length=1)
     system_objective: str = Field(..., min_length=1)
     control_domains: list[ControlDomain] = Field(..., min_length=1)

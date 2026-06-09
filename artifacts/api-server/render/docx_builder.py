@@ -1,8 +1,8 @@
 """
-DocxBuilder — Generates a Word (.docx) document from Life System Builder pipeline data.
+DocxBuilder — Generates a Word (.docx) document from Tutorial Builder pipeline data.
 
 Document structure:
-  Cover metadata block       — system identity, life event, time horizon, audience
+  Cover metadata block       — tutorial title, topic, time estimate, audience
   Table of Contents          — Word TOC field (right-click → Update Field in Word)
   For each chapter (H1):
     Chapter narrative        — plain paragraph
@@ -125,12 +125,12 @@ class DocxBuilder:
         chapter_exp = all_outputs.get("chapter_expansion", {})
         ws_system = all_outputs.get("worksheet_system", {})
 
-        system_name = _safe_text(arch.get("system_name"), "Operational Control System")
-        life_event = _safe_text(arch.get("life_event"), "")
+        system_name = _safe_text(arch.get("system_name"), "Tutorial Walkthrough")
+        topic = _safe_text(arch.get("topic"), "")
         system_objective = _safe_text(arch.get("system_objective"), "")
         time_horizon = _safe_text(arch.get("time_horizon"), "")
         audience = _safe_text(arch.get("audience"), "")
-        document_id = f"LSB-{project_id:05d}"
+        document_id = f"TUT-{project_id:05d}"
         generated_date = date.today().strftime("%B %d, %Y")
 
         chapters: list[dict] = chapter_exp.get("chapters", [])
@@ -140,12 +140,12 @@ class DocxBuilder:
         doc.add_heading(system_name, level=0)
 
         cover_para = doc.add_paragraph()
-        if life_event:
-            cover_para.add_run(f"Life Event: {life_event}\n")
+        if topic:
+            cover_para.add_run(f"Tutorial: {topic}\n")
         if system_objective:
             cover_para.add_run(f"{system_objective}\n")
         if time_horizon:
-            cover_para.add_run(f"Time Horizon: {time_horizon}\n")
+            cover_para.add_run(f"Estimated Time: {time_horizon}\n")
         if audience:
             cover_para.add_run(f"Prepared For: {audience}\n")
         cover_para.add_run(f"Generated: {generated_date}  ·  Document ID: {document_id}")

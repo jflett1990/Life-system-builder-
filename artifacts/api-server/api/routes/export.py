@@ -235,7 +235,7 @@ def download_docx(
     Generate and download the project as an editable Word document (.docx).
 
     Document structure:
-      - Cover block (system name, life event, objective, audience, date)
+      - Cover block (tutorial title, topic, objective, audience, date)
       - TOC field (right-click → "Update Field" in Word to populate)
       - For each chapter: H1 heading, narrative, quick-reference rules,
         then each worksheet as an H2 section rendered by its layout type:

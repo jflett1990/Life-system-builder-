@@ -54,28 +54,28 @@ class TestExtractThemeTokens:
         tokens = _extract_tokens(palette={"primary": "#1e2d40", "accent": "#c9a84c"})
         assert tokens["--color-accent"] == "#c9a84c"
 
-    def test_caregiving_palette(self) -> None:
-        tokens = _extract_tokens(palette={"primary": "#1a3a2a", "accent": "#7aab8a"})
-        assert tokens["--color-primary"] == "#1a3a2a"
-        assert tokens["--color-accent"]  == "#7aab8a"
+    def test_web_frontend_palette(self) -> None:
+        tokens = _extract_tokens(palette={"primary": "#1e1b4b", "accent": "#8b9cf9"})
+        assert tokens["--color-primary"] == "#1e1b4b"
+        assert tokens["--color-accent"]  == "#8b9cf9"
 
-    def test_legal_palette(self) -> None:
+    def test_backend_palette(self) -> None:
+        tokens = _extract_tokens(palette={"primary": "#0f3a3d", "accent": "#5fb3a1"})
+        assert tokens["--color-primary"] == "#0f3a3d"
+        assert tokens["--color-accent"]  == "#5fb3a1"
+
+    def test_devops_palette(self) -> None:
         tokens = _extract_tokens(palette={"primary": "#1e2d40", "accent": "#c9a84c"})
         assert tokens["--color-primary"] == "#1e2d40"
-        assert tokens["--color-accent"]  == "#c9a84c"
 
-    def test_financial_palette(self) -> None:
-        tokens = _extract_tokens(palette={"primary": "#1a2340", "accent": "#d4a017"})
-        assert tokens["--color-primary"] == "#1a2340"
+    def test_ai_ml_palette(self) -> None:
+        tokens = _extract_tokens(palette={"primary": "#2a1b40", "accent": "#b48ead"})
+        assert tokens["--color-primary"] == "#2a1b40"
 
-    def test_medical_palette(self) -> None:
-        tokens = _extract_tokens(palette={"primary": "#242424", "accent": "#4a9e8e"})
-        assert tokens["--color-primary"] == "#242424"
-
-    def test_different_life_events_produce_different_primary(self) -> None:
-        caregiving = _extract_tokens(palette={"primary": "#1a3a2a"})
-        legal      = _extract_tokens(palette={"primary": "#1e2d40"})
-        assert caregiving["--color-primary"] != legal["--color-primary"]
+    def test_different_topics_produce_different_primary(self) -> None:
+        web    = _extract_tokens(palette={"primary": "#1e1b4b"})
+        devops = _extract_tokens(palette={"primary": "#1e2d40"})
+        assert web["--color-primary"] != devops["--color-primary"]
 
     def test_missing_blueprint_returns_empty(self) -> None:
         tokens = _extract_tokens()
@@ -106,10 +106,17 @@ class TestCoverPageTemplate:
         with open(os.path.join(TEMPLATES_DIR, "cover_page.html")) as f:
             return f.read()
 
-    def test_uses_color_primary_not_cover_bg(self) -> None:
-        html = self._read()
-        assert "var(--color-primary)" in html, "cover must reference --color-primary"
-        assert "var(--color-cover-bg)" not in html, "cover must not hardcode old --color-cover-bg"
+    def _read_base_css(self) -> str:
+        with open(os.path.join(STYLES_DIR, "base.css")) as f:
+            return f.read()
+
+    def test_cover_background_uses_color_primary(self) -> None:
+        # The cover background lives on .page--cover_page in base.css,
+        # not inside the template itself.
+        css = self._read_base_css()
+        assert ".page--cover_page" in css
+        assert "var(--color-primary)" in css, "cover background must reference --color-primary"
+        assert "var(--color-cover-bg)" not in self._read(), "cover must not hardcode old --color-cover-bg"
 
     def test_accent_rule_present(self) -> None:
         html = self._read()
@@ -121,10 +128,17 @@ class TestSectionDividerTemplate:
         with open(os.path.join(TEMPLATES_DIR, "section_divider.html")) as f:
             return f.read()
 
-    def test_uses_color_primary_not_divider_bg(self) -> None:
-        html = self._read()
-        assert "var(--color-primary)" in html, "divider must reference --color-primary"
-        assert "var(--color-divider-bg)" not in html, "divider must not hardcode old --color-divider-bg"
+    def _read_base_css(self) -> str:
+        with open(os.path.join(STYLES_DIR, "base.css")) as f:
+            return f.read()
+
+    def test_divider_background_uses_color_primary(self) -> None:
+        # The divider background lives on .page--section_divider in base.css,
+        # not inside the template itself.
+        css = self._read_base_css()
+        assert ".page--section_divider" in css
+        assert "var(--color-primary)" in css, "divider background must reference --color-primary"
+        assert "var(--color-divider-bg)" not in self._read(), "divider must not hardcode old --color-divider-bg"
 
     def test_accent_used_for_decorative_elements(self) -> None:
         html = self._read()
@@ -168,25 +182,25 @@ class TestRenderBlueprintPrompt:
 
     def test_contains_all_five_categories(self) -> None:
         prompt = self._prompt()
-        assert "Legal" in prompt
-        assert "Caregiving" in prompt
-        assert "Medical" in prompt
-        assert "Financial" in prompt
+        assert "Web / frontend" in prompt
+        assert "Backend" in prompt
+        assert "DevOps" in prompt
+        assert "AI / ML" in prompt
         assert "Default" in prompt
 
     def test_contains_category_hex_values(self) -> None:
         prompt = self._prompt()
-        assert "#1e2d40" in prompt   # legal deep slate
-        assert "#c9a84c" in prompt   # legal gold
-        assert "#1a3a2a" in prompt   # caregiving forest
-        assert "#7aab8a" in prompt   # caregiving sage
-        assert "#242424" in prompt   # medical charcoal
-        assert "#4a9e8e" in prompt   # medical teal
-        assert "#1a2340" in prompt   # financial navy
-        assert "#d4a017" in prompt   # financial amber
+        assert "#1e1b4b" in prompt   # web deep indigo
+        assert "#8b9cf9" in prompt   # web periwinkle
+        assert "#0f3a3d" in prompt   # backend deep teal
+        assert "#5fb3a1" in prompt   # backend seafoam
+        assert "#1e2d40" in prompt   # devops deep slate
+        assert "#c9a84c" in prompt   # devops gold
+        assert "#2a1b40" in prompt   # ai deep violet
+        assert "#b48ead" in prompt   # ai orchid
 
-    def test_references_life_event(self) -> None:
-        assert "life_event" in self._prompt()
+    def test_references_topic(self) -> None:
+        assert "topic" in self._prompt()
 
     def test_version_still_1_0(self) -> None:
         with open(CONTRACT_PATH) as f:

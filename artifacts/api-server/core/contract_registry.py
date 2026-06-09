@@ -3,8 +3,8 @@ ContractRegistry — singleton registry mapping name@version to ContractDefiniti
 
 Usage:
     registry = get_registry()
-    contract = registry.resolve("life_event_system_core")
-    orchestrator = registry.resolve("life_system_orchestrator")
+    contract = registry.resolve("tutorial_framing_core")
+    orchestrator = registry.resolve("tutorial_orchestrator")
 
 Call validate_and_load() once at app startup. Subsequent calls to get_registry()
 return the cached singleton without re-reading disk.

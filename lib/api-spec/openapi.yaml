@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Api
   version: 0.1.0
-  description: Life System Builder API
+  description: Tutorial Builder API
 servers:
   - url: /api
     description: Base API path
@@ -390,9 +390,18 @@ components:
 
     StageName:
       type: string
+      description: >
+        Pipeline stages. Internal stage names are kept stable across the
+        tutorial pivot — system-architecture is the Tutorial Framing stage,
+        document-outline is the Tutorial Outline, chapter-expansion writes
+        step detail, chapter-worksheets generates checkpoints & exercises,
+        and appendix-builder produces the reference appendix.
       enum:
         - system-architecture
-        - worksheet-system
+        - document-outline
+        - chapter-expansion
+        - chapter-worksheets
+        - appendix-builder
         - layout-mapping
         - render-blueprint
         - validation-audit
@@ -404,6 +413,7 @@ components:
         - running
         - complete
         - failed
+        - schema_failed
 
     Project:
       type: object
@@ -412,7 +422,36 @@ components:
           type: integer
         title:
           type: string
-        lifeEvent:
+        topic:
+          type: string
+          description: What the user wants a tutorial/walkthrough on.
+        skillLevel:
+          type: string
+          description: beginner | intermediate | advanced
+        tutorialType:
+          type: string
+          description: overview | hands-on build | debugging walkthrough | architecture walkthrough | deployment guide
+        stack:
+          type: string
+          description: Language / framework / stack to use.
+        platform:
+          type: string
+          description: Platform or environment (OS, cloud, runtime).
+        depth:
+          type: string
+          description: quick | standard | deep-dive
+        includeCode:
+          type: boolean
+          description: Whether to include code snippets.
+        outputStyle:
+          type: string
+          description: concise | detailed | checklist-driven | project-based
+        constraints:
+          type: string
+          description: Time budget, preferred tools, things to avoid.
+        audience:
+          type: string
+        tone:
           type: string
         context:
           type: string
@@ -427,7 +466,7 @@ components:
       required:
         - id
         - title
-        - lifeEvent
+        - topic
         - status
         - createdAt
         - updatedAt
@@ -439,7 +478,27 @@ components:
           type: integer
         title:
           type: string
-        lifeEvent:
+        topic:
+          type: string
+        skillLevel:
+          type: string
+        tutorialType:
+          type: string
+        stack:
+          type: string
+        platform:
+          type: string
+        depth:
+          type: string
+        includeCode:
+          type: boolean
+        outputStyle:
+          type: string
+        constraints:
+          type: string
+        audience:
+          type: string
+        tone:
           type: string
         context:
           type: string
@@ -458,7 +517,7 @@ components:
       required:
         - id
         - title
-        - lifeEvent
+        - topic
         - status
         - createdAt
         - updatedAt
@@ -554,7 +613,7 @@ components:
           type: integer
         title:
           type: string
-        lifeEvent:
+        topic:
           type: string
         totalStages:
           type: integer
@@ -567,7 +626,7 @@ components:
       required:
         - projectId
         - title
-        - lifeEvent
+        - topic
         - totalStages
         - completedStages
         - stages
@@ -653,20 +712,61 @@ components:
       properties:
         title:
           type: string
-        lifeEvent:
+        topic:
+          type: string
+          description: What the user wants a tutorial/walkthrough on.
+        skillLevel:
+          type: string
+        tutorialType:
+          type: string
+        stack:
+          type: string
+        platform:
+          type: string
+        depth:
+          type: string
+        includeCode:
+          type: boolean
+        outputStyle:
+          type: string
+        constraints:
+          type: string
+        audience:
+          type: string
+        tone:
           type: string
         context:
           type: string
       required:
         - title
-        - lifeEvent
+        - topic
 
     UpdateProjectBody:
       type: object
       properties:
         title:
           type: string
-        lifeEvent:
+        topic:
+          type: string
+        skillLevel:
+          type: string
+        tutorialType:
+          type: string
+        stack:
+          type: string
+        platform:
+          type: string
+        depth:
+          type: string
+        includeCode:
+          type: boolean
+        outputStyle:
+          type: string
+        constraints:
+          type: string
+        audience:
+          type: string
+        tone:
           type: string
         context:
           type: string

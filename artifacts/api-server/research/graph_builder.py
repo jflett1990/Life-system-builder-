@@ -2,7 +2,7 @@
 GraphBuilder — assembles the research_graph.json artifact (Stage 1 output).
 
 Takes:
-  - A ProjectBrief (entities, jurisdiction, life_event)
+  - A ProjectBrief (entities, environment, tutorial topic)
   - Retrieved passages from retrieval.py
   - Model-extracted or pure-Python extracted facts from fact_extractor.py
 
@@ -36,33 +36,36 @@ logger = get_logger(__name__)
 # before the pipeline is allowed to proceed to Stage 2.
 CRITICAL_COVERAGE_THRESHOLD: float = 0.50
 
-# Per-event-type overrides (stricter for high-stakes events)
-EVENT_COVERAGE_THRESHOLDS: dict[str, float] = {
-    "eldercare":       0.65,
-    "estate_planning": 0.65,
-    "divorce":         0.60,
-    "medical":         0.60,
-    "real_estate":     0.55,
-    "immigration":     0.60,
-    "business":        0.50,
-    "default":         0.50,
+# Per-topic-category overrides (stricter where wrong guidance is costly)
+TOPIC_COVERAGE_THRESHOLDS: dict[str, float] = {
+    "security":   0.65,
+    "deploy":     0.60,
+    "database":   0.60,
+    "payment":    0.60,
+    "auth":       0.60,
+    "api":        0.55,
+    "web":        0.50,
+    "default":    0.50,
 }
 
+# Backwards-compatible alias (pre-pivot name)
+EVENT_COVERAGE_THRESHOLDS = TOPIC_COVERAGE_THRESHOLDS
 
-def _coverage_threshold(life_event_type: str) -> float:
-    key = life_event_type.lower().replace(" ", "_").replace("-", "_")
-    for event_key, threshold in EVENT_COVERAGE_THRESHOLDS.items():
-        if event_key in key:
+
+def _coverage_threshold(topic_type: str) -> float:
+    key = topic_type.lower().replace(" ", "_").replace("-", "_")
+    for topic_key, threshold in TOPIC_COVERAGE_THRESHOLDS.items():
+        if topic_key in key:
             return threshold
-    return EVENT_COVERAGE_THRESHOLDS["default"]
+    return TOPIC_COVERAGE_THRESHOLDS["default"]
 
 
 def _extract_entity_keywords(brief: dict[str, Any]) -> list[str]:
     """Pull search keywords from the project brief for retrieval."""
     keywords: list[str] = []
-    life_event = brief.get("life_event_type", "") or brief.get("life_event", "")
-    if life_event:
-        keywords.extend(life_event.lower().split())
+    topic = brief.get("topic_type", "") or brief.get("topic", "")
+    if topic:
+        keywords.extend(topic.lower().split())
     for person in brief.get("people", []):
         role = person.get("role", "")
         if role:
@@ -81,9 +84,9 @@ def _build_coverage_map(
     covered_fact_ids_by_entity: dict[str, list[str]] = {}
 
     entities_to_check: list[tuple[str, str]] = []
-    life_event = brief.get("life_event_type", "") or brief.get("life_event", "")
-    if life_event:
-        entities_to_check.append((life_event, "life_event"))
+    topic = brief.get("topic_type", "") or brief.get("topic", "")
+    if topic:
+        entities_to_check.append((topic, "topic"))
     for person in brief.get("people", []):
         name = person.get("name", "")
         role = person.get("role", "")
@@ -136,7 +139,7 @@ def build_research_graph(
         followup_questions is non-empty when critical coverage threshold is not met
         or when low-confidence facts need confirmation.
     """
-    life_event = brief.get("life_event_type", "") or brief.get("life_event", "")
+    topic = brief.get("topic_type", "") or brief.get("topic", "")
     jurisdiction = brief.get("jurisdiction")
     keywords = _extract_entity_keywords(brief)
 
@@ -144,7 +147,7 @@ def build_research_graph(
     passages = retrieve_passages(
         query_keywords=keywords,
         jurisdiction=jurisdiction,
-        life_event=life_event,
+        topic=topic,
         max_results=15,
     )
     if additional_passages:
@@ -177,7 +180,7 @@ def build_research_graph(
     conflict_count = sum(1 for f in all_facts if f.conflict_flags)
 
     # Quality gate check
-    threshold = _coverage_threshold(life_event)
+    threshold = _coverage_threshold(topic)
     critical_coverage_met = coverage_fraction >= threshold
 
     logger.info(

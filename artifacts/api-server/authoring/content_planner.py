@@ -152,11 +152,11 @@ class ContentPlanner:
         brief: dict[str, Any],
         strategy_blueprint: dict[str, Any],
     ) -> VoiceProfile:
-        life_event = brief.get("life_event_type", "") or brief.get("life_event", "")
-        audience = brief.get("audience", "general adult")
-        tone = brief.get("tone", "professional")
+        topic = brief.get("topic_type", "") or brief.get("topic", "")
+        audience = brief.get("audience", "self-directed learners and developers")
+        tone = brief.get("tone", "clear, practical, encouraging")
 
-        # Build lexical constraints from life event type
+        # Build lexical constraints from the tutorial topic
         constraints: list[LexicalConstraint] = [
             LexicalConstraint(
                 constraint_type="tone_descriptor",
@@ -178,17 +178,20 @@ class ContentPlanner:
         # Reading level and assumed knowledge from audience field
         reading_level = "professional" if "professional" in (audience or "").lower() else "general"
         assumed_knowledge: list[str] = []
-        if "caregiver" in life_event.lower():
-            assumed_knowledge.append("basic caregiving responsibilities")
-        if "estate" in life_event.lower() or "probate" in life_event.lower():
-            assumed_knowledge.append("general concept of estate settlement")
-        if "divorce" in life_event.lower():
-            assumed_knowledge.append("basic family law process")
+        topic_lower = topic.lower()
+        if any(kw in topic_lower for kw in ["deploy", "docker", "hosting", "ci/cd"]):
+            assumed_knowledge.append("basic terminal usage and git")
+        if any(kw in topic_lower for kw in ["react", "next", "vue", "frontend", "landing"]):
+            assumed_knowledge.append("basic HTML/CSS/JavaScript")
+        if any(kw in topic_lower for kw in ["python", "bot", "fastapi", "script"]):
+            assumed_knowledge.append("basic Python syntax")
+        if any(kw in topic_lower for kw in ["api", "database", "crud", "supabase", "sql"]):
+            assumed_knowledge.append("basic idea of clients, servers, and databases")
 
         emotional_context = ""
-        high_stress_events = ["death", "divorce", "eldercare", "diagnosis", "foreclosure"]
-        if any(kw in life_event.lower() for kw in high_stress_events):
-            emotional_context = "Reader is likely under significant stress. Prioritize clarity and actionability over comprehensiveness."
+        frustration_topics = ["debug", "fix", "error", "broken", "migrate", "deploy"]
+        if any(kw in topic_lower for kw in frustration_topics):
+            emotional_context = "Reader may be stuck or frustrated mid-task. Prioritize working fixes and verification steps over background theory."
 
         audience_profile = AudienceProfile(
             reading_level=reading_level,

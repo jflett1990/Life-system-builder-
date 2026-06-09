@@ -4,7 +4,7 @@
 
 ### Product overview
 
-**Life System Builder** is a pnpm monorepo with a React + Vite frontend (`artifacts/life-system-builder`) and a Python FastAPI backend (`artifacts/api-server`). The frontend proxies `/api/*` to the backend on port 8080.
+**Tutorial Builder** (formerly Life System Builder) is a pnpm monorepo with a React + Vite frontend (`artifacts/life-system-builder` — directory name kept from the previous incarnation) and a Python FastAPI backend (`artifacts/api-server`). It converts tutorial requests (e.g. "Build a CRUD app with Supabase") into structured step-by-step tutorials. The frontend proxies `/api/*` to the backend on port 8080. The primary project intake field is `topic` (formerly `life_event`).
 
 ### Starting services (manual)
 
@@ -35,9 +35,10 @@ Health check: `curl http://localhost:8080/api/healthz` → `{"status":"ok","db":
 
 | Command | Notes |
 |---------|-------|
-| `pnpm run typecheck` | Root typecheck; may fail on duplicate exports in `lib/api-zod` (known issue) |
+| `pnpm run typecheck` | Root typecheck (libs + artifacts); should pass clean |
 | `pnpm exec prettier --check "artifacts/**/*.{ts,tsx}" "lib/**/*.{ts,tsx}"` | Format check only; many files may not match Prettier defaults |
-| `cd artifacts/api-server && python3 -m pytest tests/ -v` | Backend unit tests (58+ pass; 2 theme-token template tests may fail) |
+| `cd artifacts/api-server && python3 -m pytest tests/ -v` | Backend unit tests (70+; should pass clean) |
+| `pnpm --filter @workspace/api-spec run codegen` | Regenerate orval clients after editing `lib/api-spec/openapi.yaml` |
 
 There is no ESLint config or frontend test suite in this repo.
 

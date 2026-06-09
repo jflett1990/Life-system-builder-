@@ -1,5 +1,5 @@
 """
-Life System Builder — FastAPI backend entry point.
+Tutorial Builder — FastAPI backend entry point.
 
 Startup sequence:
   1. Load and validate all prompt contracts from disk
@@ -73,7 +73,7 @@ def require_db():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown lifecycle."""
-    logger.info("=== Life System Builder — starting up ===")
+    logger.info("=== Tutorial Builder — starting up ===")
 
     # 1. Load and validate all prompt contracts — fail fast on any error
     try:
@@ -129,8 +129,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Life System Builder API",
-    description="Pipeline engine for converting life events into structured operational control systems.",
+    title="Tutorial Builder API",
+    description="Pipeline engine for converting tutorial requests into structured, step-by-step tutorials and project walkthroughs.",
     version="1.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",

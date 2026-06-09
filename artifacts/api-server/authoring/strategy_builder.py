@@ -31,66 +31,80 @@ from models.v2_artifacts import (
 logger = get_logger(__name__)
 
 
-# ── Domain detection from life event ──────────────────────────────────────────
+# ── Module detection from tutorial topic ──────────────────────────────────────
 
-LIFE_EVENT_DOMAINS: dict[str, list[str]] = {
-    "eldercare": [
-        "Medical & Healthcare Management",
-        "Financial & Benefits Administration",
-        "Legal & Advance Directives",
-        "Daily Care Coordination",
-        "Housing & Placement Decisions",
-        "Family Communication & Decision Making",
+TOPIC_DOMAINS: dict[str, list[str]] = {
+    "web_app": [
+        "Project Scaffold & Tooling Setup",
+        "Core UI & Page Structure",
+        "Data Layer & API Wiring",
+        "Interactivity & State",
+        "Testing & Verification",
+        "Build & Deployment",
     ],
-    "estate": [
-        "Probate & Legal Process",
-        "Asset Inventory & Valuation",
-        "Debt Settlement & Creditors",
-        "Tax Filing & IRS Compliance",
-        "Beneficiary Distributions",
-        "Property & Title Transfer",
+    "api_backend": [
+        "Environment & Project Setup",
+        "Data Model & Persistence",
+        "Endpoints & Business Logic",
+        "Auth & Validation",
+        "Testing & Error Handling",
+        "Deployment & Monitoring",
     ],
-    "divorce": [
-        "Legal Filing & Court Process",
-        "Asset Division & Property",
-        "Child Custody & Parenting Plan",
-        "Financial Separation & Accounts",
-        "Support & Alimony Arrangements",
-        "Document & Beneficiary Updates",
+    "bot_automation": [
+        "Platform Account & Token Setup",
+        "Bot Scaffold & Connection",
+        "Command & Event Handling",
+        "State & Persistence",
+        "Testing in a Sandbox",
+        "Hosting & Keep-Alive",
     ],
-    "real_estate": [
-        "Property Search & Evaluation",
-        "Financing & Mortgage",
-        "Inspection & Due Diligence",
-        "Legal & Title Process",
-        "Closing & Transfer",
-        "Post-Purchase Setup",
+    "deployment": [
+        "Pre-Deploy Audit & Configuration",
+        "Containerisation / Packaging",
+        "Platform Setup & Secrets",
+        "First Deploy & Smoke Test",
+        "Custom Domains & TLS",
+        "Monitoring & Rollback",
+    ],
+    "data_ai": [
+        "Environment & Dependency Setup",
+        "Data / Model Acquisition",
+        "Core Pipeline Implementation",
+        "Evaluation & Iteration",
+        "Interface & Integration",
+        "Packaging & Sharing",
     ],
     "default": [
-        "Planning & Strategy",
-        "Operations & Execution",
-        "Financial Management",
-        "Legal & Compliance",
-        "Communication & Coordination",
-        "Risk Management",
+        "Setup & Prerequisites",
+        "Core Build",
+        "Integration & Wiring",
+        "Verification & Debugging",
+        "Polish & Edge Cases",
+        "Ship & Next Steps",
     ],
 }
 
+# Backwards-compatible alias (pre-pivot name)
+LIFE_EVENT_DOMAINS = TOPIC_DOMAINS
 
-def _detect_event_type(life_event: str) -> str:
-    event_lower = life_event.lower()
-    for key in LIFE_EVENT_DOMAINS:
-        if key in event_lower:
-            return key
-    if any(kw in event_lower for kw in ["death", "deceased", "estate", "will", "probate", "inheritance"]):
-        return "estate"
-    if any(kw in event_lower for kw in ["care", "aging", "senior", "elder", "parent"]):
-        return "eldercare"
-    if any(kw in event_lower for kw in ["divorce", "separation", "custody"]):
-        return "divorce"
-    if any(kw in event_lower for kw in ["house", "home", "property", "mortgage", "closing"]):
-        return "real_estate"
+
+def _detect_topic_type(topic: str) -> str:
+    topic_lower = topic.lower()
+    if any(kw in topic_lower for kw in ["deploy", "ship", "hosting", "docker", "kubernetes", "ci/cd", "devops"]):
+        return "deployment"
+    if any(kw in topic_lower for kw in ["bot", "automation", "scraper", "cron", "webhook", "discord", "slack", "telegram"]):
+        return "bot_automation"
+    if any(kw in topic_lower for kw in ["api", "backend", "server", "fastapi", "express", "database", "crud", "rest", "graphql"]):
+        return "api_backend"
+    if any(kw in topic_lower for kw in ["ai", "ml", "model", "llm", "data science", "machine learning", "chatbot", "rag"]):
+        return "data_ai"
+    if any(kw in topic_lower for kw in ["app", "website", "site", "frontend", "react", "next", "vue", "landing", "page", "extension", "ui"]):
+        return "web_app"
     return "default"
+
+
+# Backwards-compatible alias (pre-pivot name)
+_detect_event_type = _detect_topic_type
 
 
 def _build_domain_id(name: str, idx: int) -> str:
@@ -116,9 +130,9 @@ class StrategyBuilder:
         *,
         model_output: dict[str, Any] | None = None,
     ) -> StrategyBlueprint:
-        life_event = brief.get("life_event_type", "") or brief.get("life_event", "")
-        event_type = _detect_event_type(life_event)
-        domain_names = LIFE_EVENT_DOMAINS.get(event_type, LIFE_EVENT_DOMAINS["default"])
+        topic = brief.get("topic_type", "") or brief.get("topic", "")
+        topic_type = _detect_topic_type(topic)
+        domain_names = TOPIC_DOMAINS.get(topic_type, TOPIC_DOMAINS["default"])
 
         # Build domain models
         domains: list[DomainModel] = []

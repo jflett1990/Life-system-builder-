@@ -30,7 +30,7 @@ class PipelineStageSummary(BaseModel):
 class ProjectSummary(BaseModel):
     project_id: int
     title: str
-    life_event: str
+    topic: str
     total_stages: int
     completed_stages: int
     stages: list[PipelineStageSummary]

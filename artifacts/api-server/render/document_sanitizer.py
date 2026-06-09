@@ -317,8 +317,11 @@ def run_quality_gates(
         if not detailed:
             failures.append(f"QG8: chapter {num} missing detailed_explanation")
 
+        # Exclude fenced code blocks — tutorial narratives legitimately contain
+        # long code snippets that should not count against prose density.
+        prose_only = re.sub(r"```.*?```", "", ch.get("narrative", ""), flags=re.DOTALL)
         paragraphs = [
-            p.strip() for p in re.split(r"\n{2,}", ch.get("narrative", ""))
+            p.strip() for p in re.split(r"\n{2,}", prose_only)
             if p.strip() and not p.strip().startswith("## ")
         ]
         if any(len(p.split()) > 140 for p in paragraphs):

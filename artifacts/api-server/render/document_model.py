@@ -114,9 +114,9 @@ def build_manual_document(project_id: int, all_outputs: dict[str, Any]) -> Manua
     chapter_ws = all_outputs.get("chapter_worksheets", {})
     outline = all_outputs.get("document_outline", {})
 
-    document_id = f"LSB-{project_id:05d}"
-    title = arch.get("system_name") or outline.get("document_title") or "Operational Reference Manual"
-    subtitle = outline.get("subtitle") or "Operating system and worksheets"
+    document_id = f"TUT-{project_id:05d}"
+    title = arch.get("system_name") or outline.get("document_title") or "Tutorial Handbook"
+    subtitle = outline.get("subtitle") or "Step-by-step walkthrough with checkpoints"
 
     domains_raw = arch.get("control_domains", [])
     domains: list[ManualDomain] = []

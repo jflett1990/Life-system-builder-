@@ -20,7 +20,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
   const base = `/projects/${project.id}`;
 
   const completedStages = project.stages.filter((s) => s.status === "complete").length;
-  const totalStages = 5;
+  const totalStages = 8;
 
   return (
     <div className="border-b bg-card flex-shrink-0">
@@ -29,7 +29,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
         <Link href="/projects">
           <span className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1">
             <Layers className="w-3 h-3" />
-            Projects
+            Tutorials
           </span>
         </Link>
         <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
@@ -45,7 +45,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
             {project.title}
           </h1>
           <div className="flex items-center gap-3 mt-1">
-            <span className="text-xs text-muted-foreground">{project.lifeEvent}</span>
+            <span className="text-xs text-muted-foreground">{project.topic}</span>
             <StatusBadge status={project.status} size="xs" />
             <span className="text-[10px] font-mono text-muted-foreground">
               {completedStages}/{totalStages} stages

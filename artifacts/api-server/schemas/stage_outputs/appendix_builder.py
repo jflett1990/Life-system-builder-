@@ -1,9 +1,9 @@
-"""Pydantic schemas for the appendix_builder pipeline stage.
+"""Pydantic schemas for the appendix_builder pipeline stage (Reference Appendix).
 
-Generates 3–5 appendix pages specific to the life event:
-  - Glossary (15–25 domain terms with definitions)
-  - When to Call a Professional (8–12 triggering situations)
-  - Key Resources & Contacts (table of organizations/services)
+Generates 3–5 appendix pages specific to the tutorial topic:
+  - Glossary (15–25 stack-specific terms with definitions)
+  - When to Get Help (8–12 stuck-states with the best source of help)
+  - Key Resources (table of docs/tools/communities)
   - Notes (blank ruled pages — no content schema needed, just a flag)
 """
 from __future__ import annotations
@@ -40,7 +40,7 @@ class AppendixBuilderOutput(BaseModel):
     """Accumulated output from the appendix_builder stage — saved to DB."""
     model_config = ConfigDict(extra="allow")
 
-    life_event: str = ""
+    topic: str = ""
     glossary_terms: list[GlossaryTerm] = Field(..., min_length=10)
     professional_triggers: list[ProfessionalTrigger] = Field(..., min_length=5)
     key_resources: list[KeyResourceRow] = []

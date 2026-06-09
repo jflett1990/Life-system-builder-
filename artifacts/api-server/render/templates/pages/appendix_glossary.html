@@ -2,14 +2,14 @@
 {% from 'templates/components/section_header.html' import section_header %}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 {# APPENDIX — GLOSSARY                                                          #}
-{# Two-column definition list of domain-specific terms                         #}
-{# data keys: life_event, glossary_terms (list of {term, definition})          #}
+{# Two-column definition list of stack-specific terms                          #}
+{# data keys: topic, glossary_terms (list of {term, definition})               #}
 {# ─────────────────────────────────────────────────────────────────────────── #}
 {{ section_header(label="Appendix A", title="Glossary of Key Terms") }}
 
-{% if data.life_event %}
+{% if data.topic %}
 <p class="body-text body-text--secondary" style="max-width:140mm;margin-bottom:var(--space-8)">
-  Domain-specific terminology for navigating {{ data.life_event }}. Definitions are written for practical use, not legal citation.
+  Terminology you'll meet while working through {{ data.topic }}. Definitions are written for practical use, tied to where each term appears in this tutorial.
 </p>
 {% endif %}
 

@@ -17,15 +17,19 @@ class PipelineError(Exception):
 
 
 STAGE_CONTRACT_MAP: dict[str, str] = {
-    # v1 stages
-    "system_architecture": "life_event_system_core",
+    # v1 stages (internal stage names kept stable across the tutorial pivot;
+    # semantics: system_architecture = tutorial framing, document_outline =
+    # tutorial outline, chapter_expansion = step detail writing,
+    # chapter_worksheets = checkpoints & exercises, appendix_builder =
+    # reference appendix)
+    "system_architecture": "tutorial_framing_core",
     "document_outline":    "document_outline",
     "chapter_expansion":   "chapter_expansion",
     "chapter_worksheets":  "chapter_worksheets",
     "appendix_builder":    "appendix_builder",
     "layout_mapping":      "layout_architecture_mapper",
     "render_blueprint":    "pdf_render_blueprint",
-    "validation_audit":    "life_system_validation_agent",
+    "validation_audit":    "tutorial_validation_agent",
     # v2 stages (Phase C)
     "research_graph":      "research_graph",
     "content_plan":        "content_plan",

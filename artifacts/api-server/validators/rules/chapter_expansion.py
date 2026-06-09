@@ -116,8 +116,8 @@ class MissingWorksheetLinkageRule(BaseRule):
                     stage=STAGE,
                     field_path=f"chapters[{num}].worksheet_linkage",
                     evidence="(empty list)",
-                    message=f"Chapter {num} does not explain when worksheets should be used.",
-                    required_fix=f"Re-expand chapter {num} and require worksheet_linkage blocks tied to execution timing.",
+                    message=f"Chapter {num} does not explain when its checkpoint/exercise sheets should be used.",
+                    required_fix=f"Re-expand chapter {num} and require worksheet_linkage blocks tied to step timing.",
                 ))
         return defects
 
@@ -149,7 +149,7 @@ class IncompleteOpenerRule(BaseRule):
                     stage=STAGE,
                     field_path=f"chapters[{num}].chapter_opener",
                     evidence=f"missing: {', '.join(missing)}",
-                    message=f"Chapter {num} opener is incomplete; users will not be oriented quickly under stress.",
+                    message=f"Chapter {num} opener is incomplete; readers will not be oriented quickly when skimming.",
                     required_fix="Regenerate chapter structure with a complete chapter_opener object.",
                 ))
         return defects
@@ -196,17 +196,20 @@ class DenseProseRule(BaseRule):
             num = chap.get("chapter_number", "?")
             narrative = chap.get("narrative") or ""
 
-            if narrative and "## Orientation Snapshot" not in narrative:
+            if narrative and "## What You're Building" not in narrative:
                 defects.append(self._defect(
                     stage=STAGE,
                     field_path=f"chapters[{num}].narrative",
-                    evidence="missing heading ## Orientation Snapshot",
+                    evidence="missing heading ## What You're Building",
                     message=f"Chapter {num} narrative is missing required orientation heading.",
                     required_fix="Regenerate chapter narrative with required layered heading structure.",
                 ))
 
+            # Exclude fenced code blocks from the prose-density check — tutorial
+            # narratives legitimately contain long code snippets.
+            prose_only = re.sub(r"```.*?```", "", narrative, flags=re.DOTALL)
             paragraphs = [
-                p.strip() for p in re.split(r"\n{2,}", narrative)
+                p.strip() for p in re.split(r"\n{2,}", prose_only)
                 if p.strip() and not p.strip().startswith("## ")
             ]
             overlong = [p for p in paragraphs if len(p.split()) > 140]

@@ -1,16 +1,16 @@
 """
-Stage 1 — System Architecture rule set.
+Stage 1 — Tutorial Framing (system_architecture) rule set.
 
 Rules:
   ARCH_REQUIRED_FIELD       fatal   — required top-level field absent or empty
-  ARCH_SYSTEM_NAME_GENERIC  error   — system_name is a template placeholder or bare generic
-  ARCH_NO_CONTROL_DOMAINS   fatal   — control_domains missing or zero entries
-  ARCH_DOMAIN_MISSING_ID    error   — a domain object is missing its 'id' field
-  ARCH_DOMAIN_EMPTY_SCOPE   error   — domain scope_in or primary_outputs are absent/empty
-  ARCH_ROLES_INSUFFICIENT   error   — fewer than 2 key_roles defined
-  ARCH_SUCCESS_CRITERIA_VAGUE error — any success_criteria item is < 8 words or reads as generic advice
+  ARCH_SYSTEM_NAME_GENERIC  error   — tutorial title is a template placeholder or bare generic
+  ARCH_NO_CONTROL_DOMAINS   fatal   — tutorial modules (control_domains) missing or zero entries
+  ARCH_DOMAIN_MISSING_ID    error   — a module object is missing its 'id' field
+  ARCH_DOMAIN_EMPTY_SCOPE   error   — module scope_in or primary_outputs are absent/empty
+  ARCH_ROLES_INSUFFICIENT   error   — fewer than 2 key tools/roles defined
+  ARCH_SUCCESS_CRITERIA_VAGUE error — any success_criteria item is too short or reads as generic advice
   ARCH_PREMISE_ADVICE       error   — operating_premise uses advisory language instead of
-                                      describing an operational challenge
+                                      describing the concrete difficulty the tutorial resolves
 """
 from __future__ import annotations
 
@@ -23,14 +23,15 @@ from validators.rules.base import BaseRule
 STAGE = "system_architecture"
 
 REQUIRED_FIELDS = [
-    "system_name", "life_event", "operating_premise", "system_objective",
+    "system_name", "topic", "operating_premise", "system_objective",
     "time_horizon", "control_domains", "key_roles", "success_criteria",
     "failure_modes", "operating_constraints",
 ]
 
 GENERIC_SYSTEM_NAME_PATTERNS = re.compile(
-    r"^(life system|my system|operational system|management system|"
-    r"system \d*|new system|[a-z]+ system)$",
+    r"^(tutorial|my tutorial|coding tutorial|programming tutorial|"
+    r"tutorial \d*|new tutorial|[a-z]+ tutorial|introduction to [a-z]+|"
+    r"learn [a-z]+|[a-z]+ guide|[a-z]+ walkthrough)$",
     re.IGNORECASE,
 )
 
@@ -89,21 +90,21 @@ class GenericSystemNameRule(BaseRule):
         name = stage_output.get("system_name", "")
         if not isinstance(name, str) or not name:
             return []
-        placeholders = ("system", "life system", "my system", "operational system",
-                        "[system name]", "system name", "name", "untitled")
+        placeholders = ("tutorial", "my tutorial", "coding tutorial", "walkthrough",
+                        "[tutorial title]", "tutorial title", "name", "untitled", "guide")
         if name.strip().lower() in placeholders or GENERIC_SYSTEM_NAME_PATTERNS.match(name.strip()):
             return [self._defect(
                 stage=STAGE,
                 field_path="system_name",
                 evidence=name,
                 message=(
-                    f"system_name '{name}' is a generic placeholder. "
-                    "It must be a specific, named system that reflects the life event — "
-                    "e.g. 'Estate Command System' or 'Caregiver Transition Protocol'."
+                    f"Tutorial title '{name}' is a generic placeholder. "
+                    "It must promise a concrete outcome and name the stack — "
+                    "e.g. 'Build a SaaS Landing Page with Next.js and Tailwind'."
                 ),
                 required_fix=(
-                    "Re-run stage 1. The system_name must be derived from the specific "
-                    "life event and contain at least one domain-specific noun."
+                    "Re-run stage 1. The tutorial title must be derived from the specific "
+                    "topic and contain at least one stack- or outcome-specific noun."
                 ),
             )]
         return []
@@ -124,9 +125,9 @@ class NoControlDomainsRule(BaseRule):
                 field_path="control_domains",
                 evidence=str(domains),
                 message=(
-                    "control_domains is empty or absent. At least 2 control domains are required "
-                    "to map the operational system — without them the worksheet stage cannot generate "
-                    "domain-linked worksheets."
+                    "control_domains (tutorial modules) is empty or absent. At least 2 modules are "
+                    "required to structure the tutorial — without them the checkpoint stage cannot "
+                    "generate module-linked sheets."
                 ),
                 required_fix="Re-run stage 1. The model must produce at least 2 control_domains objects.",
             )]
@@ -209,10 +210,10 @@ class InsufficientRolesRule(BaseRule):
                 field_path="key_roles",
                 evidence=f"{len(roles) if isinstance(roles, list) else 0} role(s) defined",
                 message=(
-                    "At least 2 key roles are required to define an operational system. "
-                    "A single role produces an unexecutable system with no accountability structure."
+                    "At least 2 key tools/roles are required to frame a tutorial. "
+                    "A single entry usually means the toolchain was not actually mapped."
                 ),
-                required_fix="Re-run stage 1. Define at minimum a decision-maker and an executor role.",
+                required_fix="Re-run stage 1. Name the core tools/frameworks and what each is responsible for.",
             )]
         return []
 
@@ -256,7 +257,7 @@ class SuccessCriteriaVagueRule(BaseRule):
                     field_path=f"success_criteria[{i}]",
                     evidence=item,
                     message=f"Success criterion '{item}' is a generic phrase, not a verifiable outcome.",
-                    required_fix="Replace with a measurable outcome specific to this life event.",
+                    required_fix="Replace with a verifiable outcome specific to this tutorial — a command that succeeds or behavior that can be observed.",
                     severity=Severity.error,
                     blocked_handoff=False,
                 ))
@@ -282,12 +283,12 @@ class PremiseAdviceRule(BaseRule):
                 evidence=premise,
                 message=(
                     f"operating_premise contains advisory language ('{match.group(0)}'). "
-                    "The premise must describe the core operational challenge as a factual "
-                    "statement, not advice to the user."
+                    "The premise must describe the concrete difficulty this tutorial resolves "
+                    "as a factual statement, not advice to the reader."
                 ),
                 required_fix=(
-                    "Rewrite operating_premise as a declarative operational statement: "
-                    "'The executor must coordinate [X] across [Y] within [constraint].'"
+                    "Rewrite operating_premise as a declarative statement: "
+                    "'Wiring [X] together involves [specific failure-prone decisions] that [consequence].'"
                 ),
             )]
         return []

@@ -26,85 +26,100 @@ class RetrievedPassage:
     passage_id: str
     text: str
     source: str
-    source_type: str          # government | legal | medical | financial | general
+    source_type: str          # framework_docs | platform_docs | tooling_docs | general
     jurisdiction_tags: list[str] = field(default_factory=list)
     relevance_score: float = 0.0
 
 
-# ── Built-in snippet library (jurisdiction-tagged, Phase C stub) ───────────────
-# A minimal curated set of high-confidence factual snippets for common life events.
-# Phase D will replace this with a vector search over a full knowledge base.
+# ── Built-in snippet library (Phase C stub) ────────────────────────────────────
+# A minimal curated set of high-confidence factual snippets for common coding
+# tutorial topics. Phase D will replace this with a vector search over a full
+# knowledge base.
 
 _SNIPPET_LIBRARY: list[dict[str, Any]] = [
     {
-        "text": "Probate is the court-supervised process of authenticating a deceased person's will and distributing estate assets. Required when the decedent owned assets solely in their name above state-specific thresholds (commonly $50,000–$185,000 depending on jurisdiction).",
-        "source": "Uniform Probate Code / State Law",
-        "source_type": "legal",
-        "jurisdiction_tags": ["US", "probate", "estate"],
-        "keywords": ["probate", "estate", "will", "deceased", "assets"],
+        "text": "Node.js LTS releases are supported for roughly 30 months and are the recommended baseline for tutorials and production apps. Most modern frameworks (Next.js 14+, Vite 5+) require Node 18.17 or newer; check with `node --version` before installing dependencies.",
+        "source": "Node.js Release Working Group",
+        "source_type": "platform_docs",
+        "jurisdiction_tags": ["node", "javascript", "web", "tooling"],
+        "keywords": ["node", "nodejs", "version", "lts", "npm", "javascript", "next.js", "vite"],
     },
     {
-        "text": "A durable power of attorney for healthcare remains valid even if the principal becomes incapacitated. Must be signed before incapacity occurs. State laws vary on witness and notarization requirements.",
-        "source": "State Health Care Power of Attorney Statutes",
-        "source_type": "legal",
-        "jurisdiction_tags": ["US", "healthcare", "elder_care", "legal_documents"],
-        "keywords": ["power of attorney", "healthcare proxy", "incapacity", "advance directive"],
+        "text": "In the Next.js App Router, components are Server Components by default. Any component using state, effects, or browser-only APIs must start with the \"use client\" directive, or the build fails with errors like 'useState is not defined' or 'createContext only works in Client Components'.",
+        "source": "Next.js Documentation — App Router",
+        "source_type": "framework_docs",
+        "jurisdiction_tags": ["nextjs", "react", "web", "frontend"],
+        "keywords": ["next.js", "nextjs", "app router", "use client", "server component", "react", "landing page"],
     },
     {
-        "text": "Medicare Part A covers inpatient hospital stays, skilled nursing facility care, hospice, and some home health care. Part B covers outpatient services, preventive care, and durable medical equipment. Enrollment windows apply.",
-        "source": "Centers for Medicare & Medicaid Services (CMS)",
-        "source_type": "government",
-        "jurisdiction_tags": ["US", "medicare", "healthcare", "elder_care"],
-        "keywords": ["medicare", "part a", "part b", "hospitalization", "skilled nursing"],
+        "text": "Tailwind CSS only generates classes it can statically find in files matched by the content configuration. If styles silently fail to apply, the most common cause is a missing or incorrect content glob, or class names built by string concatenation at runtime.",
+        "source": "Tailwind CSS Documentation — Content Configuration",
+        "source_type": "framework_docs",
+        "jurisdiction_tags": ["tailwind", "css", "web", "frontend"],
+        "keywords": ["tailwind", "css", "content", "purge", "styles", "frontend", "landing page"],
     },
     {
-        "text": "Medicaid spend-down rules require applicants to reduce countable assets below state thresholds before qualifying. Lookback periods of 60 months apply to asset transfers. Rules vary significantly by state.",
-        "source": "Medicaid State Programs / CMS",
-        "source_type": "government",
-        "jurisdiction_tags": ["US", "medicaid", "elder_care", "long_term_care"],
-        "keywords": ["medicaid", "spend-down", "assets", "lookback", "long term care"],
+        "text": "Environment variables prefixed with NEXT_PUBLIC_ (Next.js) or VITE_ (Vite) are inlined into the client bundle at build time and are publicly visible. Secrets such as service-role keys or API tokens must never use these prefixes and must only be read server-side.",
+        "source": "Next.js / Vite Documentation — Environment Variables",
+        "source_type": "framework_docs",
+        "jurisdiction_tags": ["env", "security", "web", "deploy"],
+        "keywords": ["environment variable", "env", "secret", "api key", "deploy", "security", "supabase"],
     },
     {
-        "text": "HIPAA grants patients the right to access their medical records within 30 days of request. Covered entities must provide records in the patient's requested format when readily producible. Fees limited to cost of production.",
-        "source": "Health Insurance Portability and Accountability Act (HIPAA) / HHS",
-        "source_type": "government",
-        "jurisdiction_tags": ["US", "healthcare", "medical_records", "HIPAA"],
-        "keywords": ["hipaa", "medical records", "access", "patient rights"],
+        "text": "Discord bots must enable privileged gateway intents (such as MESSAGE CONTENT) both in code and in the Discord Developer Portal. A bot with mismatched intents connects successfully but silently receives no message events — the most common cause of 'my bot does not respond'.",
+        "source": "Discord Developer Documentation — Gateway Intents",
+        "source_type": "platform_docs",
+        "jurisdiction_tags": ["discord", "bot", "python", "api"],
+        "keywords": ["discord", "bot", "intents", "message content", "discord.py", "slash command"],
     },
     {
-        "text": "IRS Form 706 (Estate Tax Return) must be filed for estates exceeding the federal exemption ($13.61 million in 2024). Filing deadline is 9 months after the decedent's death, with a 6-month extension available.",
-        "source": "Internal Revenue Service (IRS) — Publication 950",
-        "source_type": "government",
-        "jurisdiction_tags": ["US", "federal", "estate_tax", "probate"],
-        "keywords": ["estate tax", "form 706", "irs", "inheritance", "exemption"],
+        "text": "FastAPI apps are served by an ASGI server such as uvicorn. In containers, bind to 0.0.0.0 and read the port from the environment — binding to 127.0.0.1 inside Docker makes the service unreachable from outside the container, which presents as connection refused on the mapped port.",
+        "source": "FastAPI / Uvicorn Documentation — Deployment",
+        "source_type": "framework_docs",
+        "jurisdiction_tags": ["fastapi", "python", "api", "deploy", "docker"],
+        "keywords": ["fastapi", "uvicorn", "deploy", "docker", "port", "0.0.0.0", "api", "python"],
     },
     {
-        "text": "Real estate held in joint tenancy with right of survivorship passes automatically to the surviving owner(s) and does not go through probate. A new deed may be required to clear title. State requirements for recording vary.",
-        "source": "State Property Law / Title Insurance Standards",
-        "source_type": "legal",
-        "jurisdiction_tags": ["US", "real_estate", "probate", "estate"],
-        "keywords": ["joint tenancy", "survivorship", "deed", "title", "probate"],
+        "text": "Docker images should be built with a .dockerignore that excludes node_modules, virtual environments, and build artifacts. Copying dependency manifests first and installing before copying source code preserves layer caching and cuts rebuild times from minutes to seconds.",
+        "source": "Docker Documentation — Best Practices for Writing Dockerfiles",
+        "source_type": "tooling_docs",
+        "jurisdiction_tags": ["docker", "deploy", "devops"],
+        "keywords": ["docker", "dockerfile", "dockerignore", "layer", "cache", "build", "deploy"],
     },
     {
-        "text": "A living trust (revocable trust) allows assets to pass to beneficiaries outside of probate. The grantor retains control during their lifetime. Requires funding — assets must be retitled into the trust's name.",
-        "source": "State Trust Law / Estate Planning Standards",
-        "source_type": "legal",
-        "jurisdiction_tags": ["US", "trust", "estate", "probate"],
-        "keywords": ["living trust", "revocable trust", "probate avoidance", "funding"],
+        "text": "Supabase row-level security (RLS) is enabled per table; with RLS on and no policies, all reads and writes with the anon key fail silently with empty results or 401s. Tutorials must create explicit policies for anon/authenticated roles before client-side queries will work.",
+        "source": "Supabase Documentation — Row Level Security",
+        "source_type": "platform_docs",
+        "jurisdiction_tags": ["supabase", "database", "auth", "web"],
+        "keywords": ["supabase", "rls", "row level security", "policy", "anon key", "database", "crud"],
     },
     {
-        "text": "Social Security survivor benefits are available to spouses, children under 18, and dependent parents of a deceased worker. Application must be made at a Social Security office. Benefits begin the month after the worker's death.",
-        "source": "Social Security Administration (SSA)",
-        "source_type": "government",
-        "jurisdiction_tags": ["US", "social_security", "survivor_benefits", "estate"],
-        "keywords": ["social security", "survivor", "death benefit", "spouse", "dependent"],
+        "text": "Git branches are cheap pointers; committing after every verified checkpoint gives a known-good rollback target. `git checkout -- .` discards uncommitted changes, and `git revert <sha>` undoes a specific commit without rewriting history — safer than reset on shared branches.",
+        "source": "Pro Git Book — Git Basics",
+        "source_type": "tooling_docs",
+        "jurisdiction_tags": ["git", "tooling", "workflow"],
+        "keywords": ["git", "commit", "branch", "revert", "rollback", "checkpoint", "version control"],
     },
     {
-        "text": "A divorce decree terminates marital property rights but may not automatically update beneficiary designations on retirement accounts, life insurance, or payable-on-death accounts. These must be updated separately.",
-        "source": "ERISA / State Family Law",
-        "source_type": "legal",
-        "jurisdiction_tags": ["US", "divorce", "beneficiary", "retirement", "estate"],
-        "keywords": ["divorce", "beneficiary", "retirement account", "ira", "401k", "life insurance"],
+        "text": "Server-Sent Events (SSE) and chunked responses are the standard transports for streaming LLM output to browsers. Reverse proxies and serverless platforms often buffer responses by default; disabling buffering (e.g. X-Accel-Buffering: no) is required or streamed tokens arrive all at once.",
+        "source": "MDN Web Docs — Server-Sent Events",
+        "source_type": "platform_docs",
+        "jurisdiction_tags": ["streaming", "ai", "web", "api"],
+        "keywords": ["streaming", "sse", "server-sent events", "ai", "chat", "llm", "buffer", "proxy"],
+    },
+    {
+        "text": "Chrome extensions using Manifest V3 replace background pages with service workers, which are terminated when idle. State must be persisted in chrome.storage rather than module-level variables, and long-lived connections must handle reconnection.",
+        "source": "Chrome for Developers — Manifest V3",
+        "source_type": "platform_docs",
+        "jurisdiction_tags": ["chrome", "extension", "javascript", "web"],
+        "keywords": ["chrome extension", "manifest v3", "service worker", "chrome.storage", "tabs", "browser"],
+    },
+    {
+        "text": "Python virtual environments isolate per-project dependencies. Creating one with `python -m venv .venv` and activating it before `pip install` prevents version conflicts between projects — the most common cause of 'works on my machine' import errors in Python tutorials.",
+        "source": "Python Documentation — venv",
+        "source_type": "platform_docs",
+        "jurisdiction_tags": ["python", "tooling", "environment"],
+        "keywords": ["python", "venv", "virtual environment", "pip", "install", "dependencies"],
     },
 ]
 
@@ -131,18 +146,18 @@ def _score_passage(passage: dict[str, Any], keywords: list[str], jurisdiction: s
 def retrieve_passages(
     query_keywords: list[str],
     jurisdiction: str | None = None,
-    life_event: str = "",
+    topic: str = "",
     max_results: int = 12,
 ) -> list[RetrievedPassage]:
-    """Retrieve relevant passages for the given keywords and jurisdiction.
+    """Retrieve relevant passages for the given keywords and environment.
 
     Phase C: searches the built-in snippet library.
     Phase D: will also search an external vector knowledge base.
     """
-    # Expand keywords from life_event string
+    # Expand keywords from the tutorial topic string
     all_keywords = list(query_keywords)
-    if life_event:
-        words = re.findall(r"\b\w{4,}\b", life_event.lower())
+    if topic:
+        words = re.findall(r"\b\w{4,}\b", topic.lower())
         all_keywords.extend(words[:10])
 
     scored: list[tuple[float, dict[str, Any]]] = []

@@ -180,9 +180,9 @@ class GenericLabelsRule(BaseRule):
                         "architecture and cannot capture domain-specific operational decisions."
                     ),
                     required_fix=(
-                        "Rewrite all generic field labels to be specific to the control domain. "
-                        "For example: 'Date' → 'Estate Filing Deadline', "
-                        "'Name' → 'Beneficiary Legal Name', 'Notes' → 'Probate Court Observations'."
+                        "Rewrite all generic field labels to be specific to this tutorial's stack. "
+                        "For example: 'Value' → 'NEXT_PUBLIC_SUPABASE_URL value', "
+                        "'Name' → 'Deployed app URL', 'Notes' → 'First error line from the build log'."
                     ),
                 ))
         return defects

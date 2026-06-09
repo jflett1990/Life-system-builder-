@@ -226,9 +226,9 @@ class ManifestBuilder:
         ws_system = all_outputs.get("worksheet_system", {})
 
         generated_date = date.today().strftime("%B %d, %Y")
-        system_name = arch.get("system_name", "Operational Control System")
+        system_name = arch.get("system_name", "Tutorial Walkthrough")
         doc_title = system_name
-        document_id = f"LSB-{project_id:05d}"
+        document_id = f"TUT-{project_id:05d}"
 
         domains = arch.get("control_domains", [])
         domain_map: dict[str, dict] = {d.get("id", ""): d for d in domains}
@@ -279,7 +279,7 @@ class ManifestBuilder:
             archetype="cover_page",
             data={
                 "system_name": system_name,
-                "life_event": arch.get("life_event", ""),
+                "topic": arch.get("topic", ""),
                 "system_objective": arch.get("system_objective", ""),
                 "time_horizon": arch.get("time_horizon", ""),
                 "audience": arch.get("audience", ""),
@@ -324,8 +324,8 @@ class ManifestBuilder:
             sequence=next_seq(),
             archetype="dashboard_page",
             data={
-                "page_label": "System Overview",
-                "page_title": "Operational Dashboard",
+                "page_label": "Tutorial Overview",
+                "page_title": "Tutorial Dashboard",
                 "system_name": system_name,
                 "system_objective": arch.get("system_objective", ""),
                 "time_horizon": arch.get("time_horizon", ""),
@@ -360,7 +360,7 @@ class ManifestBuilder:
             archetype="section_divider",
             data={
                 "section_number": "01",
-                "section_title": "System Architecture",
+                "section_title": "Tutorial Framing",
                 "section_subtitle": arch.get("operating_premise", "")[:140] if arch.get("operating_premise") else "",
                 "domain_count": len(domains),
             },
@@ -374,7 +374,7 @@ class ManifestBuilder:
                 archetype="explanation_page",
                 page_break="auto",
                 data={
-                    "page_label": "System Architecture",
+                    "page_label": "Tutorial Framing",
                     "page_title": system_name,
                     "operating_premise": arch.get("operating_premise", ""),
                     "system_objective": arch.get("system_objective", ""),
@@ -554,7 +554,7 @@ class ManifestBuilder:
             key_resources = appendix.get("key_resources", [])
             include_notes = appendix.get("include_notes_pages", True)
             notes_count = appendix.get("notes_page_count", 3)
-            life_event = appendix.get("life_event", arch.get("life_event", ""))
+            topic = appendix.get("topic", arch.get("topic", ""))
 
             pages.append(ManifestPage(
                 page_id="pg-div-appendix",
@@ -563,7 +563,7 @@ class ManifestBuilder:
                 data={
                     "section_number": "A",
                     "section_title": "Appendix",
-                    "section_subtitle": "Reference materials, glossary, and professional guidance",
+                    "section_subtitle": "Glossary, getting help, and key resources",
                     "domain_count": None,
                 },
             ))
@@ -574,7 +574,7 @@ class ManifestBuilder:
                     sequence=next_seq(),
                     archetype="appendix_glossary",
                     page_break="auto",
-                    data={"life_event": life_event, "glossary_terms": glossary_terms},
+                    data={"topic": topic, "glossary_terms": glossary_terms},
                 ))
 
             if professional_triggers:
@@ -583,7 +583,7 @@ class ManifestBuilder:
                     sequence=next_seq(),
                     archetype="appendix_professional_guide",
                     page_break="auto",
-                    data={"life_event": life_event, "professional_triggers": professional_triggers},
+                    data={"topic": topic, "professional_triggers": professional_triggers},
                 ))
 
             if key_resources:
@@ -594,10 +594,10 @@ class ManifestBuilder:
                     page_break="auto",
                     data={
                         "id": "appendix-key-resources",
-                        "title": "Key Resources & Contacts",
-                        "purpose": "Record organizations, agencies, and professionals relevant to your situation.",
+                        "title": "Key Resources",
+                        "purpose": "The docs, tools, and communities for this tutorial's stack — with space for your own notes.",
                         "layout": "table",
-                        "table_columns": ["Organization", "Service", "Phone", "Website", "Hours"],
+                        "table_columns": ["Resource", "What it's for", "Notes", "Website", "Last checked"],
                         "table_row_count": max(len(key_resources), 10),
                         "system_name": system_name,
                         "domain_name": "Reference",
@@ -632,8 +632,8 @@ class ManifestBuilder:
                 sequence=next_seq(),
                 archetype="rapid_response",
                 data={
-                    "page_label": "Contingency Protocol",
-                    "page_title": "Rapid Response Reference",
+                    "page_label": "Troubleshooting",
+                    "page_title": "Common Blockers & Recovery",
                     "failure_modes": structured_modes,
                     "operating_constraints": arch.get("operating_constraints", []),
                     "escalation_paths": arch.get("escalation_paths", []),

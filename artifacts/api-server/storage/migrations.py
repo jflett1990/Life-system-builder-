@@ -1,5 +1,5 @@
 """
-Structured migration runner for Life System Builder.
+Structured migration runner for Tutorial Builder.
 
 Runs migrations in order at startup, skipping any that have already been applied.
 Supports both SQLite (local dev) and PostgreSQL (production/Replit).
@@ -220,8 +220,11 @@ def _m009_widen_life_event_to_text(conn, dialect: str) -> None:
     Users regularly supply life_event descriptions that exceed 255 characters.
     VARCHAR(255) causes a StringDataRightTruncation 500 on project creation.
     SQLite does not enforce VARCHAR length so no action needed there.
+
+    Fresh installs after the tutorial pivot no longer have a life_event column
+    (create_all builds `topic` directly), so this is guarded by existence.
     """
-    if dialect == "postgresql":
+    if dialect == "postgresql" and _column_exists(conn, "projects", "life_event", dialect):
         conn.execute(text(
             "ALTER TABLE projects ALTER COLUMN life_event TYPE TEXT"
         ))
@@ -243,6 +246,36 @@ def _m008_convert_sub_progress_to_jsonb(conn, dialect: str) -> None:
             "USING CASE WHEN sub_progress IS NULL THEN NULL "
             "     ELSE sub_progress::jsonb END"
         ))
+
+
+def _m010_pivot_projects_to_tutorials(conn, dialect: str) -> None:
+    """
+    Tutorial Builder pivot:
+      - Rename projects.life_event -> projects.topic (the tutorial request)
+      - Add tutorial request control columns
+
+    Both SQLite (>= 3.25) and PostgreSQL support ALTER TABLE ... RENAME COLUMN.
+    """
+    if _column_exists(conn, "projects", "life_event", dialect) and not _column_exists(
+        conn, "projects", "topic", dialect
+    ):
+        conn.execute(text("ALTER TABLE projects RENAME COLUMN life_event TO topic"))
+        logger.info("Renamed projects.life_event -> projects.topic")
+    elif not _column_exists(conn, "projects", "topic", dialect):
+        # Fresh installs where create_all already built the new schema land here as a no-op.
+        _add_column_if_missing(conn, "projects", "topic", "TEXT", dialect)
+
+    bool_true = "1" if dialect == "sqlite" else "TRUE"
+    _add_column_if_missing(conn, "projects", "skill_level", "VARCHAR(50)", dialect)
+    _add_column_if_missing(conn, "projects", "tutorial_type", "VARCHAR(100)", dialect)
+    _add_column_if_missing(conn, "projects", "stack", "TEXT", dialect)
+    _add_column_if_missing(conn, "projects", "platform", "VARCHAR(200)", dialect)
+    _add_column_if_missing(conn, "projects", "depth", "VARCHAR(50)", dialect)
+    _add_column_if_missing(
+        conn, "projects", "include_code", f"BOOLEAN NOT NULL DEFAULT {bool_true}", dialect
+    )
+    _add_column_if_missing(conn, "projects", "output_style", "VARCHAR(100)", dialect)
+    _add_column_if_missing(conn, "projects", "constraints", "TEXT", dialect)
 
 
 def _m005_create_branding_profiles(conn, dialect: str) -> None:
@@ -287,6 +320,7 @@ MIGRATIONS: list[tuple[int, str, MigrationFn]] = [
     (7, "add_sub_progress_to_stage_outputs", _m007_add_sub_progress_to_stage_outputs),
     (8, "convert_sub_progress_to_jsonb", _m008_convert_sub_progress_to_jsonb),
     (9, "widen_life_event_to_text", _m009_widen_life_event_to_text),
+    (10, "pivot_projects_to_tutorials", _m010_pivot_projects_to_tutorials),
 ]
 
 

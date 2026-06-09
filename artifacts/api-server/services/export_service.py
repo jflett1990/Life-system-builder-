@@ -1,5 +1,5 @@
 """
-ExportService — file packaging layer for Life System Builder.
+ExportService — file packaging layer for Tutorial Builder.
 
 Responsibilities:
   - Build in-memory zip bundles from rendered HTML + pipeline JSON
@@ -7,7 +7,7 @@ Responsibilities:
   - Provide a clear, honest hook point for future PDF rendering
 
 Bundle structure:
-  LSB-{id:05d}-export.zip
+  TUT-{id:05d}-export.zip
   ├── manifest.json          — bundle metadata + file index
   ├── html/
   │   └── document.html      — self-contained, print-ready HTML
@@ -167,7 +167,7 @@ class BundleManifest:
     project_id: int
     document_id: str
     system_name: str
-    life_event: str
+    topic: str
     page_count: int
     stages_exported: list[str]
     created_at: str                         # ISO 8601 UTC
@@ -188,7 +188,7 @@ class BundleManifest:
             "project_id": self.project_id,
             "document_id": self.document_id,
             "system_name": self.system_name,
-            "life_event": self.life_event,
+            "topic": self.topic,
             "page_count": self.page_count,
             "stages_exported": self.stages_exported,
             "created_at": self.created_at,
@@ -206,7 +206,7 @@ _PDF_PENDING_TEXT = """\
 PDF EXPORT — NOT YET IMPLEMENTED
 =================================
 
-PDF generation has not been integrated into this version of Life System Builder.
+PDF generation has not been integrated into this version of Tutorial Builder.
 
 THE HTML FILE IS PRINT-READY
 -----------------------------
@@ -312,7 +312,7 @@ class ZipPackageBuilder:
 
 class ExportService:
     """
-    File packaging layer for Life System Builder.
+    File packaging layer for Tutorial Builder.
 
     Depends on:
       RenderService — renders HTML from pipeline stage outputs
@@ -333,7 +333,7 @@ class ExportService:
         Build and return the full zip bundle for a project.
 
         Returns:
-            (zip_bytes, filename) — filename is e.g. "LSB-00001-export.zip"
+            (zip_bytes, filename) — filename is e.g. "TUT-00001-export.zip"
 
         Raises:
             ExportNotReadyError if no stages are complete.
@@ -352,9 +352,9 @@ class ExportService:
             raise ExportError(f"Render failed for project {project_id}: {e}") from e
 
         arch = stage_outputs.get("system_architecture", {})
-        system_name = arch.get("system_name", "Operational Control System")
-        life_event = arch.get("life_event", "")
-        document_id = f"LSB-{project_id:05d}"
+        system_name = arch.get("system_name", "Tutorial Walkthrough")
+        topic = arch.get("topic", "")
+        document_id = f"TUT-{project_id:05d}"
         now_utc = datetime.now(timezone.utc)
         created_at = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
         bundle_id = f"{document_id}-{now_utc.strftime('%Y%m%dT%H%M%SZ')}"
@@ -376,7 +376,7 @@ class ExportService:
             project_id=project_id,
             document_id=document_id,
             system_name=system_name,
-            life_event=life_event,
+            topic=topic,
             page_count=render_result.page_count,
             stages_exported=stages_exported,
             created_at=created_at,
@@ -431,7 +431,7 @@ class ExportService:
         except RenderServiceError as e:
             raise ExportError(str(e)) from e
 
-        filename = f"LSB-{project_id:05d}-document.html"
+        filename = f"TUT-{project_id:05d}-document.html"
         logger.info(
             "ExportService.export_html | project=%d | page_count=%d | len=%d",
             project_id, render_result.page_count, len(render_result.html),
@@ -469,10 +469,10 @@ class ExportService:
             raise ExportError(f"DOCX build failed for project {project_id}: {e}") from e
 
         arch = stage_outputs.get("system_architecture", {})
-        system_name = arch.get("system_name", f"LSB-{project_id:05d}")
+        system_name = arch.get("system_name", f"TUT-{project_id:05d}")
         slug = system_name.lower()
         import re
-        slug = re.sub(r"[^a-z0-9]+", "-", slug).strip("-")[:60] or f"lsb-{project_id:05d}"
+        slug = re.sub(r"[^a-z0-9]+", "-", slug).strip("-")[:60] or f"tut-{project_id:05d}"
         filename = f"{slug}.docx"
 
         logger.info(
@@ -500,7 +500,7 @@ class ExportService:
             raise ExportNotReadyError(
                 f"Stage '{stage}' is not complete for project {project_id}."
             )
-        filename = f"LSB-{project_id:05d}-{stage}.json"
+        filename = f"TUT-{project_id:05d}-{stage}.json"
         json_str = json.dumps(all_outputs[stage], indent=2, ensure_ascii=False)
         return json_str, filename
 
@@ -521,7 +521,7 @@ class ExportService:
             "exported_at": datetime.now(timezone.utc).isoformat(),
             "stages": all_outputs,
         }
-        filename = f"LSB-{project_id:05d}-all-stages.json"
+        filename = f"TUT-{project_id:05d}-all-stages.json"
         return json.dumps(combined, indent=2, ensure_ascii=False), filename
 
     def bundle_manifest_info(self, project_id: int) -> dict[str, Any]:
@@ -538,9 +538,9 @@ class ExportService:
             )
 
         arch = stage_outputs.get("system_architecture", {})
-        system_name = arch.get("system_name", "Operational Control System")
-        life_event = arch.get("life_event", "")
-        document_id = f"LSB-{project_id:05d}"
+        system_name = arch.get("system_name", "Tutorial Walkthrough")
+        topic = arch.get("topic", "")
+        document_id = f"TUT-{project_id:05d}"
         now_utc = datetime.now(timezone.utc)
         created_at = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
         bundle_id = f"{document_id}-{now_utc.strftime('%Y%m%dT%H%M%SZ')}"
@@ -551,7 +551,7 @@ class ExportService:
             project_id=project_id,
             document_id=document_id,
             system_name=system_name,
-            life_event=life_event,
+            topic=topic,
             page_count=0,       # page_count requires a render pass; omit here
             stages_exported=stages_exported,
             created_at=created_at,

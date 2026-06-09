@@ -20,38 +20,38 @@ export interface StageMeta {
 
 export const STAGE_META: Record<string, StageMeta> = {
   "system-architecture": {
-    label: "System Architecture",
-    description: "Maps the life event into a named operational control system — domains, roles, milestones, and success criteria.",
+    label: "Tutorial Framing",
+    description: "Interprets the request and frames the tutorial — goal, audience, prerequisites, stack, modules, milestones, and verifiable success criteria.",
     order: 1,
     modelRole: "planner",
   },
   "document-outline": {
-    label: "Document Outline",
-    description: "Produces the complete master blueprint — every chapter title, every worksheet title, the cascade chain, and master operating rules.",
+    label: "Tutorial Outline",
+    description: "Produces the complete tutorial blueprint — every step title, every checkpoint and exercise sheet, the dependency chain, and ground rules.",
     order: 2,
     modelRole: "planner",
   },
   "chapter-expansion": {
-    label: "Chapter Expansion",
-    description: "Writes the full narrative, quick-reference rules, and cascade triggers for each chapter. One focused call per chapter — no worksheets.",
+    label: "Step Detail Writing",
+    description: "Writes the full walkthrough for each step — numbered substeps, code snippets, expected outputs, decision points, and debugging notes. One focused call per step.",
     order: 3,
     modelRole: "executor",
   },
   "chapter-worksheets": {
-    label: "Chapter Worksheets",
-    description: "Generates all worksheets for each chapter using the chapter narrative as context. One focused call per chapter — no narrative writing.",
+    label: "Checkpoints & Exercises",
+    description: "Generates verification checklists, command references, and exercises for each step using the walkthrough as context. One focused call per step.",
     order: 4,
     modelRole: "executor",
   },
   "appendix-builder": {
-    label: "Appendix Builder",
-    description: "Generates domain-specific appendix pages: a glossary of key terms, a situational guide for when to call a professional, a key resources table, and blank notes pages.",
+    label: "Reference Appendix",
+    description: "Generates stack-specific appendix pages: a glossary of key terms, a 'when to get help' guide, a key resources table, and blank notes pages.",
     order: 5,
     modelRole: "executor",
   },
   "layout-mapping": {
     label: "Layout Mapping",
-    description: "Maps all chapters and worksheets into a structured document layout with section ordering and print architecture.",
+    description: "Maps all steps and checkpoint sheets into a structured document layout with section ordering and print architecture.",
     order: 6,
     modelRole: "executor",
   },
@@ -63,7 +63,7 @@ export const STAGE_META: Record<string, StageMeta> = {
   },
   "validation-audit": {
     label: "Validation Audit",
-    description: "Compiler-style structural audit — checks cross-stage references, field completeness, and render-readiness.",
+    description: "Compiler-style structural audit — checks cross-stage references, section completeness, prerequisite ordering, and render-readiness.",
     order: 8,
     modelRole: "executor",
   },
