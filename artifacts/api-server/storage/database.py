@@ -1,3 +1,4 @@
+import os
 import time
 import threading
 from sqlalchemy import create_engine
@@ -7,17 +8,31 @@ from core.logging import get_logger
 
 logger = get_logger(__name__)
 
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
-    pool_pre_ping=True,
-    echo=False,
+_database_url = settings.get_database_url()
+_is_sqlite = _database_url.startswith("sqlite")
+_is_vercel = bool(os.environ.get("VERCEL"))
+
+_engine_kwargs: dict = {
+    "connect_args": {"check_same_thread": False} if _is_sqlite else {},
+    "pool_pre_ping": True,
+    "echo": False,
+}
+
+# Serverless-friendly pool sizing on Vercel + Postgres
+if not _is_sqlite and _is_vercel:
+    _engine_kwargs.update(pool_size=1, max_overflow=0, pool_recycle=300)
+
+engine = create_engine(_database_url, **_engine_kwargs)
+
+logger.info(
+    "Database engine: dialect=%s vercel=%s",
+    "sqlite" if _is_sqlite else "postgresql",
+    _is_vercel,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Readiness flag — set True once init_db() succeeds.
-# Routes call require_db_ready() to gate access until DB is available.
 _db_ready = threading.Event()
 
 
@@ -30,11 +45,7 @@ def is_db_ready() -> bool:
 
 
 def require_db_ready() -> None:
-    """Raise HTTP 503 if the database has not yet initialised.
-
-    Import and call this from FastAPI route dependencies so callers get a
-    clean 503 rather than an internal SQLAlchemy connection error.
-    """
+    """Raise HTTP 503 if the database has not yet initialised."""
     if not _db_ready.is_set():
         from fastapi import HTTPException
         raise HTTPException(

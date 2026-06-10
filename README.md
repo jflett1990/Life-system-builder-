@@ -101,9 +101,18 @@ python main.py
 |----------|----------|---------|
 | `AI_INTEGRATIONS_OPENAI_API_KEY` | Yes (for LLM stages) | Model API key |
 | `FIRECRAWL_API_KEY` | Recommended | Powers the **Web Research** stage via [Firecrawl](https://firecrawl.dev) |
-| `DATABASE_URL` | No | Defaults to SQLite |
+| `POSTGRES_URL` | Auto on Vercel | Injected when [Vercel Postgres](https://vercel.com/storage/postgres) storage is linked |
+| `DATABASE_URL` | Local dev | Use SQLite locally; optional override on Vercel |
 
 Without `FIRECRAWL_API_KEY`, the research stage falls back to a minimal built-in snippet library. For coding tutorials, configure Firecrawl so the pipeline can scrape current documentation and tutorials from the web.
+
+### Vercel Postgres setup
+
+1. In the Vercel project → **Storage** → **Create Database** → **Postgres**
+2. Connect the database to your project (this injects `POSTGRES_URL` automatically)
+3. Redeploy — migrations run at startup; no manual schema step needed
+
+The backend resolves `POSTGRES_URL` first, then `DATABASE_URL`, then falls back to SQLite for local dev.
 
 ### Frontend
 

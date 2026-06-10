@@ -28,7 +28,8 @@ class Settings(BaseSettings):
     schema_retry_attempts: int = 2
 
     # ── Database ──────────────────────────────────────────────────────────────
-    database_url: str = "sqlite:///./life_system.db"
+    # Resolved at runtime via resolve_database_url() — honors Vercel POSTGRES_URL.
+    database_url: str = "sqlite:///./tutorial_builder.db"
 
     # ── Chapter expansion concurrency ─────────────────────────────────────────
     # Number of parallel workers for the chapter_expansion stage.
@@ -105,6 +106,11 @@ class Settings(BaseSettings):
             os.environ.get("FIRECRAWL_API_KEY")
             or self.firecrawl_api_key
         ).strip()
+
+    def get_database_url(self) -> str:
+        from core.database_url import resolve_database_url
+
+        return resolve_database_url(fallback=self.database_url)
 
 
 settings = Settings()
