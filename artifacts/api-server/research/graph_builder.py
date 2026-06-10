@@ -38,14 +38,11 @@ CRITICAL_COVERAGE_THRESHOLD: float = 0.50
 
 # Per-event-type overrides (stricter for high-stakes events)
 EVENT_COVERAGE_THRESHOLDS: dict[str, float] = {
-    "eldercare":       0.65,
-    "estate_planning": 0.65,
-    "divorce":         0.60,
-    "medical":         0.60,
-    "real_estate":     0.55,
-    "immigration":     0.60,
-    "business":        0.50,
-    "default":         0.50,
+    "tutorial":        0.35,
+    "build":           0.35,
+    "deploy":          0.40,
+    "coding":          0.35,
+    "default":         0.35,
 }
 
 
@@ -146,6 +143,7 @@ def build_research_graph(
         jurisdiction=jurisdiction,
         life_event=life_event,
         max_results=15,
+        brief=brief,
     )
     if additional_passages:
         passages = passages + additional_passages

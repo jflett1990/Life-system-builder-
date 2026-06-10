@@ -57,7 +57,7 @@ export default function ExportPage() {
 
   function handleDownloadHtml() {
     if (!exportBundle) return;
-    downloadBlob(exportBundle.html, `${slug}-operational-system.html`, "text/html");
+    downloadBlob(exportBundle.html, `${slug}-tutorial.html`, "text/html");
   }
 
   function handleDownloadJson() {
@@ -91,7 +91,7 @@ export default function ExportPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `LSB-${String(projectId).padStart(5, "0")}-document.pdf`;
+      a.download = `TB-${String(projectId).padStart(5, "0")}-tutorial.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: unknown) {
@@ -114,7 +114,7 @@ export default function ExportPage() {
       const blob = await response.blob();
       const disposition = response.headers.get("Content-Disposition") ?? "";
       const filenameMatch = disposition.match(/filename="([^"]+)"/);
-      const filename = filenameMatch ? filenameMatch[1] : `${slug}-operational-system.docx`;
+      const filename = filenameMatch ? filenameMatch[1] : `${slug}-tutorial.docx`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -140,7 +140,7 @@ export default function ExportPage() {
               Export Bundle
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Download the complete operational system as self-contained files.
+              Download the complete tutorial as self-contained files.
             </p>
           </div>
 
@@ -151,7 +151,7 @@ export default function ExportPage() {
               <div className="border border-amber-200 bg-amber-50 rounded-sm p-3">
                 <p className="text-xs text-amber-800 font-medium mb-0.5">Export unavailable</p>
                 <p className="text-xs text-amber-700">
-                  Complete all pipeline stages before exporting. At least the system architecture
+                  Complete all pipeline stages before exporting. At least the tutorial framing
                   stage must be complete.
                 </p>
               </div>

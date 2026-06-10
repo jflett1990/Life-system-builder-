@@ -61,6 +61,47 @@ def _get_assembler() -> PromptAssembler:
     return PromptAssembler(orch_contract)
 
 
+def _project_payload(project) -> dict[str, Any]:
+    """Build the template payload for LLM prompts from project tutorial metadata."""
+    return {
+        "life_event": project.life_event,
+        "audience": project.audience or "beginner",
+        "tone": project.tone or "project-based",
+        "context": project.context or "",
+        "formatting_profile": project.formatting_profile or "hands-on build",
+        "artifact_density": project.artifact_density or "standard",
+    }
+
+
+def _tutorial_research_brief(project, arch: dict[str, Any]) -> dict[str, Any]:
+    """Assemble the brief dict used by Firecrawl research retrieval."""
+    context = project.context or ""
+    stack = ""
+    platform = ""
+    for line in context.splitlines():
+        lower = line.lower()
+        if "stack" in lower or "framework" in lower or "language" in lower:
+            _, _, stack = line.partition(":")
+            stack = stack.strip()
+        if "platform" in lower or "environment" in lower:
+            _, _, platform = line.partition(":")
+            platform = platform.strip()
+
+    return {
+        "life_event_type": project.life_event or arch.get("life_event", ""),
+        "life_event": project.life_event or arch.get("life_event", ""),
+        "people": arch.get("key_roles", []),
+        "systems": [d.get("name", "") for d in arch.get("control_domains", [])],
+        "jurisdiction": context or None,
+        "jurisdiction_tags": ["tutorial", "coding"],
+        "context": context,
+        "stack": stack,
+        "platform": platform,
+        "tutorial_type": project.formatting_profile or "hands-on build",
+        "audience": project.audience or "beginner",
+    }
+
+
 class PipelineService:
     def __init__(self, db: Session) -> None:
         self._repo = StageOutputRepository(db)
@@ -118,12 +159,7 @@ class PipelineService:
         # Assemble context
         all_outputs = self.all_stage_outputs_as_dict(project_id)
         upstream = orchestrator.collect_upstream_outputs(stage, all_outputs)
-        payload = {
-            "life_event": project.life_event,
-            "audience": project.audience or "general adult",
-            "tone": project.tone or "professional",
-            "context": project.context or "",
-        }
+        payload = _project_payload(project)
 
         registry = get_registry()
         contract_name = orchestrator.resolve_contract_name(stage)
@@ -302,10 +338,7 @@ class PipelineService:
         narrative_contract = get_registry().resolve("chapter_narrative_writer")
 
         base_payload = {
-            "life_event": project.life_event,
-            "audience": project.audience or "general adult",
-            "tone": project.tone or "professional",
-            "context": project.context or "",
+            **_project_payload(project),
             "document_title": outline_data.get("document_title", project.life_event),
         }
 
@@ -791,10 +824,7 @@ class PipelineService:
         assembler = _get_assembler()
 
         base_payload = {
-            "life_event": project.life_event,
-            "audience": project.audience or "general adult",
-            "tone": project.tone or "professional",
-            "context": project.context or "",
+            **_project_payload(project),
             "document_title": outline_data.get("document_title", project.life_event),
         }
 
@@ -1006,14 +1036,7 @@ class PipelineService:
         all_outputs = self.all_stage_outputs_as_dict(project_id)
         arch = all_outputs.get("system_architecture", {})
 
-        brief = {
-            "life_event_type": project.life_event or arch.get("life_event", ""),
-            "life_event":      project.life_event or arch.get("life_event", ""),
-            "people":          arch.get("key_roles", []),
-            "systems":         [d.get("name", "") for d in arch.get("control_domains", [])],
-            "jurisdiction":    project.context or None,
-            "jurisdiction_tags": [],
-        }
+        brief = _tutorial_research_brief(project, arch)
 
         try:
             graph, followup_questions = build_research_graph(project_id, brief)

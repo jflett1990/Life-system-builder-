@@ -4,7 +4,8 @@
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string. Falls back to `sqlite:///./life_system.db` if unset. |
+| `POSTGRES_URL` | Vercel | Auto-injected when Vercel Postgres storage is linked (preferred on Vercel). |
+| `DATABASE_URL` | Local | PostgreSQL or SQLite connection string for local/non-Vercel deploys. |
 | `AI_INTEGRATIONS_OPENAI_API_KEY` | Yes | OpenAI API key for LLM pipeline stages. |
 | `AI_INTEGRATIONS_OPENAI_BASE_URL` | Yes | OpenAI API base URL. Use `https://api.openai.com/v1` for standard OpenAI, or a Replit AI Integrations proxy URL. |
 
@@ -15,6 +16,20 @@
 | `OPENAI_MODEL` | `gpt-5.2` | Model to use for pipeline stages. |
 | `PORT` | `8080` | Port for the FastAPI server. |
 | `LOG_LEVEL` | `INFO` | Python logging level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. |
+
+## Vercel Postgres
+
+1. Project → **Storage** → create/connect **Postgres**
+2. Vercel injects `POSTGRES_URL` (pooled) and `POSTGRES_URL_NON_POOLING`
+3. The API uses `POSTGRES_URL` automatically — no code changes per deploy
+
+Also set in Vercel **Environment Variables**:
+
+```
+FIRECRAWL_API_KEY=...
+AI_INTEGRATIONS_OPENAI_API_KEY=...
+AI_INTEGRATIONS_OPENAI_BASE_URL=https://api.openai.com/v1
+```
 
 ## Replit Setup
 

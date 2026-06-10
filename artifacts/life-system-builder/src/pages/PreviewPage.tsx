@@ -65,7 +65,7 @@ export default function PreviewPage() {
                 Document Preview
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Renders the operational system as a print-ready HTML document.
+                Renders the tutorial as a print-ready HTML walkthrough.
                 {hasExistingRender && !renderResult && cachedInfo && (
                   <span className="ml-1 text-muted-foreground/60">
                     · Last rendered {new Date(cachedInfo.updatedAt).toLocaleDateString()}

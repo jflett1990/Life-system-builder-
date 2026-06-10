@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Api
   version: 0.1.0
-  description: Life System Builder API
+  description: Tutorial Builder API — generates structured coding tutorials and project walkthroughs
 servers:
   - url: /api
     description: Base API path
@@ -392,7 +392,11 @@ components:
       type: string
       enum:
         - system-architecture
-        - worksheet-system
+        - research-graph
+        - document-outline
+        - chapter-expansion
+        - chapter-worksheets
+        - appendix-builder
         - layout-mapping
         - render-blueprint
         - validation-audit
@@ -404,6 +408,7 @@ components:
         - running
         - complete
         - failed
+        - schema_failed
 
     Project:
       type: object
@@ -653,10 +658,25 @@ components:
       properties:
         title:
           type: string
+          description: Short label for the tutorial project
         lifeEvent:
           type: string
+          description: Primary tutorial request — what the user wants to learn or build
+        audience:
+          type: string
+          description: Target skill level or audience (e.g. beginner, intermediate, advanced)
+        tone:
+          type: string
+          description: Output style (e.g. concise, detailed, checklist-driven, project-based)
+        formattingProfile:
+          type: string
+          description: Tutorial type (e.g. hands-on build, debugging walkthrough, deployment guide)
+        artifactDensity:
+          type: string
+          description: Desired tutorial depth or length (e.g. quick overview, standard, comprehensive)
         context:
           type: string
+          description: Stack, platform, constraints, preferred tools, and things to avoid
       required:
         - title
         - lifeEvent
@@ -667,6 +687,14 @@ components:
         title:
           type: string
         lifeEvent:
+          type: string
+        audience:
+          type: string
+        tone:
+          type: string
+        formattingProfile:
+          type: string
+        artifactDensity:
           type: string
         context:
           type: string

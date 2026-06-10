@@ -27,11 +27,13 @@ MEDIUM_CONFIDENCE_THRESHOLD: float = 0.60
 
 # Source type signals → base score contribution
 SOURCE_TYPE_SCORES: dict[str, float] = {
+    "official_docs":  0.88,
     "government":     0.90,
     "legal":          0.85,
     "medical":        0.80,
     "financial":      0.75,
     "professional":   0.70,
+    "web":            0.65,
     "secondary":      0.55,
     "general":        0.45,
     "inferred":       0.25,

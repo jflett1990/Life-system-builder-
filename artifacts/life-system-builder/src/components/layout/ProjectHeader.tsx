@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { ChevronRight, Layers } from "lucide-react";
+import { ChevronRight, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { PIPELINE_STAGE_COUNT } from "@/lib/stages";
 import type { ProjectWithStages } from "@workspace/api-client-react";
 
 const TABS = [
@@ -20,7 +21,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
   const base = `/projects/${project.id}`;
 
   const completedStages = project.stages.filter((s) => s.status === "complete").length;
-  const totalStages = 5;
+  const totalStages = PIPELINE_STAGE_COUNT;
 
   return (
     <div className="border-b bg-card flex-shrink-0">
@@ -28,8 +29,8 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
       <div className="flex items-center gap-2 px-6 pt-4 pb-3">
         <Link href="/projects">
           <span className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1">
-            <Layers className="w-3 h-3" />
-            Projects
+            <BookOpen className="w-3 h-3" />
+            Tutorials
           </span>
         </Link>
         <ChevronRight className="w-3 h-3 text-muted-foreground/50" />

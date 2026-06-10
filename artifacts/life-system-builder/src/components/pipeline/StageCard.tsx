@@ -36,7 +36,7 @@ export function StageCard({ projectId, stage, canRun }: StageCardProps) {
 
   const isRunning = stage.status === StageStatus.running || isPending;
   const isComplete = stage.status === StageStatus.complete;
-  const isFailed = stage.status === StageStatus.failed || stage.status === "schema_failed";
+  const isFailed = stage.status === StageStatus.failed || stage.status === StageStatus.schema_failed;
 
   const revisionNumber = stage.revisionNumber ?? 1;
 

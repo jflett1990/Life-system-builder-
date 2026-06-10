@@ -125,12 +125,12 @@ class DocxBuilder:
         chapter_exp = all_outputs.get("chapter_expansion", {})
         ws_system = all_outputs.get("worksheet_system", {})
 
-        system_name = _safe_text(arch.get("system_name"), "Operational Control System")
+        system_name = _safe_text(arch.get("system_name"), "Tutorial Guide")
         life_event = _safe_text(arch.get("life_event"), "")
         system_objective = _safe_text(arch.get("system_objective"), "")
         time_horizon = _safe_text(arch.get("time_horizon"), "")
         audience = _safe_text(arch.get("audience"), "")
-        document_id = f"LSB-{project_id:05d}"
+        document_id = f"TB-{project_id:05d}"
         generated_date = date.today().strftime("%B %d, %Y")
 
         chapters: list[dict] = chapter_exp.get("chapters", [])
@@ -141,13 +141,13 @@ class DocxBuilder:
 
         cover_para = doc.add_paragraph()
         if life_event:
-            cover_para.add_run(f"Life Event: {life_event}\n")
+            cover_para.add_run(f"Tutorial: {life_event}\n")
         if system_objective:
             cover_para.add_run(f"{system_objective}\n")
         if time_horizon:
-            cover_para.add_run(f"Time Horizon: {time_horizon}\n")
+            cover_para.add_run(f"Estimated Duration: {time_horizon}\n")
         if audience:
-            cover_para.add_run(f"Prepared For: {audience}\n")
+            cover_para.add_run(f"Skill Level: {audience}\n")
         cover_para.add_run(f"Generated: {generated_date}  ·  Document ID: {document_id}")
         for run in cover_para.runs:
             run.font.size = Pt(10)
