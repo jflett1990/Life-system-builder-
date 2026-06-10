@@ -5,11 +5,13 @@ import os
 
 
 def normalize_postgres_url(url: str) -> str:
-    """Convert Vercel/Heroku-style postgres:// URLs for SQLAlchemy + psycopg2."""
+    """Convert Vercel/Heroku-style postgres:// URLs for SQLAlchemy + psycopg v3."""
     if url.startswith("postgres://"):
-        return "postgresql+psycopg2://" + url[len("postgres://") :]
+        return "postgresql+psycopg://" + url[len("postgres://") :]
     if url.startswith("postgresql://") and "+" not in url.split("://", 1)[0]:
-        return "postgresql+psycopg2://" + url[len("postgresql://") :]
+        return "postgresql+psycopg://" + url[len("postgresql://") :]
+    if url.startswith("postgresql+psycopg2://"):
+        return "postgresql+psycopg://" + url[len("postgresql+psycopg2://") :]
     return url
 
 

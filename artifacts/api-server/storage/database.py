@@ -12,8 +12,15 @@ _database_url = settings.get_database_url()
 _is_sqlite = _database_url.startswith("sqlite")
 _is_vercel = bool(os.environ.get("VERCEL"))
 
+_connect_args: dict = {}
+if _is_sqlite:
+    _connect_args = {"check_same_thread": False}
+elif "sslmode=" not in _database_url:
+    # Vercel Postgres requires SSL
+    _connect_args = {"sslmode": "require"}
+
 _engine_kwargs: dict = {
-    "connect_args": {"check_same_thread": False} if _is_sqlite else {},
+    "connect_args": _connect_args,
     "pool_pre_ping": True,
     "echo": False,
 }
@@ -22,7 +29,11 @@ _engine_kwargs: dict = {
 if not _is_sqlite and _is_vercel:
     _engine_kwargs.update(pool_size=1, max_overflow=0, pool_recycle=300)
 
-engine = create_engine(_database_url, **_engine_kwargs)
+try:
+    engine = create_engine(_database_url, **_engine_kwargs)
+except Exception as exc:
+    logger.error("Failed to create database engine (%s): %s", _database_url[:40], exc)
+    raise
 
 logger.info(
     "Database engine: dialect=%s vercel=%s",

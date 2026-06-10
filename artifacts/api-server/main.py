@@ -75,7 +75,7 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown lifecycle."""
     logger.info("=== Tutorial Builder — starting up ===")
 
-    # 1. Load and validate all prompt contracts — fail fast on any error
+    # 1. Load and validate all prompt contracts
     try:
         registry = validate_and_load()
         logger.info(
@@ -83,8 +83,10 @@ async def lifespan(app: FastAPI):
             len(registry.list_all()),
         )
     except Exception as e:
-        logger.error("FATAL: Contract registry failed to load: %s", e)
-        raise
+        # On Vercel, still allow the SPA + health routes to respond
+        logger.error("Contract registry failed to load: %s", e)
+        if not os.environ.get("VERCEL"):
+            raise
 
     # 2. Ensure Playwright Chromium binary is installed (skip on Vercel serverless).
     #    Failure is logged as a warning only — PDF export degrades gracefully to HTML.

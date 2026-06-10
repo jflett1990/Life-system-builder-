@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "corepack enable && pnpm install",
+  "installCommand": "pip install -r requirements.txt && corepack enable && pnpm install",
   "buildCommand": "pnpm --filter @workspace/api-spec run codegen && pnpm exec tsc -p lib/api-client-react/tsconfig.json && pnpm --filter @workspace/life-system-builder run build"
 }

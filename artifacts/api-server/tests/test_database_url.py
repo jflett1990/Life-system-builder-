@@ -8,8 +8,8 @@ from core.database_url import normalize_postgres_url, resolve_database_url
 
 
 def test_normalize_postgres_url() -> None:
-    assert normalize_postgres_url("postgres://u:p@host/db").startswith("postgresql+psycopg2://")
-    assert normalize_postgres_url("postgresql://u:p@host/db").startswith("postgresql+psycopg2://")
+    assert normalize_postgres_url("postgres://u:p@host/db").startswith("postgresql+psycopg://")
+    assert normalize_postgres_url("postgresql://u:p@host/db").startswith("postgresql+psycopg://")
     assert normalize_postgres_url("sqlite:///./x.db") == "sqlite:///./x.db"
 
 
@@ -24,7 +24,7 @@ def test_resolve_prefers_postgres_url() -> None:
     ):
         url = resolve_database_url()
         assert "pooler" in url
-        assert url.startswith("postgresql+psycopg2://")
+        assert url.startswith("postgresql+psycopg://")
 
 
 def test_resolve_sqlite_fallback() -> None:
